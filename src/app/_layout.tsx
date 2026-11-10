@@ -5,6 +5,12 @@ import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 
@@ -39,6 +45,10 @@ function RootLayoutInner() {
     Aeonik_300Light: require('../../assets/fonts/AeonikTRIAL-Light.otf'),
     Aeonik_400Regular: require('../../assets/fonts/AeonikTRIAL-Regular.otf'),
     Aeonik_700Bold: require('../../assets/fonts/AeonikTRIAL-Bold.otf'),
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   useEffect(() => {
