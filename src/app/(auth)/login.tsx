@@ -106,7 +106,7 @@ export default function LoginScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <Text variant="largeTitle">Welcome back</Text>
+            <Text variant="largeTitle">Welcome backó</Text>
             <Text variant="callout" color={colors.labelSecondary} style={{ marginTop: 4 }}>
               Sign in to your FlowX account
             </Text>

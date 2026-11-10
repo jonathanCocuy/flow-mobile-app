@@ -25,7 +25,7 @@ export default function TabLayout() {
             elevation: 0,
           },
           tabBarLabelStyle: {
-            fontFamily: FontFamily.aeonikRegular,
+            fontFamily: FontFamily.interMedium,
             fontSize: 10,
             letterSpacing: 0,
           },

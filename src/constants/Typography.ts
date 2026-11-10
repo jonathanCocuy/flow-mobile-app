@@ -1,15 +1,16 @@
 /**
- * FlowX Typography System — Aeonik Bold (headings) + Inter (body/UI)
- * Matches FinTracker: Aeonik-Bold for h1-h6, Inter for everything else
+ * FlowX Typography System — Apple HIG iOS Text Styles
+ * Using Plus Jakarta Sans for display/headings + Inter for body
  */
 
 export const FontFamily = {
-  // Aeonik — display & headings (matches FinTracker heading font)
-  aeonikBold: 'Aeonik_700Bold',
-  aeonikRegular: 'Aeonik_400Regular',
-  aeonikLight: 'Aeonik_300Light',
+  // Plus Jakarta Sans — display & headings
+  jakartaBold: 'PlusJakartaSans_700Bold',
+  jakartaSemiBold: 'PlusJakartaSans_600SemiBold',
+  jakartaMedium: 'PlusJakartaSans_500Medium',
+  jakartaRegular: 'PlusJakartaSans_400Regular',
 
-  // Inter — body & UI (reliable, full glyph set)
+  // Inter — body & UI
   interBold: 'Inter_700Bold',
   interSemiBold: 'Inter_600SemiBold',
   interMedium: 'Inter_500Medium',
@@ -18,49 +19,48 @@ export const FontFamily = {
 
 /**
  * Apple HIG iOS Text Styles
+ * https://developer.apple.com/design/human-interface-guidelines/typography
  */
 export const TextStyles = {
-  // Display — Aeonik Bold
+  // Display — Jakarta Bold (not in HIG but used for hero numbers)
   displayLarge: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaBold,
     fontSize: 48,
     lineHeight: 56,
     letterSpacing: -1.5,
   },
   displayMedium: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaBold,
     fontSize: 36,
     lineHeight: 44,
     letterSpacing: -0.5,
   },
 
-  // HIG Text Styles — Aeonik Bold for titles
+  // HIG Text Styles
   largeTitle: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaBold,
     fontSize: 34,
     lineHeight: 41,
     letterSpacing: 0.37,
   },
   title1: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaBold,
     fontSize: 28,
     lineHeight: 34,
     letterSpacing: 0.36,
   },
   title2: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaBold,
     fontSize: 22,
     lineHeight: 28,
     letterSpacing: 0.35,
   },
   title3: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaSemiBold,
     fontSize: 20,
     lineHeight: 25,
     letterSpacing: 0.38,
   },
-
-  // HIG Text Styles — Inter for body/UI
   headline: {
     fontFamily: FontFamily.interSemiBold,
     fontSize: 17,
@@ -104,21 +104,21 @@ export const TextStyles = {
     letterSpacing: 0.07,
   },
 
-  // Numeric — Aeonik Bold for financial figures
+  // Numeric — Jakarta for financial figures
   numericLarge: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaBold,
     fontSize: 48,
     lineHeight: 56,
     letterSpacing: -1,
   },
   numericMedium: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaSemiBold,
     fontSize: 28,
     lineHeight: 34,
     letterSpacing: -0.5,
   },
   numericSmall: {
-    fontFamily: FontFamily.aeonikBold,
+    fontFamily: FontFamily.jakartaMedium,
     fontSize: 20,
     lineHeight: 24,
     letterSpacing: -0.3,
