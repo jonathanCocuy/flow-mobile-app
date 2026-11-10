@@ -1,10 +1,11 @@
 import React from 'react';
-import { ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
+import { ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { useAuth } from '@/context/AuthContext';
 import Svg, { Path } from 'react-native-svg';
 
 function ChevronRight({ color }: { color: string }) {
@@ -20,14 +21,15 @@ interface SettingsRowProps {
   label: string;
   value?: string;
   destructive?: boolean;
+  onPress?: () => void;
 }
 
-function SettingsRow({ emoji, label, value, destructive }: SettingsRowProps) {
+function SettingsRow({ emoji, label, value, destructive, onPress }: SettingsRowProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
   return (
-    <TouchableOpacity style={styles.settingsRow} activeOpacity={0.6}>
+    <TouchableOpacity style={styles.settingsRow} activeOpacity={0.6} onPress={onPress}>
       <Text variant="body" style={{ width: 28 }}>{emoji}</Text>
       <Text
         variant="callout"
@@ -77,6 +79,18 @@ const SECTIONS = [
 export default function ProfileScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { signOut, user } = useAuth();
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
@@ -88,10 +102,14 @@ export default function ProfileScreen() {
         {/* Avatar + Name */}
         <View style={styles.profileSection}>
           <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
-            <Text variant="title1" color="#fff" align="center">J</Text>
+            <Text variant="title1" color="#fff" align="center">
+              {(user?.user_metadata?.full_name as string)?.[0]?.toUpperCase() ?? (user?.email?.[0]?.toUpperCase() ?? 'U')}
+            </Text>
           </View>
-          <Text variant="title2" style={{ marginTop: Spacing.sm }}>Jonathan</Text>
-          <Text variant="callout" color={colors.labelSecondary}>jonathancp145@gmail.com</Text>
+          <Text variant="title2" style={{ marginTop: Spacing.sm }}>
+            {user?.user_metadata?.full_name ?? 'User'}
+          </Text>
+          <Text variant="callout" color={colors.labelSecondary}>{user?.email ?? ''}</Text>
         </View>
 
         {/* Stats */}
@@ -145,7 +163,7 @@ export default function ProfileScreen() {
         <View style={styles.settingsSection}>
           <Card radius={Spacing.radius.lg} padding={0}>
             <View style={{ paddingHorizontal: Spacing.md }}>
-              <SettingsRow emoji="🚪" label="Sign Out" destructive />
+              <SettingsRow emoji="🚪" label="Sign Out" destructive onPress={handleSignOut} />
             </View>
           </Card>
         </View>

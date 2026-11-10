@@ -3,9 +3,6 @@ import { useColorScheme, Platform } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { FontFamily } from '@/constants/Typography';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-// Tab icons — using simple Unicode/SF-style SVG approach
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 
 export default function TabLayout() {
@@ -13,8 +10,7 @@ export default function TabLayout() {
   const colors = Colors[colorScheme];
 
   return (
-    <SafeAreaProvider>
-      <Tabs
+    <Tabs
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.tabBarActive,
@@ -43,7 +39,7 @@ export default function TabLayout() {
           options={{
             title: 'Home',
             tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon name="house" color={color} focused={focused} />
+              <TabBarIcon name="house" color={color as string} focused={focused} />
             ),
           }}
         />
@@ -52,7 +48,7 @@ export default function TabLayout() {
           options={{
             title: 'Activity',
             tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon name="list" color={color} focused={focused} />
+              <TabBarIcon name="list" color={color as string} focused={focused} />
             ),
           }}
         />
@@ -61,7 +57,7 @@ export default function TabLayout() {
           options={{
             title: 'Budgets',
             tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon name="chart" color={color} focused={focused} />
+              <TabBarIcon name="chart" color={color as string} focused={focused} />
             ),
           }}
         />
@@ -70,7 +66,7 @@ export default function TabLayout() {
           options={{
             title: 'Goals',
             tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon name="target" color={color} focused={focused} />
+              <TabBarIcon name="target" color={color as string} focused={focused} />
             ),
           }}
         />
@@ -79,11 +75,10 @@ export default function TabLayout() {
           options={{
             title: 'Profile',
             tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon name="person" color={color} focused={focused} />
+              <TabBarIcon name="person" color={color as string} focused={focused} />
             ),
           }}
         />
       </Tabs>
-    </SafeAreaProvider>
   );
 }
