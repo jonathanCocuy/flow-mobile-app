@@ -1,156 +1,279 @@
-import React, { useState } from 'react';
-import { ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import {
+  ScrollView,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { useTransactions } from '@/hooks/useTransactions';
+import { AddTransactionSheet } from '@/components/AddTransactionSheet';
+import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import type { DashboardTransaction, UserCategory } from '@/types/finance';
 
-const TRANSACTIONS = [
-  { id: '1', name: 'Spotify', category: 'Entertainment', amount: -9.99, date: '2026-11-09', icon: '🎵' },
-  { id: '2', name: 'Salary', category: 'Income', amount: 4200.00, date: '2026-11-08', icon: '💼' },
-  { id: '3', name: 'Whole Foods', category: 'Groceries', amount: -84.20, date: '2026-11-08', icon: '🛒' },
-  { id: '4', name: 'Netflix', category: 'Entertainment', amount: -15.99, date: '2026-11-07', icon: '📺' },
-  { id: '5', name: 'Uber', category: 'Transport', amount: -12.40, date: '2026-11-06', icon: '🚗' },
-  { id: '6', name: 'Electric Bill', category: 'Utilities', amount: -98.00, date: '2026-11-05', icon: '⚡' },
-  { id: '7', name: 'Amazon', category: 'Shopping', amount: -44.50, date: '2026-11-04', icon: '📦' },
-  { id: '8', name: 'Freelance', category: 'Income', amount: 350.00, date: '2026-11-03', icon: '💻' },
-];
+type AppColors = typeof Colors[keyof typeof Colors];
+type FilterKey = 'all' | 'income' | 'expense' | 'transfer';
 
-const FILTERS = ['All', 'Income', 'Expense'];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatCurrency(value: number): string {
-  const formatted = Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2 });
-  return value < 0 ? `-$${formatted}` : `+$${formatted}`;
-}
-
-function groupByDate(transactions: typeof TRANSACTIONS) {
-  const groups: Record<string, typeof TRANSACTIONS> = {};
-  transactions.forEach((tx) => {
-    if (!groups[tx.date]) groups[tx.date] = [];
-    groups[tx.date].push(tx);
-  });
-  return groups;
+function formatAmount(tx: DashboardTransaction): string {
+  const val = Math.abs(tx.amount * tx.exchange_rate);
+  const formatted = val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (tx.type === 'income') return `+$${formatted}`;
+  if (tx.type === 'transfer') return `$${formatted}`;
+  return `-$${formatted}`;
 }
 
 function formatGroupDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  if (!dateStr) return '';
   const today = new Date();
   const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (dateStr === today.toISOString().split('T')[0]) return 'Today';
-  if (dateStr === yesterday.toISOString().split('T')[0]) return 'Yesterday';
-  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  yesterday.setDate(today.getDate() - 1);
+  const todayStr = today.toISOString().split('T')[0];
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  if (dateStr === todayStr) return 'Today';
+  if (dateStr === yesterdayStr) return 'Yesterday';
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'long', month: 'short', day: 'numeric',
+  });
 }
 
+function getCategoryLabel(category: string, categories: UserCategory[]): string {
+  const cat = categories.find(c => c.name === category);
+  return cat?.label ?? category;
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+
+function PlusIcon({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function TxRow({
+  tx,
+  isLast,
+  colors,
+  categories,
+}: {
+  tx: DashboardTransaction;
+  isLast: boolean;
+  colors: AppColors;
+  categories: UserCategory[];
+}) {
+  const emoji = getCategoryEmoji(tx.category, tx.type);
+  const label = getCategoryLabel(tx.category, categories);
+  const amountStr = formatAmount(tx);
+  const amountColor =
+    tx.type === 'income' ? colors.income :
+    tx.type === 'transfer' ? colors.savings :
+    colors.label;
+
+  return (
+    <View>
+      <TouchableOpacity
+        style={[styles.txRow, { paddingHorizontal: Spacing.md }]}
+        activeOpacity={0.6}
+      >
+        <View style={[styles.txIcon, { backgroundColor: colors.fillTertiary }]}>
+          <Text variant="body" align="center">{emoji}</Text>
+        </View>
+        <View style={styles.txMiddle}>
+          <Text variant="callout" style={{ fontWeight: '500' }}>{tx.description}</Text>
+          <Text variant="caption1" color={colors.labelSecondary}>{label}</Text>
+        </View>
+        <Text variant="callout" style={{ fontWeight: '600' }} color={amountColor}>
+          {amountStr}
+        </Text>
+      </TouchableOpacity>
+      {!isLast && (
+        <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 72 }]} />
+      )}
+    </View>
+  );
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
 export default function TransactionsScreen() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const [activeFilter, setActiveFilter] = useState('All');
+  const { data, loading, refetch } = useTransactions();
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const filtered = TRANSACTIONS.filter((tx) => {
-    if (activeFilter === 'Income') return tx.amount > 0;
-    if (activeFilter === 'Expense') return tx.amount < 0;
-    return true;
-  });
+  const FILTERS: { key: FilterKey; label: string }[] = [
+    { key: 'all', label: t('transactions.filter.all') },
+    { key: 'income', label: t('transactions.filter.income') },
+    { key: 'expense', label: t('transactions.filter.expense') },
+    { key: 'transfer', label: t('transactions.filter.transfer') },
+  ];
 
-  const groups = groupByDate(filtered);
+  const filtered = useMemo(() => {
+    if (activeFilter === 'all') return data.transactions;
+    return data.transactions.filter(tx => tx.type === activeFilter);
+  }, [data.transactions, activeFilter]);
+
+  const groups = useMemo(() => {
+    const map: Record<string, DashboardTransaction[]> = {};
+    for (const tx of filtered) {
+      if (!map[tx.date]) map[tx.date] = [];
+      map[tx.date].push(tx);
+    }
+    return map;
+  }, [filtered]);
+
+  const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={refetch}
+            tintColor={colors.labelSecondary}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
-          <Text variant="largeTitle">Activity</Text>
+          <Text variant="largeTitle">{t('transactions.title')}</Text>
         </View>
 
-        {/* Filter Chips */}
-        <View style={styles.filters}>
-          {FILTERS.map((f) => (
+        {/* Filter chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+        >
+          {FILTERS.map(f => (
             <TouchableOpacity
-              key={f}
-              onPress={() => setActiveFilter(f)}
+              key={f.key}
+              onPress={() => setActiveFilter(f.key)}
               style={[
                 styles.chip,
                 {
-                  backgroundColor: activeFilter === f ? colors.tint : colors.fillPrimary,
+                  backgroundColor: activeFilter === f.key ? colors.tint : colors.fillPrimary,
                 },
               ]}
               activeOpacity={0.7}
             >
               <Text
                 variant="subheadline"
-                color={activeFilter === f ? '#fff' : colors.labelSecondary}
+                color={activeFilter === f.key ? colors.tintForeground : colors.labelSecondary}
               >
-                {f}
+                {f.label}
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
-        {/* Groups */}
-        {Object.entries(groups).map(([date, txs]) => (
-          <View key={date} style={styles.group}>
-            <Text
-              variant="footnote"
-              color={colors.labelSecondary}
-              style={styles.groupLabel}
-            >
-              {formatGroupDate(date).toUpperCase()}
-            </Text>
-            <Card radius={Spacing.radius.lg} padding={0}>
-              {txs.map((tx, index) => (
-                <View key={tx.id}>
-                  <TouchableOpacity
-                    style={[styles.txRow, { paddingHorizontal: Spacing.md }]}
-                    activeOpacity={0.6}
-                  >
-                    <View style={[styles.txIcon, { backgroundColor: colors.fillTertiary }]}>
-                      <Text variant="body" align="center">{tx.icon}</Text>
-                    </View>
-                    <View style={styles.txMiddle}>
-                      <Text variant="callout" style={{ fontWeight: '500' }}>{tx.name}</Text>
-                      <Text variant="caption1" color={colors.labelSecondary}>{tx.category}</Text>
-                    </View>
-                    <Text
-                      variant="callout"
-                      style={{ fontWeight: '600' }}
-                      color={tx.amount > 0 ? colors.income : colors.label}
-                    >
-                      {formatCurrency(tx.amount)}
-                    </Text>
-                  </TouchableOpacity>
-                  {index < txs.length - 1 && (
-                    <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 72 }]} />
-                  )}
-                </View>
-              ))}
-            </Card>
+        {/* Loading state */}
+        {loading && data.transactions.length === 0 && (
+          <View style={styles.center}>
+            <ActivityIndicator color={colors.labelSecondary} />
           </View>
-        ))}
+        )}
+
+        {/* Empty state */}
+        {!loading && filtered.length === 0 && (
+          <View style={styles.center}>
+            <Text variant="body" color={colors.labelSecondary} align="center">
+              {t('transactions.empty')}
+            </Text>
+          </View>
+        )}
+
+        {/* Grouped transactions */}
+        {sortedDates.map(date => {
+          const txs = groups[date];
+          return (
+            <View key={date} style={styles.group}>
+              <Text
+                variant="footnote"
+                color={colors.labelSecondary}
+                style={styles.groupLabel}
+              >
+                {formatGroupDate(date).toUpperCase()}
+              </Text>
+              <Card radius={Spacing.radius.lg} padding={0}>
+                {txs.map((tx, index) => (
+                  <TxRow
+                    key={tx.id}
+                    tx={tx}
+                    isLast={index === txs.length - 1}
+                    colors={colors}
+                    categories={data.categories}
+                  />
+                ))}
+              </Card>
+            </View>
+          );
+        })}
       </ScrollView>
+
+      {/* FAB */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.tint }]}
+        onPress={() => setSheetOpen(true)}
+        activeOpacity={0.85}
+      >
+        <PlusIcon color={colors.tintForeground} />
+      </TouchableOpacity>
+
+      {/* Add transaction sheet */}
+      <AddTransactionSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onSuccess={() => { setSheetOpen(false); refetch(); }}
+        accounts={data.accounts}
+        categories={data.categories}
+      />
     </SafeAreaView>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  scrollContent: { paddingBottom: 100 },
   header: {
     paddingHorizontal: Spacing.screenHorizontal,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
   },
   filters: {
-    flexDirection: 'row',
     paddingHorizontal: Spacing.screenHorizontal,
     gap: Spacing.xs,
-    marginBottom: Spacing.sm,
+    paddingBottom: Spacing.xs,
   },
   chip: {
     paddingHorizontal: Spacing.md,
     paddingVertical: 7,
     borderRadius: Spacing.radius.full,
+  },
+  center: {
+    paddingTop: 80,
+    alignItems: 'center',
   },
   group: {
     paddingHorizontal: Spacing.screenHorizontal,
@@ -176,4 +299,19 @@ const styles = StyleSheet.create({
   },
   txMiddle: { flex: 1, gap: 2 },
   divider: { height: StyleSheet.hairlineWidth },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
 });

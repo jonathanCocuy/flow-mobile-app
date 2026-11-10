@@ -1,42 +1,64 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
   View,
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
-import { TextStyles } from '@/constants/Typography';
-import Svg, { Path, Circle } from 'react-native-svg';
+import { useAuth } from '@/context/AuthContext';
+import { useDashboard } from '@/hooks/useDashboard';
+import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import { AddTransactionSheet } from '@/components/AddTransactionSheet';
+import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
 
-// Mock data
-const BALANCE = 12_480.50;
-const INCOME = 4_200.00;
-const EXPENSES = 1_847.30;
+type AppColors = typeof Colors[keyof typeof Colors];
 
-const RECENT_TRANSACTIONS = [
-  { id: '1', name: 'Spotify', category: 'Entertainment', amount: -9.99, date: 'Today' },
-  { id: '2', name: 'Salary', category: 'Income', amount: 4200.00, date: 'Yesterday' },
-  { id: '3', name: 'Whole Foods', category: 'Groceries', amount: -84.20, date: 'Yesterday' },
-  { id: '4', name: 'Netflix', category: 'Entertainment', amount: -15.99, date: 'Nov 7' },
-  { id: '5', name: 'Uber', category: 'Transport', amount: -12.40, date: 'Nov 6' },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatCurrency(value: number, compact = false): string {
-  if (compact && Math.abs(value) >= 1000) {
-    return `$${(Math.abs(value) / 1000).toFixed(1)}k`;
+  if (compact && Math.abs(value) >= 1_000_000) {
+    return `$${(Math.abs(value) / 1_000_000).toFixed(1)}M`;
+  }
+  if (compact && Math.abs(value) >= 1_000) {
+    return `$${(Math.abs(value) / 1_000).toFixed(1)}k`;
   }
   const formatted = Math.abs(value).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return value < 0 ? `-$${formatted}` : `$${formatted}`;
+  return `$${formatted}`;
 }
+
+function formatTxDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const todayStr = today.toISOString().split('T')[0];
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  if (dateStr === todayStr) return 'Today';
+  if (dateStr === yesterdayStr) return 'Yesterday';
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+
+function getCategoryLabel(category: string, categories: UserCategory[]): string {
+  const cat = categories.find(c => c.name === category);
+  return cat?.label ?? category;
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
 function PlusIcon({ color }: { color: string }) {
   return (
@@ -46,17 +68,69 @@ function PlusIcon({ color }: { color: string }) {
   );
 }
 
-function ArrowIcon({ color }: { color: string }) {
+function AddCircleIcon({ color }: { color: string }) {
   return (
-    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
-      <Path d="M6 12L10 8L6 4" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
     </Svg>
   );
 }
 
+function ListIcon({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function ChartIcon({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M18 20V10M12 20V4M6 20v-6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function TargetIcon({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
+
 export default function DashboardScreen() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { data, loading, refetch } = useDashboard();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? '';
+
+  const hour = new Date().getHours();
+  const greeting =
+    hour >= 5 && hour < 12 ? t('dashboard.greeting.morning')
+    : hour >= 12 && hour < 17 ? t('dashboard.greeting.afternoon')
+    : t('dashboard.greeting.evening');
+
+  // Balance card — always dark, elevated in dark mode
+  const cardBg = colorScheme === 'dark' ? '#262626' : '#171717';
+  const cardBorder = colorScheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'transparent';
+  const cardText = '#fafafa';
+  const cardTextSub = 'rgba(250,250,250,0.55)';
+  const cardDivider = 'rgba(250,250,250,0.15)';
+
+  const quickActions = [
+    { key: 'add',      label: t('dashboard.action.add'),      icon: (c: string) => <AddCircleIcon color={c} />, onPress: () => setSheetOpen(true) },
+    { key: 'activity', label: t('dashboard.action.activity'), icon: (c: string) => <ListIcon color={c} />,      onPress: () => router.push('/(tabs)/transactions') },
+    { key: 'budgets',  label: t('dashboard.action.budgets'),  icon: (c: string) => <ChartIcon color={c} />,     onPress: () => router.push('/(tabs)/budgets') },
+    { key: 'goals',    label: t('dashboard.action.goals'),    icon: (c: string) => <TargetIcon color={c} />,    onPress: () => router.push('/(tabs)/goals') },
+  ];
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
@@ -64,66 +138,69 @@ export default function DashboardScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={refetch}
+            tintColor={colors.labelSecondary}
+          />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
             <Text variant="footnote" color={colors.labelSecondary}>
-              Good morning
+              {greeting}{firstName ? `, ${firstName}` : ''}
             </Text>
             <Text variant="title2">FlowX</Text>
           </View>
           <TouchableOpacity
             style={[styles.addButton, { backgroundColor: colors.tint }]}
             activeOpacity={0.8}
+            onPress={() => setSheetOpen(true)}
           >
-            <PlusIcon color="#fff" />
+            <PlusIcon color={colors.tintForeground} />
           </TouchableOpacity>
         </View>
 
         {/* Balance Card */}
         <View style={styles.section}>
-          <Card style={[styles.balanceCard, { backgroundColor: colors.label }]} padding={0} radius={Spacing.radius.xl}>
+          <Card style={[styles.balanceCard, { backgroundColor: cardBg, borderWidth: StyleSheet.hairlineWidth, borderColor: cardBorder }]} padding={0} radius={Spacing.radius.xl}>
             <View style={styles.balancePadding}>
-              <Text variant="footnote" color={colorScheme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'}>
-                Total Balance
+              <Text variant="footnote" color={cardTextSub} align="center">
+                {t('dashboard.totalBalance')}
               </Text>
-              <Text
-                variant="displayMedium"
-                color={colorScheme === 'dark' ? '#000' : '#fff'}
-                style={styles.balanceAmount}
-              >
-                {formatCurrency(BALANCE)}
-              </Text>
+              {loading ? (
+                <View style={styles.balanceSkeleton}>
+                  <ActivityIndicator color={cardText} size="small" />
+                </View>
+              ) : (
+                <Text
+                  variant="displayMedium"
+                  color={cardText}
+                  align="center"
+                  style={styles.balanceAmount}
+                >
+                  {formatCurrency(data.totalBalance)}
+                </Text>
+              )}
               <View style={styles.balanceStats}>
                 <View style={styles.statItem}>
-                  <View style={[styles.statDot, { backgroundColor: colorScheme === 'dark' ? '#30D158' : '#34C759' }]} />
+                  <View style={[styles.statDot, { backgroundColor: colors.income }]} />
                   <View>
-                    <Text variant="caption2" color={colorScheme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)'}>
-                      Income
-                    </Text>
-                    <Text
-                      variant="footnote"
-                      color={colorScheme === 'dark' ? '#000' : '#fff'}
-                      style={{ fontWeight: '600' }}
-                    >
-                      {formatCurrency(INCOME, true)}
+                    <Text variant="caption2" color={cardTextSub}>{t('dashboard.income')}</Text>
+                    <Text variant="footnote" color={cardText} style={{ fontWeight: '600' }}>
+                      {loading ? '—' : formatCurrency(data.currentMonthIncome, true)}
                     </Text>
                   </View>
                 </View>
-                <View style={[styles.statDivider, { backgroundColor: colorScheme === 'dark' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)' }]} />
+                <View style={[styles.statDivider, { backgroundColor: cardDivider }]} />
                 <View style={styles.statItem}>
-                  <View style={[styles.statDot, { backgroundColor: colorScheme === 'dark' ? '#FF453A' : '#FF3B30' }]} />
+                  <View style={[styles.statDot, { backgroundColor: colors.expense }]} />
                   <View>
-                    <Text variant="caption2" color={colorScheme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)'}>
-                      Expenses
-                    </Text>
-                    <Text
-                      variant="footnote"
-                      color={colorScheme === 'dark' ? '#000' : '#fff'}
-                      style={{ fontWeight: '600' }}
-                    >
-                      {formatCurrency(EXPENSES, true)}
+                    <Text variant="caption2" color={cardTextSub}>{t('dashboard.expenses')}</Text>
+                    <Text variant="footnote" color={cardText} style={{ fontWeight: '600' }}>
+                      {loading ? '—' : formatCurrency(data.currentMonthExpenses, true)}
                     </Text>
                   </View>
                 </View>
@@ -135,19 +212,15 @@ export default function DashboardScreen() {
         {/* Quick Actions */}
         <View style={styles.section}>
           <View style={styles.quickActions}>
-            {[
-              { label: 'Send', icon: '↑' },
-              { label: 'Receive', icon: '↓' },
-              { label: 'Pay', icon: '⊕' },
-              { label: 'More', icon: '···' },
-            ].map((action) => (
+            {quickActions.map((action) => (
               <TouchableOpacity
-                key={action.label}
+                key={action.key}
                 style={styles.quickAction}
                 activeOpacity={0.7}
+                onPress={action.onPress}
               >
                 <View style={[styles.quickActionIcon, { backgroundColor: colors.fillPrimary }]}>
-                  <Text variant="title3" color={colors.tint}>{action.icon}</Text>
+                  {action.icon(colors.tint)}
                 </View>
                 <Text variant="caption1" color={colors.labelSecondary} style={styles.quickActionLabel}>
                   {action.label}
@@ -158,106 +231,173 @@ export default function DashboardScreen() {
         </View>
 
         {/* Budget Overview */}
-        <View style={styles.sectionWithHeader}>
-          <View style={styles.sectionHeader}>
-            <Text variant="title3">Budgets</Text>
-            <TouchableOpacity>
-              <Text variant="subheadline" color={colors.tint}>See all</Text>
-            </TouchableOpacity>
-          </View>
-          <Card radius={Spacing.radius.lg} padding={0}>
-            {[
-              { name: 'Groceries', spent: 320, total: 500, color: colors.tintOrange },
-              { name: 'Entertainment', spent: 60, total: 100, color: colors.tint },
-              { name: 'Transport', spent: 85, total: 150, color: colors.tintGreen },
-            ].map((budget, index) => (
-              <View key={budget.name}>
-                <View style={[styles.budgetItem, { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2 }]}>
-                  <View style={styles.budgetLeft}>
-                    <Text variant="callout">{budget.name}</Text>
-                    <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary }]}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          {
-                            backgroundColor: budget.color,
-                            width: `${(budget.spent / budget.total) * 100}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                  <View style={styles.budgetRight}>
-                    <Text variant="callout" style={{ fontWeight: '600' }}>
-                      ${budget.spent}
-                    </Text>
-                    <Text variant="caption1" color={colors.labelSecondary}>
-                      of ${budget.total}
-                    </Text>
-                  </View>
+        {(loading || data.budgets.length > 0) && (
+          <View style={styles.sectionWithHeader}>
+            <View style={styles.sectionHeader}>
+              <Text variant="title3">{t('dashboard.budgets')}</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/budgets')}>
+                <Text variant="subheadline" color={colors.tint}>{t('dashboard.seeAll')}</Text>
+              </TouchableOpacity>
+            </View>
+            <Card radius={Spacing.radius.lg} padding={0}>
+              {loading ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator color={colors.labelTertiary} size="small" />
                 </View>
-                {index < 2 && (
-                  <View style={[styles.insetDivider, { backgroundColor: colors.separator, marginLeft: Spacing.md }]} />
-                )}
-              </View>
-            ))}
-          </Card>
-        </View>
+              ) : (
+                data.budgets.map((budget, index) => (
+                  <BudgetRow
+                    key={budget.id}
+                    budget={budget}
+                    categories={data.categories}
+                    colors={colors}
+                    isLast={index === data.budgets.length - 1}
+                  />
+                ))
+              )}
+            </Card>
+          </View>
+        )}
 
         {/* Recent Transactions */}
         <View style={[styles.sectionWithHeader, styles.lastSection]}>
           <View style={styles.sectionHeader}>
-            <Text variant="title3">Recent</Text>
-            <TouchableOpacity>
-              <Text variant="subheadline" color={colors.tint}>See all</Text>
+            <Text variant="title3">{t('dashboard.recentTransactions')}</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
+              <Text variant="subheadline" color={colors.tint}>{t('dashboard.seeAll')}</Text>
             </TouchableOpacity>
           </View>
           <Card radius={Spacing.radius.lg} padding={0}>
-            {RECENT_TRANSACTIONS.map((tx, index) => (
-              <View key={tx.id}>
-                <TouchableOpacity
-                  style={[styles.txItem, { paddingHorizontal: Spacing.md }]}
-                  activeOpacity={0.6}
-                >
-                  <View style={[styles.txIcon, { backgroundColor: tx.amount > 0 ? `${colors.income}18` : colors.fillTertiary }]}>
-                    <Text variant="footnote" align="center">
-                      {tx.amount > 0 ? '↑' : tx.category === 'Groceries' ? '🛒' : tx.category === 'Entertainment' ? '🎵' : '🚗'}
-                    </Text>
-                  </View>
-                  <View style={styles.txMiddle}>
-                    <Text variant="callout" style={{ fontWeight: '500' }}>{tx.name}</Text>
-                    <Text variant="caption1" color={colors.labelSecondary}>{tx.category}</Text>
-                  </View>
-                  <View style={styles.txRight}>
-                    <Text
-                      variant="callout"
-                      style={{ fontWeight: '600' }}
-                      color={tx.amount > 0 ? colors.income : colors.label}
-                    >
-                      {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
-                    </Text>
-                    <Text variant="caption2" color={colors.labelTertiary}>{tx.date}</Text>
-                  </View>
-                </TouchableOpacity>
-                {index < RECENT_TRANSACTIONS.length - 1 && (
-                  <View style={[styles.insetDivider, { backgroundColor: colors.separator, marginLeft: 72 }]} />
-                )}
+            {loading ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator color={colors.labelTertiary} size="small" />
               </View>
-            ))}
+            ) : data.recentTransactions.length === 0 ? (
+              <View style={styles.emptyRow}>
+                <Text variant="callout" color={colors.labelTertiary} align="center">
+                  {t('dashboard.noTransactions')}
+                </Text>
+              </View>
+            ) : (
+              data.recentTransactions.map((tx, index) => (
+                <TransactionRow
+                  key={tx.id}
+                  tx={tx}
+                  categories={data.categories}
+                  colors={colors}
+                  isLast={index === data.recentTransactions.length - 1}
+                />
+              ))
+            )}
           </Card>
         </View>
       </ScrollView>
+
+      <AddTransactionSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onSuccess={() => { setSheetOpen(false); refetch(); }}
+        accounts={data.accounts}
+        categories={data.categories}
+      />
     </SafeAreaView>
   );
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function BudgetRow({
+  budget,
+  categories,
+  colors,
+  isLast,
+}: {
+  budget: BudgetWithProgress;
+  categories: UserCategory[];
+  colors: AppColors;
+  isLast: boolean;
+}) {
+  const pct = Math.min(budget.percentage, 100);
+  const barColor = budget.isOverBudget ? colors.expense : budget.percentage > 80 ? colors.tintOrange : colors.tintGreen;
+  const label = getCategoryLabel(budget.category, categories);
+
+  return (
+    <>
+      <View style={[styles.budgetItem, { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2 }]}>
+        <View style={styles.budgetLeft}>
+          <Text variant="callout">{label}</Text>
+          <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary }]}>
+            <View style={[styles.progressFill, { backgroundColor: barColor, width: `${pct}%` }]} />
+          </View>
+        </View>
+        <View style={styles.budgetRight}>
+          <Text variant="callout" style={{ fontWeight: '600' }}>
+            {formatCurrency(budget.spent, true)}
+          </Text>
+          <Text variant="caption1" color={colors.labelSecondary}>
+            of {formatCurrency(budget.monthly_limit, true)}
+          </Text>
+        </View>
+      </View>
+      {!isLast && (
+        <View style={[styles.insetDivider, { backgroundColor: colors.separator, marginLeft: Spacing.md }]} />
+      )}
+    </>
+  );
+}
+
+function TransactionRow({
+  tx,
+  categories,
+  colors,
+  isLast,
+}: {
+  tx: DashboardTransaction;
+  categories: UserCategory[];
+  colors: AppColors;
+  isLast: boolean;
+}) {
+  const emoji = getCategoryEmoji(tx.category, tx.type);
+  const label = getCategoryLabel(tx.category, categories);
+  const displayAmount = tx.amount * (tx.exchange_rate ?? 1);
+  const isIncome = tx.type === 'income';
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[styles.txItem, { paddingHorizontal: Spacing.md }]}
+        activeOpacity={0.6}
+      >
+        <View style={[styles.txIcon, { backgroundColor: isIncome ? `${colors.income}18` : colors.fillTertiary }]}>
+          <Text variant="footnote" align="center">{emoji}</Text>
+        </View>
+        <View style={styles.txMiddle}>
+          <Text variant="callout" style={{ fontWeight: '500' }}>{tx.description}</Text>
+          <Text variant="caption1" color={colors.labelSecondary}>{label}</Text>
+        </View>
+        <View style={styles.txRight}>
+          <Text
+            variant="callout"
+            style={{ fontWeight: '600' }}
+            color={isIncome ? colors.income : tx.type === 'transfer' ? colors.savings : colors.label}
+          >
+            {isIncome ? '+' : tx.type === 'transfer' ? '' : '-'}{formatCurrency(displayAmount)}
+          </Text>
+          <Text variant="caption2" color={colors.labelTertiary}>{formatTxDate(tx.date)}</Text>
+        </View>
+      </TouchableOpacity>
+      {!isLast && (
+        <View style={[styles.insetDivider, { backgroundColor: colors.separator, marginLeft: 72 }]} />
+      )}
+    </>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-  },
-  scroll: {
-    paddingBottom: 24,
-  },
+  safe: { flex: 1 },
+  scroll: { paddingBottom: 24 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -281,20 +421,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenHorizontal,
     marginTop: Spacing.xl,
   },
-  lastSection: {
-    marginBottom: Spacing.sm,
-  },
+  lastSection: { marginBottom: Spacing.sm },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  balanceCard: {
-    overflow: 'hidden',
-  },
-  balancePadding: {
-    padding: Spacing.lg,
+  balanceCard: { overflow: 'hidden' },
+  balancePadding: { padding: Spacing.lg },
+  balanceSkeleton: {
+    height: 48,
+    justifyContent: 'center',
+    marginVertical: Spacing.xs,
   },
   balanceAmount: {
     marginTop: 4,
@@ -311,15 +450,8 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     flex: 1,
   },
-  statDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-  },
+  statDot: { width: 8, height: 8, borderRadius: 4 },
+  statDivider: { width: 1, height: 32 },
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -336,33 +468,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickActionLabel: {
-    marginTop: 2,
+  quickActionLabel: { marginTop: 2 },
+  loadingRow: {
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
+  },
+  emptyRow: {
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
   },
   budgetItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
   },
-  budgetLeft: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
+  budgetLeft: { flex: 1, gap: Spacing.xs },
   progressTrack: {
     height: 4,
     borderRadius: 2,
     overflow: 'hidden',
   },
-  progressFill: {
-    height: 4,
-    borderRadius: 2,
-  },
-  budgetRight: {
-    alignItems: 'flex-end',
-  },
-  insetDivider: {
-    height: StyleSheet.hairlineWidth,
-  },
+  progressFill: { height: 4, borderRadius: 2 },
+  budgetRight: { alignItems: 'flex-end' },
+  insetDivider: { height: StyleSheet.hairlineWidth },
   txItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -376,12 +505,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  txMiddle: {
-    flex: 1,
-    gap: 2,
-  },
-  txRight: {
-    alignItems: 'flex-end',
-    gap: 2,
-  },
+  txMiddle: { flex: 1, gap: 2 },
+  txRight: { alignItems: 'flex-end', gap: 2 },
 });
