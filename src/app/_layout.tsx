@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { I18nextProvider } from 'react-i18next';
+import i18n, { initI18n } from '@/i18n';
 
 import {
   PlusJakartaSans_400Regular,
@@ -48,6 +50,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 // ── Font + splash loader ──────────────────────────────────────────────────────
 function RootLayoutInner() {
   const colorScheme = useColorScheme();
+  const [i18nReady, setI18nReady] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     PlusJakartaSans_400Regular,
@@ -61,17 +64,21 @@ function RootLayoutInner() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    initI18n().then(() => setI18nReady(true));
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && i18nReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, i18nReady]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !i18nReady) {
     return null;
   }
 
   return (
-    <>
+    <I18nextProvider i18n={i18n}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <AuthGate>
         <Stack screenOptions={{ headerShown: false }}>
@@ -80,7 +87,7 @@ function RootLayoutInner() {
           <Stack.Screen name="+not-found" options={{ headerShown: true, title: 'Not Found' }} />
         </Stack>
       </AuthGate>
-    </>
+    </I18nextProvider>
   );
 }
 

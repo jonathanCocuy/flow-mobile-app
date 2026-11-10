@@ -14,19 +14,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { useAuth } from '@/context/AuthContext';
+import { LanguagePicker } from '@/components/ui/LanguagePicker';
 
-function validate(name: string, email: string, password: string, confirm: string) {
-  if (!name.trim() || name.trim().length < 2) return 'Enter your full name.';
-  if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) return 'Enter a valid email address.';
-  if (password.length < 8) return 'Password must be at least 8 characters.';
-  if (password !== confirm) return 'Passwords do not match.';
-  return null;
-}
 
 function PasswordStrength({ password }: { password: string }) {
   const colorScheme = useColorScheme() ?? 'light';
@@ -80,6 +75,7 @@ const pwStyles = StyleSheet.create({
 
 // ── Success screen ────────────────────────────────────────────────────────────
 function ConfirmEmailScreen({ email }: { email: string }) {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
@@ -89,17 +85,15 @@ function ConfirmEmailScreen({ email }: { email: string }) {
         <View style={[successStyles.iconBox, { backgroundColor: `${colors.income}18` }]}>
           <Text variant="displayLarge" align="center">✉️</Text>
         </View>
-        <Text variant="title1" align="center">Check your inbox</Text>
+        <Text variant="title1" align="center">{t('register.success.title')}</Text>
         <Text variant="callout" color={colors.labelSecondary} align="center" style={successStyles.sub}>
-          We sent a confirmation link to{'\n'}
-          <Text variant="callout" style={{ fontWeight: '600' }}>{email}</Text>
-          {'\n\n'}Click it to activate your account.
+          {t('register.success.subtitle', { email })}
         </Text>
         <TouchableOpacity
           style={[successStyles.btn, { backgroundColor: colors.tint }]}
           onPress={() => router.replace('/(auth)/login')}
         >
-          <Text variant="headline" color={colors.tintForeground}>Back to Sign In</Text>
+          <Text variant="headline" color={colors.tintForeground}>{t('register.success.backToSignIn')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -135,10 +129,19 @@ const successStyles = StyleSheet.create({
 
 // ── Register screen ───────────────────────────────────────────────────────────
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { height } = useWindowDimensions();
   const { signUp, signInWithApple, signInWithGoogle } = useAuth();
+
+  function validate(name: string, email: string, password: string, confirm: string) {
+    if (!name.trim() || name.trim().length < 2) return t('register.error.nameRequired');
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) return t('register.error.emailInvalid');
+    if (password.length < 8) return t('register.error.passwordShort');
+    if (password !== confirm) return t('register.error.passwordMismatch');
+    return null;
+  }
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -186,7 +189,7 @@ export default function RegisterScreen() {
 
     if (authError) {
       if (authError.message.includes('already registered')) {
-        setError('This email is already registered. Try signing in.');
+        setError(t('register.error.emailTaken'));
       } else {
         setError(authError.message);
       }
@@ -215,36 +218,39 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Wordmark */}
-          <View style={styles.wordmark}>
-            <View style={[styles.logoBox, { backgroundColor: colors.tint }]}>
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill={colors.tintForeground} stroke={colors.tintForeground} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <Path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" />
-                <Path d="M7 14h.01" />
-                <Path d="M9 5v2" />
-                <Path d="M15 5v2" />
-              </Svg>
+          {/* Wordmark row + language picker */}
+          <View style={styles.wordmarkRow}>
+            <View style={styles.wordmark}>
+              <View style={[styles.logoBox, { backgroundColor: colors.tint }]}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill={colors.tintForeground} stroke={colors.tintForeground} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" />
+                  <Path d="M7 14h.01" />
+                  <Path d="M9 5v2" />
+                  <Path d="M15 5v2" />
+                </Svg>
+              </View>
+              <Text variant="title3" style={{ letterSpacing: -0.5 }}>FlowX</Text>
             </View>
-            <Text variant="title3" style={{ letterSpacing: -0.5 }}>FlowX</Text>
+            <LanguagePicker />
           </View>
 
           {/* Header */}
           <View style={styles.header}>
-            <Text variant="largeTitle">Create Account</Text>
+            <Text variant="largeTitle">{t('register.title')}</Text>
             <Text variant="callout" color={colors.labelSecondary} style={{ marginTop: 4 }}>
-              Start tracking your finances today.
+              {t('register.subtitle')}
             </Text>
           </View>
 
           {/* Form */}
           <View style={[styles.formCard, { backgroundColor: colors.backgroundGroupedSecondary, borderColor: colors.separator }]}>
             <Input
-              label="Full Name"
+              label={t('register.fullName')}
               value={name}
-              onChangeText={(t) => { setName(t); clearError(); }}
+              onChangeText={(v) => { setName(v); clearError(); }}
               returnKeyType="next"
               onSubmitEditing={() => emailRef.current?.focus()}
-              placeholder="Jonathan Smith"
+              placeholder={t('register.namePlaceholder')}
               textContentType="name"
               autoComplete="name"
               autoCapitalize="words"
@@ -254,9 +260,9 @@ export default function RegisterScreen() {
 
             <Input
               ref={emailRef}
-              label="Email"
+              label={t('register.email')}
               value={email}
-              onChangeText={(t) => { setEmail(t); clearError(); }}
+              onChangeText={(v) => { setEmail(v); clearError(); }}
               keyboardType="email-address"
               returnKeyType="next"
               onSubmitEditing={() => passwordRef.current?.focus()}
@@ -269,13 +275,13 @@ export default function RegisterScreen() {
 
             <Input
               ref={passwordRef}
-              label="Password"
+              label={t('register.password')}
               value={password}
-              onChangeText={(t) => { setPassword(t); clearError(); }}
+              onChangeText={(v) => { setPassword(v); clearError(); }}
               secureToggle
               returnKeyType="next"
               onSubmitEditing={() => confirmRef.current?.focus()}
-              placeholder="Min. 8 characters"
+              placeholder={t('register.passwordPlaceholder')}
               textContentType="newPassword"
               autoComplete="new-password"
             />
@@ -285,16 +291,16 @@ export default function RegisterScreen() {
 
             <Input
               ref={confirmRef}
-              label="Confirm Password"
+              label={t('register.confirmPassword')}
               value={confirm}
-              onChangeText={(t) => { setConfirm(t); clearError(); }}
+              onChangeText={(v) => { setConfirm(v); clearError(); }}
               secureToggle
               returnKeyType="done"
               onSubmitEditing={handleRegister}
-              placeholder="Repeat your password"
+              placeholder={t('register.confirmPlaceholder')}
               textContentType="newPassword"
               autoComplete="new-password"
-              error={confirm && password !== confirm ? 'Passwords do not match' : undefined}
+              error={confirm && password !== confirm ? t('register.passwordMismatch') : undefined}
             />
           </View>
 
@@ -314,14 +320,14 @@ export default function RegisterScreen() {
           >
             {loading
               ? <ActivityIndicator color={colors.tintForeground} />
-              : <Text variant="headline" color={colors.tintForeground}>Create Account</Text>
+              : <Text variant="headline" color={colors.tintForeground}>{t('register.submit')}</Text>
             }
           </TouchableOpacity>
 
           {/* OR divider */}
           <View style={styles.orDivider}>
             <View style={[styles.orLine, { backgroundColor: colors.separator }]} />
-            <Text variant="footnote" color={colors.labelTertiary} style={{ paddingHorizontal: Spacing.sm }}>or</Text>
+            <Text variant="footnote" color={colors.labelTertiary} style={{ paddingHorizontal: Spacing.sm }}>{t('register.or')}</Text>
             <View style={[styles.orLine, { backgroundColor: colors.separator }]} />
           </View>
 
@@ -369,17 +375,17 @@ export default function RegisterScreen() {
 
           {/* Terms note */}
           <Text variant="caption1" color={colors.labelTertiary} align="center" style={styles.termsNote}>
-            By creating an account you agree to our{' '}
-            <Text variant="caption1" color={colors.tint}>Terms of Service</Text>
-            {' '}and{' '}
-            <Text variant="caption1" color={colors.tint}>Privacy Policy</Text>.
+            {t('register.legalPrefix')}{' '}
+            <Text variant="caption1" color={colors.tint}>{t('register.terms')}</Text>
+            {' '}{t('register.and')}{' '}
+            <Text variant="caption1" color={colors.tint}>{t('register.privacy')}</Text>.
           </Text>
 
           {/* Switch to login */}
           <View style={styles.switchRow}>
-            <Text variant="callout" color={colors.labelSecondary}>Already have an account? </Text>
+            <Text variant="callout" color={colors.labelSecondary}>{t('register.haveAccount')} </Text>
             <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
-              <Text variant="callout" color={colors.tint} style={{ fontWeight: '600' }}>Sign in</Text>
+              <Text variant="callout" color={colors.tint} style={{ fontWeight: '600' }}>{t('register.signIn')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -395,11 +401,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenHorizontal,
     paddingBottom: Spacing.xxxl,
   },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xxl,
+  },
   wordmark: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    marginBottom: Spacing.xxl,
   },
   logoBox: {
     width: 36,

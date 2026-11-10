@@ -10,9 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { LanguagePicker } from '@/components/ui/LanguagePicker';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +45,7 @@ function FeatureRow({ emoji, label }: { emoji: string; label: string }) {
 }
 
 export default function WelcomeScreen() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
@@ -73,6 +76,11 @@ export default function WelcomeScreen() {
       <View style={[styles.blob, { backgroundColor: isDark ? '#0A84FF22' : '#007AFF12' }]} />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Language picker — top right */}
+        <View style={styles.topBar}>
+          <LanguagePicker />
+        </View>
+
         <Animated.View
           style={[
             styles.content,
@@ -91,17 +99,17 @@ export default function WelcomeScreen() {
               align="center"
               style={styles.tagline}
             >
-              Your finances,{'\n'}beautifully simple.
+              {t('welcome.tagline')}
             </Text>
           </View>
 
           {/* Features */}
           <View style={[styles.featuresBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.separator }]}>
-            <FeatureRow emoji="💰" label="Track income & expenses" />
+            <FeatureRow emoji="💰" label={t('welcome.feat1')} />
             <View style={[styles.featureDivider, { backgroundColor: colors.separator }]} />
-            <FeatureRow emoji="📊" label="Smart budget categories" />
+            <FeatureRow emoji="📊" label={t('welcome.feat2')} />
             <View style={[styles.featureDivider, { backgroundColor: colors.separator }]} />
-            <FeatureRow emoji="🎯" label="Set & reach financial goals" />
+            <FeatureRow emoji="🎯" label={t('welcome.feat3')} />
           </View>
 
           {/* CTAs */}
@@ -111,7 +119,7 @@ export default function WelcomeScreen() {
               activeOpacity={0.85}
               onPress={() => router.push('/(auth)/register')}
             >
-              <Text variant="headline" color="#fff">Create Account</Text>
+              <Text variant="headline" color="#fff">{t('welcome.createAccount')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -119,12 +127,12 @@ export default function WelcomeScreen() {
               activeOpacity={0.7}
               onPress={() => router.push('/(auth)/login')}
             >
-              <Text variant="headline" color={isDark ? '#0A84FF' : '#007AFF'}>Sign In</Text>
+              <Text variant="headline" color={isDark ? '#0A84FF' : '#007AFF'}>{t('welcome.signIn')}</Text>
             </TouchableOpacity>
           </View>
 
           <Text variant="caption2" color={colors.labelQuaternary} align="center" style={styles.legalNote}>
-            By continuing you agree to our Terms of Service and Privacy Policy.
+            {t('welcome.legal')}
           </Text>
         </Animated.View>
       </SafeAreaView>
@@ -143,11 +151,16 @@ const styles = StyleSheet.create({
     borderRadius: width * 0.7,
   },
   safe: { flex: 1 },
+  topBar: {
+    alignItems: 'flex-end',
+    paddingHorizontal: Spacing.screenHorizontal + 4,
+    paddingTop: Spacing.sm,
+  },
   content: {
     flex: 1,
     paddingHorizontal: Spacing.screenHorizontal + 4,
     justifyContent: 'space-between',
-    paddingTop: Spacing.xxxl,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.lg,
   },
   hero: {

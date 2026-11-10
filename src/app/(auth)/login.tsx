@@ -14,25 +14,28 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { useAuth } from '@/context/AuthContext';
-
-function validate(email: string, password: string) {
-  if (!email.trim()) return 'Email is required.';
-  if (!/\S+@\S+\.\S+/.test(email)) return 'Enter a valid email address.';
-  if (!password) return 'Password is required.';
-  if (password.length < 6) return 'Password must be at least 6 characters.';
-  return null;
-}
+import { LanguagePicker } from '@/components/ui/LanguagePicker';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { height } = useWindowDimensions();
   const { signIn, signInWithApple, signInWithGoogle } = useAuth();
+
+  function validate(email: string, password: string) {
+    if (!email.trim()) return t('login.error.emailRequired');
+    if (!/\S+@\S+\.\S+/.test(email)) return t('login.error.emailInvalid');
+    if (!password) return t('login.error.passwordRequired');
+    if (password.length < 6) return t('login.error.passwordShort');
+    return null;
+  }
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,9 +72,9 @@ export default function LoginScreen() {
 
     if (authError) {
       if (authError.message.includes('Invalid login credentials')) {
-        setError('Incorrect email or password. Please try again.');
+        setError(t('login.error.wrongCredentials'));
       } else if (authError.message.includes('Email not confirmed')) {
-        setError('Please confirm your email before signing in.');
+        setError(t('login.error.emailNotConfirmed'));
       } else {
         setError(authError.message);
       }
@@ -91,33 +94,36 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Wordmark */}
-          <View style={styles.wordmark}>
-            <View style={[styles.logoBox, { backgroundColor: colors.tint }]}>
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill={colors.tintForeground} stroke={colors.tintForeground} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <Path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" />
-                <Path d="M7 14h.01" />
-                <Path d="M9 5v2" />
-                <Path d="M15 5v2" />
-              </Svg>
+          {/* Wordmark row + language picker */}
+          <View style={styles.wordmarkRow}>
+            <View style={styles.wordmark}>
+              <View style={[styles.logoBox, { backgroundColor: colors.tint }]}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill={colors.tintForeground} stroke={colors.tintForeground} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" />
+                  <Path d="M7 14h.01" />
+                  <Path d="M9 5v2" />
+                  <Path d="M15 5v2" />
+                </Svg>
+              </View>
+              <Text variant="title3" style={{ letterSpacing: -0.5 }}>FlowX</Text>
             </View>
-            <Text variant="title3" style={{ letterSpacing: -0.5 }}>FlowX</Text>
+            <LanguagePicker />
           </View>
 
           {/* Header */}
           <View style={styles.header}>
-            <Text variant="largeTitle">Welcome backó</Text>
+            <Text variant="largeTitle">{t('login.title')}</Text>
             <Text variant="callout" color={colors.labelSecondary} style={{ marginTop: 4 }}>
-              Sign in to your FlowX account
+              {t('login.subtitle')}
             </Text>
           </View>
 
           {/* Form */}
           <View style={[styles.formCard, { backgroundColor: colors.backgroundGroupedSecondary, borderColor: colors.separator }]}>
             <Input
-              label="Email"
+              label={t('login.email')}
               value={email}
-              onChangeText={(t) => { setEmail(t); setError(null); }}
+              onChangeText={(v) => { setEmail(v); setError(null); }}
               keyboardType="email-address"
               returnKeyType="next"
               onSubmitEditing={() => passwordRef.current?.focus()}
@@ -130,9 +136,9 @@ export default function LoginScreen() {
 
             <Input
               ref={passwordRef}
-              label="Password"
+              label={t('login.password')}
               value={password}
-              onChangeText={(t) => { setPassword(t); setError(null); }}
+              onChangeText={(v) => { setPassword(v); setError(null); }}
               secureToggle
               returnKeyType="done"
               onSubmitEditing={handleSignIn}
@@ -147,7 +153,7 @@ export default function LoginScreen() {
             style={styles.forgotLink}
             onPress={() => router.push('/(auth)/forgot-password')}
           >
-            <Text variant="callout" color={colors.tint}>Forgot Password?</Text>
+            <Text variant="callout" color={colors.tint}>{t('login.forgotPassword')}</Text>
           </TouchableOpacity>
 
           {/* Error */}
@@ -166,14 +172,14 @@ export default function LoginScreen() {
           >
             {loading
               ? <ActivityIndicator color={colors.tintForeground} />
-              : <Text variant="headline" color={colors.tintForeground}>Sign In</Text>
+              : <Text variant="headline" color={colors.tintForeground}>{t('login.submit')}</Text>
             }
           </TouchableOpacity>
 
           {/* OR divider */}
           <View style={styles.orDivider}>
             <View style={[styles.orLine, { backgroundColor: colors.separator }]} />
-            <Text variant="footnote" color={colors.labelTertiary} style={{ paddingHorizontal: Spacing.sm }}>or</Text>
+            <Text variant="footnote" color={colors.labelTertiary} style={{ paddingHorizontal: Spacing.sm }}>{t('login.or')}</Text>
             <View style={[styles.orLine, { backgroundColor: colors.separator }]} />
           </View>
 
@@ -221,9 +227,9 @@ export default function LoginScreen() {
 
           {/* Switch to register */}
           <View style={styles.switchRow}>
-            <Text variant="callout" color={colors.labelSecondary}>Don't have an account? </Text>
+            <Text variant="callout" color={colors.labelSecondary}>{t('login.noAccount')} </Text>
             <TouchableOpacity onPress={() => router.replace('/(auth)/register')}>
-              <Text variant="callout" color={colors.tint} style={{ fontWeight: '600' }}>Create one</Text>
+              <Text variant="callout" color={colors.tint} style={{ fontWeight: '600' }}>{t('login.createOne')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -239,11 +245,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenHorizontal,
     paddingBottom: Spacing.xxl,
   },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xxl,
+  },
   wordmark: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    marginBottom: Spacing.xxl,
   },
   logoBox: {
     width: 36,
