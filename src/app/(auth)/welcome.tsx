@@ -48,7 +48,6 @@ export default function WelcomeScreen() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const isDark = colorScheme === 'dark';
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(32)).current;
@@ -71,9 +70,9 @@ export default function WelcomeScreen() {
   }, []);
 
   return (
-    <View style={[styles.root, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      {/* Top gradient blob */}
-      <View style={[styles.blob, { backgroundColor: isDark ? '#0A84FF22' : '#007AFF12' }]} />
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Top decorative blob */}
+      <View style={[styles.blob, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]} />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         {/* Language picker — top right */}
@@ -89,8 +88,8 @@ export default function WelcomeScreen() {
         >
           {/* Logo + Brand */}
           <View style={styles.hero}>
-            <View style={[styles.logoBox, { backgroundColor: isDark ? '#0A84FF' : '#007AFF' }]}>
-              <FlowXLogo size={40} color="#fff" />
+            <View style={[styles.logoBox, { backgroundColor: colors.tint }]}>
+              <FlowXLogo size={40} color={colors.tintForeground} />
             </View>
             <Text variant="largeTitle" style={styles.brandName}>FlowX</Text>
             <Text
@@ -115,19 +114,19 @@ export default function WelcomeScreen() {
           {/* CTAs */}
           <View style={styles.ctas}>
             <TouchableOpacity
-              style={[styles.btnPrimary, { backgroundColor: isDark ? '#0A84FF' : '#007AFF' }]}
+              style={[styles.btnPrimary, { backgroundColor: colors.tint }]}
               activeOpacity={0.85}
               onPress={() => router.push('/(auth)/register')}
             >
-              <Text variant="headline" color="#fff">{t('welcome.createAccount')}</Text>
+              <Text variant="headline" color={colors.tintForeground}>{t('welcome.createAccount')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.btnSecondary, { borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)' }]}
+              style={[styles.btnSecondary, { borderColor: colors.separator }]}
               activeOpacity={0.7}
               onPress={() => router.push('/(auth)/login')}
             >
-              <Text variant="headline" color={isDark ? '#0A84FF' : '#007AFF'}>{t('welcome.signIn')}</Text>
+              <Text variant="headline" color={colors.label}>{t('welcome.signIn')}</Text>
             </TouchableOpacity>
           </View>
 
