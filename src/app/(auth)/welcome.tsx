@@ -72,7 +72,7 @@ export default function WelcomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Top decorative blob */}
-      <View style={[styles.blob, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]} />
+      <View style={[styles.blob, { backgroundColor: colors.fillQuaternary }]} />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         {/* Language picker — top right */}
