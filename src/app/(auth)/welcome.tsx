@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
@@ -18,17 +18,13 @@ import { LanguagePicker } from '@/components/ui/LanguagePicker';
 
 const { width } = Dimensions.get('window');
 
-function FlowXLogo({ size = 64, color = '#fff' }: { size?: number; color?: string }) {
+function FlowXLogo({ size = 40, color = '#fff' }: { size?: number; color?: string }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      {/* Piggy bank / coin stack icon — matches FinTracker icon */}
-      <Circle cx="24" cy="20" r="12" stroke={color} strokeWidth="2.5" />
-      <Path d="M18 20 C18 20 20 24 24 24 C28 24 30 20 30 20" stroke={color} strokeWidth="2" strokeLinecap="round" />
-      <Circle cx="20" cy="18" r="1.5" fill={color} />
-      <Circle cx="28" cy="18" r="1.5" fill={color} />
-      <Path d="M24 32 L24 38" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
-      <Path d="M18 38 L30 38" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
-      <Path d="M34 16 C36 15 38 16 38 18 C38 20 36 21 34 20" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" />
+      <Path d="M7 14h.01" />
+      <Path d="M9 5v2" />
+      <Path d="M15 5v2" />
     </Svg>
   );
 }
