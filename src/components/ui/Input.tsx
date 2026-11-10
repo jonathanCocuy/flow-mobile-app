@@ -72,7 +72,7 @@ export const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
             styles.input,
             {
               color: colors.label,
-              fontFamily: FontFamily.interRegular,
+              fontFamily: FontFamily.aeonikRegular,
               fontSize: 16,
             },
             style,

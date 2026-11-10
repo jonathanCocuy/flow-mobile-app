@@ -9,9 +9,10 @@ import {
   ActivityIndicator,
   TextInput,
   useColorScheme,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { router } from 'expo-router';
 import { Text } from '@/components/ui/Text';
 import { Input } from '@/components/ui/Input';
@@ -98,7 +99,7 @@ function ConfirmEmailScreen({ email }: { email: string }) {
           style={[successStyles.btn, { backgroundColor: colors.tint }]}
           onPress={() => router.replace('/(auth)/login')}
         >
-          <Text variant="headline" color="#fff">Back to Sign In</Text>
+          <Text variant="headline" color={colors.tintForeground}>Back to Sign In</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -136,6 +137,7 @@ const successStyles = StyleSheet.create({
 export default function RegisterScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { height } = useWindowDimensions();
   const { signUp, signInWithApple, signInWithGoogle } = useAuth();
 
   const [name, setName] = useState('');
@@ -209,21 +211,18 @@ export default function RegisterScreen() {
         keyboardVerticalOffset={0}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.scroll, { paddingTop: height * 0.06 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Wordmark */}
           <View style={styles.wordmark}>
             <View style={[styles.logoBox, { backgroundColor: colors.tint }]}>
-              <Svg width={20} height={20} viewBox="0 0 48 48" fill="none">
-                <Circle cx="24" cy="20" r="12" stroke="#fff" strokeWidth="2.5" />
-                <Path d="M18 20 C18 20 20 24 24 24 C28 24 30 20 30 20" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                <Circle cx="20" cy="18" r="1.5" fill="#fff" />
-                <Circle cx="28" cy="18" r="1.5" fill="#fff" />
-                <Path d="M24 32 L24 38" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-                <Path d="M18 38 L30 38" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-                <Path d="M34 16 C36 15 38 16 38 18 C38 20 36 21 34 20" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill={colors.tintForeground} stroke={colors.tintForeground} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <Path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" />
+                <Path d="M7 14h.01" />
+                <Path d="M9 5v2" />
+                <Path d="M15 5v2" />
               </Svg>
             </View>
             <Text variant="title3" style={{ letterSpacing: -0.5 }}>FlowX</Text>
@@ -314,8 +313,8 @@ export default function RegisterScreen() {
             disabled={loading}
           >
             {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text variant="headline" color="#fff">Create Account</Text>
+              ? <ActivityIndicator color={colors.tintForeground} />
+              : <Text variant="headline" color={colors.tintForeground}>Create Account</Text>
             }
           </TouchableOpacity>
 
@@ -400,7 +399,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    paddingTop: Spacing.lg,
     marginBottom: Spacing.xxl,
   },
   logoBox: {

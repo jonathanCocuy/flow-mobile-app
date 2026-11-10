@@ -1,122 +1,103 @@
 /**
- * FlowX Color System — Apple HIG compliant
- * iOS system colors + dark/light semantic tokens
+ * FlowX Color System — FinTracker palette
+ * Monochromatic primary (black/white) + emerald/rose/blue finance accents
  */
-
-export const SystemColors = {
-  // iOS System Colors
-  blue: '#007AFF',
-  green: '#34C759',
-  red: '#FF3B30',
-  orange: '#FF9500',
-  yellow: '#FFCC00',
-  purple: '#AF52DE',
-  indigo: '#5856D6',
-  teal: '#5AC8FA',
-  pink: '#FF2D55',
-
-  // Grays (iOS)
-  gray1: '#8E8E93',
-  gray2: '#AEAEB2',
-  gray3: '#C7C7CC',
-  gray4: '#D1D1D6',
-  gray5: '#E5E5EA',
-  gray6: '#F2F2F7',
-} as const;
 
 export const Colors = {
   light: {
     // Backgrounds
-    background: '#FFFFFF',
-    backgroundSecondary: '#F2F2F7',
-    backgroundTertiary: '#FFFFFF',
-    backgroundGrouped: '#F2F2F7',
-    backgroundGroupedSecondary: '#FFFFFF',
+    background: '#ffffff',
+    backgroundSecondary: '#f5f5f5',
+    backgroundTertiary: '#ffffff',
+    backgroundGrouped: '#f5f5f5',
+    backgroundGroupedSecondary: '#ffffff',
 
     // Labels
-    label: '#000000',
-    labelSecondary: 'rgba(60, 60, 67, 0.60)',
-    labelTertiary: 'rgba(60, 60, 67, 0.30)',
-    labelQuaternary: 'rgba(60, 60, 67, 0.18)',
+    label: '#0a0a0a',
+    labelSecondary: '#737373',
+    labelTertiary: '#a1a1a1',
+    labelQuaternary: 'rgba(0, 0, 0, 0.12)',
 
     // Separators
-    separator: 'rgba(60, 60, 67, 0.29)',
-    separatorOpaque: '#C6C6C8',
+    separator: '#e5e5e5',
+    separatorOpaque: '#e5e5e5',
 
     // Fills
-    fillPrimary: 'rgba(120, 120, 128, 0.20)',
-    fillSecondary: 'rgba(120, 120, 128, 0.16)',
-    fillTertiary: 'rgba(118, 118, 128, 0.12)',
-    fillQuaternary: 'rgba(116, 116, 128, 0.08)',
+    fillPrimary: 'rgba(0, 0, 0, 0.12)',
+    fillSecondary: 'rgba(0, 0, 0, 0.08)',
+    fillTertiary: 'rgba(0, 0, 0, 0.06)',
+    fillQuaternary: 'rgba(0, 0, 0, 0.04)',
 
-    // Tints
-    tint: SystemColors.blue,
-    tintGreen: SystemColors.green,
-    tintRed: SystemColors.red,
-    tintOrange: SystemColors.orange,
+    // Tints — monochromatic primary
+    tint: '#171717',
+    tintForeground: '#fafafa',
+    tintGreen: '#10b981',
+    tintRed: '#f43f5e',
+    tintOrange: '#f59e0b',
 
     // Finance-specific
-    income: SystemColors.green,
-    expense: SystemColors.red,
-    savings: SystemColors.blue,
-    investment: SystemColors.indigo,
+    income: '#10b981',
+    expense: '#f43f5e',
+    savings: '#3b82f6',
+    investment: '#8b5cf6',
 
     // Tab bar
-    tabBarBackground: 'rgba(249, 249, 249, 0.94)',
-    tabBarBorder: 'rgba(0, 0, 0, 0.12)',
-    tabBarActive: SystemColors.blue,
-    tabBarInactive: SystemColors.gray1,
+    tabBarBackground: 'rgba(255, 255, 255, 0.94)',
+    tabBarBorder: '#e5e5e5',
+    tabBarActive: '#171717',
+    tabBarInactive: '#a1a1a1',
 
     // Card
-    card: '#FFFFFF',
-    cardBorder: 'rgba(0, 0, 0, 0.06)',
+    card: '#ffffff',
+    cardBorder: '#e5e5e5',
   },
 
   dark: {
     // Backgrounds
-    background: '#000000',
-    backgroundSecondary: '#1C1C1E',
-    backgroundTertiary: '#2C2C2E',
-    backgroundGrouped: '#000000',
-    backgroundGroupedSecondary: '#1C1C1E',
+    background: '#0a0a0a',
+    backgroundSecondary: '#262626',
+    backgroundTertiary: '#262626',
+    backgroundGrouped: '#0a0a0a',
+    backgroundGroupedSecondary: '#171717',
 
     // Labels
-    label: '#FFFFFF',
-    labelSecondary: 'rgba(235, 235, 245, 0.60)',
-    labelTertiary: 'rgba(235, 235, 245, 0.30)',
-    labelQuaternary: 'rgba(235, 235, 245, 0.18)',
+    label: '#fafafa',
+    labelSecondary: '#a1a1a1',
+    labelTertiary: '#737373',
+    labelQuaternary: 'rgba(255, 255, 255, 0.12)',
 
     // Separators
-    separator: 'rgba(84, 84, 88, 0.60)',
-    separatorOpaque: '#38383A',
+    separator: 'rgba(255, 255, 255, 0.10)',
+    separatorOpaque: '#262626',
 
     // Fills
-    fillPrimary: 'rgba(120, 120, 128, 0.36)',
-    fillSecondary: 'rgba(120, 120, 128, 0.32)',
-    fillTertiary: 'rgba(118, 118, 128, 0.24)',
-    fillQuaternary: 'rgba(116, 116, 128, 0.18)',
+    fillPrimary: 'rgba(255, 255, 255, 0.16)',
+    fillSecondary: 'rgba(255, 255, 255, 0.12)',
+    fillTertiary: 'rgba(255, 255, 255, 0.08)',
+    fillQuaternary: 'rgba(255, 255, 255, 0.04)',
 
-    // Tints
-    tint: '#0A84FF',
-    tintGreen: '#30D158',
-    tintRed: '#FF453A',
-    tintOrange: '#FF9F0A',
+    // Tints — monochromatic primary
+    tint: '#e5e5e5',
+    tintForeground: '#171717',
+    tintGreen: '#10b981',
+    tintRed: '#f43f5e',
+    tintOrange: '#f59e0b',
 
     // Finance-specific
-    income: '#30D158',
-    expense: '#FF453A',
-    savings: '#0A84FF',
-    investment: '#5E5CE6',
+    income: '#10b981',
+    expense: '#f43f5e',
+    savings: '#3b82f6',
+    investment: '#8b5cf6',
 
     // Tab bar
-    tabBarBackground: 'rgba(28, 28, 30, 0.94)',
+    tabBarBackground: 'rgba(10, 10, 10, 0.94)',
     tabBarBorder: 'rgba(255, 255, 255, 0.10)',
-    tabBarActive: '#0A84FF',
-    tabBarInactive: '#8E8E93',
+    tabBarActive: '#e5e5e5',
+    tabBarInactive: '#737373',
 
     // Card
-    card: '#1C1C1E',
-    cardBorder: 'rgba(255, 255, 255, 0.06)',
+    card: '#171717',
+    cardBorder: 'rgba(255, 255, 255, 0.10)',
   },
 } as const;
 

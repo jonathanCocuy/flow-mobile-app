@@ -9,12 +9,34 @@ import {
   useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { router } from 'expo-router';
 import { Text } from '@/components/ui/Text';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { useAuth } from '@/context/AuthContext';
+
+function Wordmark({ colors, colorScheme }: { colors: typeof Colors[keyof typeof Colors]; colorScheme: 'light' | 'dark' }) {
+  return (
+    <View style={wordmarkStyles.row}>
+      <View style={[wordmarkStyles.box, { backgroundColor: colors.tint }]}>
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill={colors.tintForeground} stroke={colors.tintForeground} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" />
+          <Path d="M7 14h.01" />
+          <Path d="M9 5v2" />
+          <Path d="M15 5v2" />
+        </Svg>
+      </View>
+      <Text variant="title3" style={{ letterSpacing: -0.5 }}>FlowX</Text>
+    </View>
+  );
+}
+
+const wordmarkStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.xxl },
+  box: { width: 36, height: 36, borderRadius: Spacing.radius.sm, alignItems: 'center', justifyContent: 'center' },
+});
 
 export default function ForgotPasswordScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -28,11 +50,6 @@ export default function ForgotPasswordScreen() {
 
   const handleSend = async () => {
     setError(null);
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-      setError('Enter a valid email address.');
-      return;
-    }
-
     setLoading(true);
     const { error: authError } = await resetPassword(email.trim().toLowerCase());
     setLoading(false);
@@ -68,12 +85,19 @@ export default function ForgotPasswordScreen() {
                 style={[styles.btn, { backgroundColor: colors.tint }]}
                 onPress={() => router.back()}
               >
-                <Text variant="headline" color="#fff">Back to Sign In</Text>
+                <Text variant="headline" color={colors.tintForeground}>Back to Sign In</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: colors.backgroundGroupedSecondary, borderWidth: StyleSheet.hairlineWidth * 2, borderColor: colors.separator }]}
+                onPress={() => router.push('/(auth)/reset-password')}
+              >
+                <Text variant="headline" color={colors.label}>Go to Reset Password</Text>
               </TouchableOpacity>
             </View>
           ) : (
             // ── Form state ────────────────────────────────────────────────────
             <>
+              <Wordmark colors={colors} colorScheme={colorScheme} />
               <View style={styles.header}>
                 <Text variant="title1">Forgot Password?</Text>
                 <Text variant="callout" color={colors.labelSecondary} style={{ marginTop: 6 }}>
@@ -109,8 +133,8 @@ export default function ForgotPasswordScreen() {
                 disabled={loading}
               >
                 {loading
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text variant="headline" color="#fff">Send Reset Link</Text>
+                  ? <ActivityIndicator color={colors.tintForeground} />
+                  : <Text variant="headline" color={colors.tintForeground}>Send Reset Link</Text>
                 }
               </TouchableOpacity>
 
@@ -138,7 +162,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxxl,
   },
   header: {
     marginBottom: Spacing.xl,
@@ -160,6 +184,7 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'stretch',
     marginTop: Spacing.xl,
   },
   cancelBtn: {
