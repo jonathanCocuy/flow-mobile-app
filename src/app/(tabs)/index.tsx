@@ -379,8 +379,8 @@ function StatChip({
       <View style={[chipStyles.iconBox, { backgroundColor: `${accent}22` }]}>
         {icon}
       </View>
-      <Text variant="caption2" color="rgba(250,250,250,0.55)" style={{ marginTop: 7 }}>{label}</Text>
-      <Text variant="footnote" color="#fafafa" style={{ fontWeight: '700', marginTop: 1 }}>{value}</Text>
+      <Text variant="caption2" color="rgba(250,250,250,0.55)">{label}</Text>
+      <Text variant="footnote" color="#fafafa" style={{ fontWeight: '700' }}>{value}</Text>
     </View>
   );
 }
@@ -391,7 +391,9 @@ const chipStyles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     padding: 10,
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
   iconBox: {
     width: 30,
