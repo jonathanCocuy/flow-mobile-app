@@ -243,12 +243,11 @@ export default function DashboardScreen() {
                 />
                 <StatChip
                   label={t('dashboard.expenses')}
-                  value={loading ? '—' : formatCurrency(data.currentMonthExpenses, true)}
+                  value={loading ? '—' : formatCurrency(Math.abs(data.currentMonthExpenses), true)}
                   accent={colors.expense}
                   chipBg={chipBg}
                   chipBorder={chipBorder}
                   icon={<ArrowDownIcon color={colors.expense} />}
-                  elevated
                 />
                 <StatChip
                   label={t('dashboard.savings')}
@@ -546,7 +545,7 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: 'row',
     gap: 8,
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
     marginTop: 4,
   },
   quickActions: {
