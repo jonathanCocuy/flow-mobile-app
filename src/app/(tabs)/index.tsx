@@ -116,10 +116,21 @@ function ArrowDownIcon({ color }: { color: string }) {
   );
 }
 
-function DiamondIcon({ color }: { color: string }) {
+function PiggyBankIcon({ color }: { color: string }) {
   return (
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 2L2 9l10 13L22 9z" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
+      {/* Body */}
+      <Path d="M9.5 7C9.5 9.5 8.3 11 7 11C5.7 11 2.5 9.8 2.5 7C2.5 4.2 4.5 3 7 3C8.3 3 9.5 4.5 9.5 7Z"
+        stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Snout */}
+      <Path d="M9.5 6.2C10 5.5 12 5.5 12.5 7C13 8.5 11 9.2 9.5 7.8"
+        stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+      {/* Coin slot on top */}
+      <Path d="M5.5 3L8.5 3" stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+      {/* Eye */}
+      <Path d="M6.5 6.8L6.5 6.8" stroke={color} strokeWidth={2} strokeLinecap="round"/>
+      {/* Legs */}
+      <Path d="M4.5 11L4 13M7.5 11L7.5 13" stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
     </Svg>
   );
 }
@@ -255,7 +266,7 @@ export default function DashboardScreen() {
                   accent={colors.savings}
                   chipBg={chipBg}
                   chipBorder={chipBorder}
-                  icon={<DiamondIcon color={colors.savings} />}
+                  icon={<PiggyBankIcon color={colors.savings} />}
                 />
               </View>
             </View>
