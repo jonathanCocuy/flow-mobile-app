@@ -81,7 +81,7 @@ function TxRow({
   const amountColor =
     tx.type === 'income' ? colors.income :
     tx.type === 'transfer' ? colors.savings :
-    colors.label;
+    colors.expense;
 
   return (
     <View>

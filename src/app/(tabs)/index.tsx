@@ -100,6 +100,41 @@ function TargetIcon({ color }: { color: string }) {
   );
 }
 
+function ArrowUpIcon({ color }: { color: string }) {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 19V5M5 12l7-7 7 7" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function ArrowDownIcon({ color }: { color: string }) {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M19 12l-7 7-7-7" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function DiamondIcon({ color }: { color: string }) {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 2L2 9l10 13L22 9z" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function TrendArrow({ up, color }: { up: boolean; color: string }) {
+  return (
+    <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+      <Path
+        d={up ? 'M7 17L17 7M17 7H7M17 7v10' : 'M7 7l10 10M17 17H7M17 17V7'}
+        stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
@@ -123,7 +158,10 @@ export default function DashboardScreen() {
   const cardBorder = colorScheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'transparent';
   const cardText = '#fafafa';
   const cardTextSub = 'rgba(250,250,250,0.55)';
-  const cardDivider = 'rgba(250,250,250,0.15)';
+  const chipBg = 'rgba(255,255,255,0.09)';
+  const chipBorder = 'rgba(255,255,255,0.13)';
+
+  const savings = data.currentMonthIncome - data.currentMonthExpenses;
 
   const quickActions = [
     { key: 'add',      label: t('dashboard.action.add'),      icon: (c: string) => <AddCircleIcon color={c} />, onPress: () => setSheetOpen(true) },
@@ -167,43 +205,59 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <Card style={[styles.balanceCard, { backgroundColor: cardBg, borderWidth: StyleSheet.hairlineWidth, borderColor: cardBorder }]} padding={0} radius={Spacing.radius.xl}>
             <View style={styles.balancePadding}>
+              {/* Label */}
               <Text variant="footnote" color={cardTextSub} align="center">
                 {t('dashboard.totalBalance')}
               </Text>
+
+              {/* Balance amount */}
               {loading ? (
                 <View style={styles.balanceSkeleton}>
                   <ActivityIndicator color={cardText} size="small" />
                 </View>
               ) : (
-                <Text
-                  variant="displayMedium"
-                  color={cardText}
-                  align="center"
-                  style={styles.balanceAmount}
-                >
+                <Text variant="displayMedium" color={cardText} align="center" style={styles.balanceAmount}>
                   {formatCurrency(data.totalBalance)}
                 </Text>
               )}
-              <View style={styles.balanceStats}>
-                <View style={styles.statItem}>
-                  <View style={[styles.statDot, { backgroundColor: colors.income }]} />
-                  <View>
-                    <Text variant="caption2" color={cardTextSub}>{t('dashboard.income')}</Text>
-                    <Text variant="footnote" color={cardText} style={{ fontWeight: '600' }}>
-                      {loading ? '—' : formatCurrency(data.currentMonthIncome, true)}
-                    </Text>
-                  </View>
+
+              {/* Net savings badge */}
+              {!loading && (
+                <View style={styles.savingsBadge}>
+                  <TrendArrow up={savings >= 0} color={savings >= 0 ? colors.income : colors.expense} />
+                  <Text variant="caption1" color={savings >= 0 ? colors.income : colors.expense}>
+                    {savings >= 0 ? '+' : ''}{formatCurrency(savings, true)} {t('dashboard.thisMonth')}
+                  </Text>
                 </View>
-                <View style={[styles.statDivider, { backgroundColor: cardDivider }]} />
-                <View style={styles.statItem}>
-                  <View style={[styles.statDot, { backgroundColor: colors.expense }]} />
-                  <View>
-                    <Text variant="caption2" color={cardTextSub}>{t('dashboard.expenses')}</Text>
-                    <Text variant="footnote" color={cardText} style={{ fontWeight: '600' }}>
-                      {loading ? '—' : formatCurrency(data.currentMonthExpenses, true)}
-                    </Text>
-                  </View>
-                </View>
+              )}
+
+              {/* Floating stat chips */}
+              <View style={styles.chipRow}>
+                <StatChip
+                  label={t('dashboard.income')}
+                  value={loading ? '—' : formatCurrency(data.currentMonthIncome, true)}
+                  accent={colors.income}
+                  chipBg={chipBg}
+                  chipBorder={chipBorder}
+                  icon={<ArrowUpIcon color={colors.income} />}
+                />
+                <StatChip
+                  label={t('dashboard.expenses')}
+                  value={loading ? '—' : formatCurrency(data.currentMonthExpenses, true)}
+                  accent={colors.expense}
+                  chipBg={chipBg}
+                  chipBorder={chipBorder}
+                  icon={<ArrowDownIcon color={colors.expense} />}
+                  elevated
+                />
+                <StatChip
+                  label={t('dashboard.savings')}
+                  value={loading ? '—' : formatCurrency(Math.abs(savings), true)}
+                  accent={colors.savings}
+                  chipBg={chipBg}
+                  chipBorder={chipBorder}
+                  icon={<DiamondIcon color={colors.savings} />}
+                />
               </View>
             </View>
           </Card>
@@ -306,6 +360,49 @@ export default function DashboardScreen() {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+function StatChip({
+  label, value, accent, chipBg, chipBorder, icon, elevated,
+}: {
+  label: string;
+  value: string;
+  accent: string;
+  chipBg: string;
+  chipBorder: string;
+  icon: React.ReactNode;
+  elevated?: boolean;
+}) {
+  return (
+    <View style={[
+      chipStyles.chip,
+      { backgroundColor: chipBg, borderColor: chipBorder },
+      elevated && { transform: [{ translateY: -10 }] },
+    ]}>
+      <View style={[chipStyles.iconBox, { backgroundColor: `${accent}22` }]}>
+        {icon}
+      </View>
+      <Text variant="caption2" color="rgba(250,250,250,0.55)" style={{ marginTop: 7 }}>{label}</Text>
+      <Text variant="footnote" color="#fafafa" style={{ fontWeight: '700', marginTop: 1 }}>{value}</Text>
+    </View>
+  );
+}
+
+const chipStyles = StyleSheet.create({
+  chip: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 10,
+    alignItems: 'flex-start',
+  },
+  iconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
 function BudgetRow({
   budget,
   categories,
@@ -379,7 +476,7 @@ function TransactionRow({
           <Text
             variant="callout"
             style={{ fontWeight: '600' }}
-            color={isIncome ? colors.income : tx.type === 'transfer' ? colors.savings : colors.label}
+            color={isIncome ? colors.income : tx.type === 'transfer' ? colors.savings : colors.expense}
           >
             {isIncome ? '+' : tx.type === 'transfer' ? '' : '-'}{formatCurrency(displayAmount)}
           </Text>
@@ -429,29 +526,29 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   balanceCard: { overflow: 'hidden' },
-  balancePadding: { padding: Spacing.lg },
+  balancePadding: { paddingHorizontal: Spacing.md, paddingTop: Spacing.lg, paddingBottom: Spacing.md },
   balanceSkeleton: {
-    height: 48,
+    height: 56,
     justifyContent: 'center',
     marginVertical: Spacing.xs,
   },
   balanceAmount: {
     marginTop: 4,
+    marginBottom: Spacing.sm,
+  },
+  savingsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
     marginBottom: Spacing.md,
   },
-  balanceStats: {
+  chipRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
+    gap: 8,
+    alignItems: 'flex-end',
+    marginTop: 4,
   },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    flex: 1,
-  },
-  statDot: { width: 8, height: 8, borderRadius: 4 },
-  statDivider: { width: 1, height: 32 },
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
