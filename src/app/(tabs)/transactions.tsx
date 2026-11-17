@@ -190,9 +190,8 @@ export default function TransactionsScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
+            refreshing={false}
             onRefresh={refetch}
-            tintColor={colors.labelSecondary}
           />
         }
       >
