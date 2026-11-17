@@ -72,6 +72,9 @@ export default {
   // Common actions
   'common.cancel': 'Cancel',
   'common.delete': 'Delete',
+  'common.today': 'Today',
+  'common.yesterday': 'Yesterday',
+  'common.of': 'of',
 
   // Accounts screen
   'accounts.title': 'Accounts',

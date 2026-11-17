@@ -18,6 +18,7 @@ import { Spacing } from '@/constants/Spacing';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/hooks/useDashboard';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import i18n from '@/i18n';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { EditTransactionSheet } from '@/components/EditTransactionSheet';
 import { AddAccountSheet } from '@/components/AddAccountSheet';
@@ -38,7 +39,7 @@ function formatCurrency(value: number, compact = false): string {
   if (compact && Math.abs(value) >= 1_000) {
     return `$${(Math.abs(value) / 1_000).toFixed(1)}k`;
   }
-  const formatted = Math.abs(value).toLocaleString('en-US', {
+  const formatted = Math.abs(value).toLocaleString(i18n.language, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -52,9 +53,9 @@ function formatTxDate(dateStr: string): string {
   yesterday.setDate(today.getDate() - 1);
   const todayStr = today.toISOString().split('T')[0];
   const yesterdayStr = yesterday.toISOString().split('T')[0];
-  if (dateStr === todayStr) return 'Today';
-  if (dateStr === yesterdayStr) return 'Yesterday';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (dateStr === todayStr) return i18n.t('common.today');
+  if (dateStr === yesterdayStr) return i18n.t('common.yesterday');
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
 }
 
 
@@ -494,7 +495,7 @@ function BudgetRow({
             {formatCurrency(budget.spent, true)}
           </Text>
           <Text variant="caption1" color={colors.labelSecondary}>
-            of {formatCurrency(budget.monthly_limit, true)}
+            {i18n.t('common.of')} {formatCurrency(budget.monthly_limit, true)}
           </Text>
         </View>
       </View>

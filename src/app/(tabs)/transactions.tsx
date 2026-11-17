@@ -15,6 +15,7 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import i18n from '@/i18n';
 import { useTransactions } from '@/hooks/useTransactions';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { EditTransactionSheet } from '@/components/EditTransactionSheet';
@@ -28,7 +29,7 @@ type FilterKey = 'all' | 'income' | 'expense' | 'transfer';
 
 function formatAmount(tx: DashboardTransaction): string {
   const val = Math.abs(tx.amount * tx.exchange_rate);
-  const formatted = val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatted = val.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (tx.type === 'income') return `+$${formatted}`;
   if (tx.type === 'transfer') return `$${formatted}`;
   return `-$${formatted}`;
@@ -41,9 +42,9 @@ function formatGroupDate(dateStr: string): string {
   yesterday.setDate(today.getDate() - 1);
   const todayStr = today.toISOString().split('T')[0];
   const yesterdayStr = yesterday.toISOString().split('T')[0];
-  if (dateStr === todayStr) return 'Today';
-  if (dateStr === yesterdayStr) return 'Yesterday';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+  if (dateStr === todayStr) return i18n.t('common.today');
+  if (dateStr === yesterdayStr) return i18n.t('common.yesterday');
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString(i18n.language, {
     weekday: 'long', month: 'short', day: 'numeric',
   });
 }
