@@ -20,6 +20,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/hooks/useDashboard';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
+import { AddAccountSheet } from '@/components/AddAccountSheet';
+import { AddBudgetSheet } from '@/components/AddBudgetSheet';
+import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { GettingStartedChecklist } from '@/components/GettingStartedChecklist';
 import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
 
@@ -156,6 +159,9 @@ export default function DashboardScreen() {
   const colors = Colors[colorScheme];
   const { data, loading, refetch } = useDashboard();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [accountSheetOpen, setAccountSheetOpen] = useState(false);
+  const [budgetSheetOpen, setBudgetSheetOpen] = useState(false);
+  const [goalSheetOpen, setGoalSheetOpen] = useState(false);
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? '';
 
@@ -303,8 +309,10 @@ export default function DashboardScreen() {
               hasTransactions={data.hasTransactions}
               hasBudgets={data.hasBudgets}
               hasGoals={data.hasGoals}
-              onAddAccount={() => router.push('/(tabs)/profile')}
+              onAddAccount={() => setAccountSheetOpen(true)}
               onAddTransaction={() => setSheetOpen(true)}
+              onAddBudget={() => setBudgetSheetOpen(true)}
+              onAddGoal={() => setGoalSheetOpen(true)}
             />
           </View>
         )}
@@ -378,6 +386,22 @@ export default function DashboardScreen() {
         onSuccess={() => { setSheetOpen(false); refetch(); }}
         accounts={data.accounts}
         categories={data.categories}
+      />
+      <AddAccountSheet
+        visible={accountSheetOpen}
+        onClose={() => setAccountSheetOpen(false)}
+        onSuccess={() => { setAccountSheetOpen(false); refetch(); }}
+      />
+      <AddBudgetSheet
+        visible={budgetSheetOpen}
+        onClose={() => setBudgetSheetOpen(false)}
+        onSuccess={() => { setBudgetSheetOpen(false); refetch(); }}
+        categories={data.categories}
+      />
+      <AddGoalSheet
+        visible={goalSheetOpen}
+        onClose={() => setGoalSheetOpen(false)}
+        onSuccess={() => { setGoalSheetOpen(false); refetch(); }}
       />
     </SafeAreaView>
   );

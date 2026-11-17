@@ -62,7 +62,7 @@ export function useDashboard() {
           .eq('user_id', user.id)
           .order('created_at'),
         supabase
-          .from('goals')
+          .from('savings_goals')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id),
       ])

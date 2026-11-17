@@ -69,6 +69,35 @@ export default {
   'onboarding.securityTitle': 'Segurança total',
   'onboarding.securityDesc': 'Seus dados são protegidos com tecnologia de grau bancário e Supabase.',
 
+  // Account
+  'account.add': 'Nova Conta',
+  'account.name': 'Nome da conta',
+  'account.namePlaceholder': 'Ex. Conta principal',
+  'account.balance': 'Saldo atual',
+  'account.color': 'Cor',
+  'account.save': 'Criar conta',
+  'account.error.nameRequired': 'Digite um nome.',
+  'account.error.balanceInvalid': 'Digite um saldo válido.',
+
+  // Budget
+  'budget.add': 'Novo Orçamento',
+  'budget.monthlyLimit': 'Limite mensal',
+  'budget.save': 'Criar orçamento',
+  'budget.error.categoryRequired': 'Selecione uma categoria.',
+  'budget.error.limitInvalid': 'Digite um valor válido.',
+
+  // Goal
+  'goal.add': 'Nova Meta',
+  'goal.icon': 'Ícone',
+  'goal.name': 'Nome da meta',
+  'goal.namePlaceholder': 'Ex. Fundo de emergência',
+  'goal.targetAmount': 'Valor alvo',
+  'goal.deadline': 'Prazo (opcional)',
+  'goal.save': 'Criar meta',
+  'goal.error.nameRequired': 'Digite um nome.',
+  'goal.error.amountInvalid': 'Digite um valor válido.',
+  'goal.error.deadlineInvalid': 'Digite a data no formato YYYY-MM-DD.',
+
   // Getting started checklist
   'checklist.title': 'Primeiros passos',
   'checklist.progress': '{{done}} de {{total}} etapas concluídas',

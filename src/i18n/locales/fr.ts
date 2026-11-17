@@ -69,6 +69,35 @@ export default {
   'onboarding.securityTitle': 'Sécurité totale',
   'onboarding.securityDesc': 'Vos données sont protégées par une technologie de grade bancaire et Supabase.',
 
+  // Account
+  'account.add': 'Nouveau Compte',
+  'account.name': 'Nom du compte',
+  'account.namePlaceholder': 'Ex. Compte principal',
+  'account.balance': 'Solde actuel',
+  'account.color': 'Couleur',
+  'account.save': 'Créer le compte',
+  'account.error.nameRequired': 'Entrez un nom de compte.',
+  'account.error.balanceInvalid': 'Entrez un solde valide.',
+
+  // Budget
+  'budget.add': 'Nouveau Budget',
+  'budget.monthlyLimit': 'Limite mensuelle',
+  'budget.save': 'Créer le budget',
+  'budget.error.categoryRequired': 'Sélectionnez une catégorie.',
+  'budget.error.limitInvalid': 'Entrez un montant valide.',
+
+  // Goal
+  'goal.add': 'Nouvel Objectif',
+  'goal.icon': 'Icône',
+  'goal.name': "Nom de l'objectif",
+  'goal.namePlaceholder': "Ex. Fonds d'urgence",
+  'goal.targetAmount': 'Montant cible',
+  'goal.deadline': 'Échéance (optionnel)',
+  'goal.save': "Créer l'objectif",
+  'goal.error.nameRequired': 'Entrez un nom.',
+  'goal.error.amountInvalid': 'Entrez un montant valide.',
+  'goal.error.deadlineInvalid': 'Entrez la date sous YYYY-MM-DD.',
+
   // Getting started checklist
   'checklist.title': 'Premiers pas',
   'checklist.progress': '{{done}} sur {{total}} étapes terminées',

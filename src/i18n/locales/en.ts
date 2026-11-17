@@ -69,6 +69,35 @@ export default {
   'onboarding.securityTitle': 'Total security',
   'onboarding.securityDesc': 'Your data is protected with bank-grade technology and Supabase.',
 
+  // Account
+  'account.add': 'New Account',
+  'account.name': 'Account Name',
+  'account.namePlaceholder': 'e.g. Main Checking',
+  'account.balance': 'Current Balance',
+  'account.color': 'Color',
+  'account.save': 'Create Account',
+  'account.error.nameRequired': 'Enter an account name.',
+  'account.error.balanceInvalid': 'Enter a valid balance.',
+
+  // Budget
+  'budget.add': 'New Budget',
+  'budget.monthlyLimit': 'Monthly Limit',
+  'budget.save': 'Create Budget',
+  'budget.error.categoryRequired': 'Select a category.',
+  'budget.error.limitInvalid': 'Enter a valid amount.',
+
+  // Goal
+  'goal.add': 'New Goal',
+  'goal.icon': 'Icon',
+  'goal.name': 'Goal Name',
+  'goal.namePlaceholder': 'e.g. Emergency Fund',
+  'goal.targetAmount': 'Target Amount',
+  'goal.deadline': 'Deadline (optional)',
+  'goal.save': 'Create Goal',
+  'goal.error.nameRequired': 'Enter a goal name.',
+  'goal.error.amountInvalid': 'Enter a valid amount.',
+  'goal.error.deadlineInvalid': 'Enter date as YYYY-MM-DD.',
+
   // Getting started checklist
   'checklist.title': 'Getting started',
   'checklist.progress': '{{done}} of {{total}} steps complete',

@@ -8,7 +8,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
-import { router } from 'expo-router';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
@@ -92,6 +91,8 @@ interface Props {
   hasGoals: boolean;
   onAddAccount?: () => void;
   onAddTransaction?: () => void;
+  onAddBudget?: () => void;
+  onAddGoal?: () => void;
 }
 
 export function GettingStartedChecklist({
@@ -101,6 +102,8 @@ export function GettingStartedChecklist({
   hasGoals,
   onAddAccount,
   onAddTransaction,
+  onAddBudget,
+  onAddGoal,
 }: Props) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
@@ -135,14 +138,14 @@ export function GettingStartedChecklist({
       done: hasBudgets,
       label: t('checklist.stepBudget'),
       Icon: PiggyIcon,
-      onPress: () => router.push('/(tabs)/budgets'),
+      onPress: onAddBudget,
     },
     {
       key: 'goal',
       done: hasGoals,
       label: t('checklist.stepGoal'),
       Icon: TargetIcon,
-      onPress: () => router.push('/(tabs)/goals'),
+      onPress: onAddGoal,
     },
   ];
 
