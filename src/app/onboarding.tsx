@@ -107,8 +107,8 @@ function SecurityIllustration({ tint }: { tint: string }) {
 
 type SlideKey = 'welcome' | 'accounts' | 'expenses' | 'security';
 
-const SLIDES: { key: SlideKey; accentKey: 'tint' | 'income' | 'savings' | 'expense' }[] = [
-  { key: 'welcome',  accentKey: 'tint' },
+const SLIDES: { key: SlideKey; accentKey: 'income' | 'savings' | 'expense' }[] = [
+  { key: 'welcome',  accentKey: 'income' },
   { key: 'accounts', accentKey: 'savings' },
   { key: 'expenses', accentKey: 'expense' },
   { key: 'security', accentKey: 'income' },
@@ -126,11 +126,11 @@ export default function OnboardingScreen() {
 
   const tint = colors.tint;
   const accentMap: Record<string, string> = {
-    tint: tint,
     income: colors.income,
     savings: colors.savings,
     expense: colors.expense,
   };
+  const activeAccent = accentMap[SLIDES[activeIndex]?.accentKey] ?? colors.income;
 
   const finish = useCallback(async () => {
     try {
@@ -219,7 +219,7 @@ export default function OnboardingScreen() {
                 styles.dot,
                 {
                   width: i === activeIndex ? 20 : 6,
-                  backgroundColor: i === activeIndex ? tint : colors.fillPrimary,
+                  backgroundColor: i === activeIndex ? activeAccent : colors.fillPrimary,
                 },
               ]}
             />
@@ -227,7 +227,7 @@ export default function OnboardingScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.ctaButton, { backgroundColor: tint }]}
+          style={[styles.ctaButton, { backgroundColor: activeAccent }]}
           onPress={goNext}
           activeOpacity={0.85}
         >
