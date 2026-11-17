@@ -199,10 +199,10 @@ export default function OnboardingScreen() {
               </View>
 
               <Text style={[styles.slideTitle, { color: colors.label }]}>
-                {t(`onboarding.${item.key}.title`)}
+                {t(`onboarding.${item.key}Title`)}
               </Text>
               <Text style={[styles.slideDesc, { color: colors.labelSecondary }]}>
-                {t(`onboarding.${item.key}.description`)}
+                {t(`onboarding.${item.key}Desc`)}
               </Text>
             </View>
           );
