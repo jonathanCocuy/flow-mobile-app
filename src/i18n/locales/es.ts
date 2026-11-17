@@ -69,6 +69,15 @@ export default {
   'onboarding.securityTitle': 'Seguridad total',
   'onboarding.securityDesc': 'Tus datos están protegidos con tecnología de grado bancario y Supabase.',
 
+  // Getting started checklist
+  'checklist.title': 'Primeros pasos',
+  'checklist.progress': '{{done}} de {{total}} pasos completos',
+  'checklist.stepAccount': 'Crea tu primera cuenta',
+  'checklist.stepTransaction': 'Registra tu primera transacción',
+  'checklist.stepBudget': 'Configura un presupuesto',
+  'checklist.stepGoal': 'Crea una meta de ahorro',
+  'checklist.dismiss': 'Descartar',
+
   // Tabs
   'tabs.home': 'Inicio',
   'tabs.activity': 'Actividad',

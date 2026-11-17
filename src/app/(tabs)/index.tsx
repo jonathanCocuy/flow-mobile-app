@@ -20,6 +20,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/hooks/useDashboard';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
+import { GettingStartedChecklist } from '@/components/GettingStartedChecklist';
 import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
@@ -293,6 +294,20 @@ export default function DashboardScreen() {
             ))}
           </View>
         </View>
+
+        {/* Getting Started Checklist */}
+        {!loading && (
+          <View style={styles.section}>
+            <GettingStartedChecklist
+              hasAccounts={data.accounts.length > 0}
+              hasTransactions={data.hasTransactions}
+              hasBudgets={data.hasBudgets}
+              hasGoals={data.hasGoals}
+              onAddAccount={() => router.push('/(tabs)/profile')}
+              onAddTransaction={() => setSheetOpen(true)}
+            />
+          </View>
+        )}
 
         {/* Budget Overview */}
         {(loading || data.budgets.length > 0) && (

@@ -49,4 +49,6 @@ export type DashboardData = {
   budgets: BudgetWithProgress[]
   categories: UserCategory[]
   hasTransactions: boolean
+  hasGoals: boolean
+  hasBudgets: boolean
 }

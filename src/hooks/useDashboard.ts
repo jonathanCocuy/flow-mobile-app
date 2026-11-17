@@ -20,6 +20,8 @@ const empty: DashboardData = {
   budgets: [],
   categories: [],
   hasTransactions: false,
+  hasGoals: false,
+  hasBudgets: false,
 }
 
 export function useDashboard() {
@@ -38,7 +40,7 @@ export function useDashboard() {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
         .toISOString().split('T')[0]
 
-      const [accountsRes, txRes, budgetsRes, categoriesRes] = await Promise.all([
+      const [accountsRes, txRes, budgetsRes, categoriesRes, goalsRes] = await Promise.all([
         supabase
           .from('accounts')
           .select('id, name, balance, initial_balance, color')
@@ -59,6 +61,10 @@ export function useDashboard() {
           .select('id, name, label, color, icon')
           .eq('user_id', user.id)
           .order('created_at'),
+        supabase
+          .from('goals')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
       ])
 
       const accounts: DashboardAccount[] = accountsRes.data ?? []
@@ -128,6 +134,8 @@ export function useDashboard() {
         .sort((a, b) => b.percentage - a.percentage)
         .slice(0, 3)
 
+      const allBudgets = budgetsRes.data ?? []
+
       setData({
         accounts,
         totalBalance,
@@ -137,6 +145,8 @@ export function useDashboard() {
         budgets,
         categories,
         hasTransactions: txData.length > 0,
+        hasGoals: (goalsRes.count ?? 0) > 0,
+        hasBudgets: allBudgets.length > 0,
       })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
