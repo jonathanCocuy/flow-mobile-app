@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -26,6 +25,7 @@ import { AddBudgetSheet } from '@/components/AddBudgetSheet';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { GettingStartedChecklist } from '@/components/GettingStartedChecklist';
 import { BalanceFlipCard } from '@/components/BalanceFlipCard';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
@@ -233,7 +233,7 @@ export default function DashboardScreen() {
                 {/* Balance amount */}
                 {loading ? (
                   <View style={styles.balanceSkeleton}>
-                    <ActivityIndicator color={cardText} size="small" />
+                    <Skeleton width={180} height={40} radius={10} />
                   </View>
                 ) : (
                   <Text variant="displayMedium" color={cardText} align="center" style={styles.balanceAmount}>
@@ -331,8 +331,19 @@ export default function DashboardScreen() {
             </View>
             <Card radius={Spacing.radius.lg} padding={0}>
               {loading ? (
-                <View style={styles.loadingRow}>
-                  <ActivityIndicator color={colors.labelTertiary} size="small" />
+                <View style={{ paddingVertical: Spacing.xs }}>
+                  {([1, 2] as const).map((i) => (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2, gap: Spacing.sm }}>
+                      <Skeleton width={40} height={40} radius={20} />
+                      <View style={{ flex: 1, gap: 6 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Skeleton width="45%" height={13} radius={7} />
+                          <Skeleton width="22%" height={13} radius={7} />
+                        </View>
+                        <Skeleton width="100%" height={5} radius={3} />
+                      </View>
+                    </View>
+                  ))}
                 </View>
               ) : (
                 data.budgets.map((budget, index) => (
@@ -359,8 +370,17 @@ export default function DashboardScreen() {
           </View>
           <Card radius={Spacing.radius.lg} padding={0}>
             {loading ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator color={colors.labelTertiary} size="small" />
+              <View style={{ paddingVertical: Spacing.xs }}>
+                {([1, 2, 3] as const).map((i) => (
+                  <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm }}>
+                    <Skeleton width={40} height={40} radius={20} />
+                    <View style={{ flex: 1, gap: 5 }}>
+                      <Skeleton width="52%" height={13} radius={7} />
+                      <Skeleton width="38%" height={12} radius={6} />
+                    </View>
+                    <Skeleton width={56} height={13} radius={7} />
+                  </View>
+                ))}
               </View>
             ) : data.recentTransactions.length === 0 ? (
               <View style={styles.emptyRow}>

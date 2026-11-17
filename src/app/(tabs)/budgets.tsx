@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
   ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -14,6 +13,7 @@ import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { AddBudgetSheet } from '@/components/AddBudgetSheet';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
@@ -34,6 +34,46 @@ function PlusIcon({ color }: { color: string }) {
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
       <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
     </Svg>
+  );
+}
+
+function BudgetsSkeleton({ colors }: { colors: AppColors }) {
+  return (
+    <View style={{ gap: Spacing.xl, marginTop: Spacing.sm }}>
+      <View style={{ paddingHorizontal: Spacing.screenHorizontal }}>
+        <Card radius={Spacing.radius.xl} padding={Spacing.lg}>
+          <Skeleton width={80} height={12} radius={6} />
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs, marginTop: 6 }}>
+            <Skeleton width={120} height={28} radius={6} />
+            <Skeleton width={70} height={16} radius={6} />
+          </View>
+          <Skeleton width="100%" height={5} radius={3} style={{ marginTop: 12 }} />
+          <Skeleton width={100} height={12} radius={6} style={{ marginTop: 8 }} />
+        </Card>
+      </View>
+
+      <View style={{ paddingHorizontal: Spacing.screenHorizontal }}>
+        <Skeleton width={110} height={16} radius={8} style={{ marginBottom: Spacing.sm }} />
+        <Card radius={Spacing.radius.lg} padding={0}>
+          {([1, 2, 3] as const).map((i) => (
+            <View key={i}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2, gap: Spacing.sm }}>
+                <Skeleton width={44} height={44} radius={22} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Skeleton width="45%" height={14} radius={7} />
+                    <Skeleton width="22%" height={14} radius={7} />
+                  </View>
+                  <Skeleton width="100%" height={5} radius={3} />
+                  <Skeleton width="38%" height={12} radius={6} />
+                </View>
+              </View>
+              {i < 3 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 72 }} />}
+            </View>
+          ))}
+        </Card>
+      </View>
+    </View>
   );
 }
 
@@ -145,9 +185,7 @@ export default function BudgetsScreen() {
         </View>
 
         {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator color={colors.labelSecondary} />
-          </View>
+          <BudgetsSkeleton colors={colors} />
         ) : budgets.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📊</Text>

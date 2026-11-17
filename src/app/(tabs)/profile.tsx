@@ -18,6 +18,7 @@ import { CategoryModal, type CategoryData } from '@/components/CategoryModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { SUPPORTED_LANGUAGES, changeLanguage, type LanguageCode } from '@/i18n';
 import i18n from '@/i18n';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -165,6 +166,7 @@ export default function ProfileScreen() {
 
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [stats, setStats] = useState<Stats>({ budgets: 0, goals: 0, transactions: 0 });
+  const [loading, setLoading] = useState(true);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [editCategory, setEditCategory] = useState<CategoryData | null>(null);
   const [signOutDialogVisible, setSignOutDialogVisible] = useState(false);
@@ -174,8 +176,9 @@ export default function ProfileScreen() {
   const currentLangLabel = SUPPORTED_LANGUAGES.find(l => l.code === currentLang)?.label ?? 'English';
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return;
+    if (!authUser) { setLoading(false); return; }
 
     const [catsRes, budgetsRes, goalsRes, txRes] = await Promise.all([
       supabase.from('categories').select('id, label, color, icon').eq('user_id', authUser.id).order('created_at'),
@@ -190,6 +193,7 @@ export default function ProfileScreen() {
       goals: goalsRes.count ?? 0,
       transactions: txRes.count ?? 0,
     });
+    setLoading(false);
   }, []);
 
   useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
@@ -217,26 +221,42 @@ export default function ProfileScreen() {
         <View style={{ paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.sm }}>
           <Card radius={Spacing.radius.lg} padding={0}>
             <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text variant="title3" align="center">{stats.budgets}</Text>
-                <Text variant="caption1" color={colors.labelSecondary} align="center">
-                  {t('profile.stats.budgets')}
-                </Text>
-              </View>
-              <View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
-              <View style={styles.statItem}>
-                <Text variant="title3" align="center">{stats.goals}</Text>
-                <Text variant="caption1" color={colors.labelSecondary} align="center">
-                  {t('profile.stats.goals')}
-                </Text>
-              </View>
-              <View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
-              <View style={styles.statItem}>
-                <Text variant="title3" align="center">{stats.transactions}</Text>
-                <Text variant="caption1" color={colors.labelSecondary} align="center">
-                  {t('profile.stats.transactions')}
-                </Text>
-              </View>
+              {loading ? (
+                <>
+                  {([1, 2, 3] as const).map((i) => (
+                    <React.Fragment key={i}>
+                      <View style={styles.statItem}>
+                        <Skeleton width={40} height={22} radius={6} />
+                        <Skeleton width={64} height={12} radius={6} style={{ marginTop: 4 }} />
+                      </View>
+                      {i < 3 && <View style={[styles.statDivider, { backgroundColor: colors.separator }]} />}
+                    </React.Fragment>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <View style={styles.statItem}>
+                    <Text variant="title3" align="center">{stats.budgets}</Text>
+                    <Text variant="caption1" color={colors.labelSecondary} align="center">
+                      {t('profile.stats.budgets')}
+                    </Text>
+                  </View>
+                  <View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
+                  <View style={styles.statItem}>
+                    <Text variant="title3" align="center">{stats.goals}</Text>
+                    <Text variant="caption1" color={colors.labelSecondary} align="center">
+                      {t('profile.stats.goals')}
+                    </Text>
+                  </View>
+                  <View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
+                  <View style={styles.statItem}>
+                    <Text variant="title3" align="center">{stats.transactions}</Text>
+                    <Text variant="caption1" color={colors.labelSecondary} align="center">
+                      {t('profile.stats.transactions')}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           </Card>
         </View>
@@ -253,7 +273,13 @@ export default function ProfileScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-          {categories.length === 0 ? (
+          {loading ? (
+            <View style={styles.categoryChips}>
+              {([80, 96, 72, 88] as const).map((w) => (
+                <Skeleton key={w} width={w} height={30} radius={Spacing.radius.full} />
+              ))}
+            </View>
+          ) : categories.length === 0 ? (
             <Card radius={Spacing.radius.lg} padding={Spacing.md}>
               <Text variant="callout" color={colors.labelSecondary} align="center">
                 {t('categories.empty')}

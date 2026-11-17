@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
   ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -14,6 +13,7 @@ import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { ContributeGoalSheet } from '@/components/ContributeGoalSheet';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { DashboardAccount } from '@/types/finance';
 
 type SavingsGoal = {
@@ -24,6 +24,48 @@ type SavingsGoal = {
   deadline: string | null;
   icon: string | null;
 };
+
+function GoalsSkeleton() {
+  return (
+    <View style={{ gap: Spacing.xl, marginTop: Spacing.sm }}>
+      {/* Summary cards */}
+      <View style={{ paddingHorizontal: Spacing.screenHorizontal, flexDirection: 'row', gap: Spacing.sm }}>
+        <Card style={{ flex: 1 }} radius={Spacing.radius.lg} padding={Spacing.md}>
+          <Skeleton width={60} height={12} radius={6} />
+          <Skeleton width={80} height={22} radius={6} style={{ marginTop: 6 }} />
+        </Card>
+        <Card style={{ flex: 1 }} radius={Spacing.radius.lg} padding={Spacing.md}>
+          <Skeleton width={60} height={12} radius={6} />
+          <Skeleton width={80} height={22} radius={6} style={{ marginTop: 6 }} />
+        </Card>
+      </View>
+
+      {/* Goal cards */}
+      <View style={{ paddingHorizontal: Spacing.screenHorizontal, gap: Spacing.sm }}>
+        {([1, 2] as const).map((i) => (
+          <Card key={i} radius={Spacing.radius.lg} padding={Spacing.md}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <Skeleton width={44} height={44} radius={22} />
+              <View style={{ flex: 1, gap: 6 }}>
+                <Skeleton width="55%" height={16} radius={8} />
+                <Skeleton width="35%" height={12} radius={6} />
+              </View>
+              <Skeleton width={36} height={18} radius={9} />
+            </View>
+            <View style={{ marginTop: Spacing.sm, gap: 6 }}>
+              <Skeleton width="100%" height={6} radius={3} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Skeleton width="30%" height={12} radius={6} />
+                <Skeleton width="30%" height={12} radius={6} />
+              </View>
+            </View>
+            <Skeleton width="100%" height={36} radius={Spacing.radius.md} style={{ marginTop: Spacing.sm }} />
+          </Card>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 function PlusIcon({ color }: { color: string }) {
   return (
@@ -97,9 +139,7 @@ export default function GoalsScreen() {
         </View>
 
         {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator color={colors.labelSecondary} />
-          </View>
+          <GoalsSkeleton />
         ) : goals.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🎯</Text>

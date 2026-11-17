@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   useColorScheme,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -20,6 +19,7 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { EditTransactionSheet } from '@/components/EditTransactionSheet';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { DashboardTransaction, DashboardAccount, UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
@@ -52,6 +52,35 @@ function formatGroupDate(dateStr: string): string {
 function getCategoryLabel(category: string, categories: UserCategory[]): string {
   const cat = categories.find(c => c.name === category);
   return cat?.label ?? category;
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+function TransactionsSkeleton({ colors }: { colors: AppColors }) {
+  return (
+    <View>
+      {([0, 1] as const).map((groupIdx) => (
+        <View key={groupIdx} style={{ paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.lg }}>
+          <Skeleton width={groupIdx === 0 ? 44 : 160} height={12} radius={6} style={{ marginBottom: Spacing.xs, marginLeft: 2 }} />
+          <Card radius={Spacing.radius.lg} padding={0}>
+            {([0, 1, 2] as const).map((rowIdx) => (
+              <View key={rowIdx}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm }}>
+                  <Skeleton width={44} height={44} radius={22} />
+                  <View style={{ flex: 1, gap: 5 }}>
+                    <Skeleton width="55%" height={14} radius={7} />
+                    <Skeleton width="40%" height={12} radius={6} />
+                  </View>
+                  <Skeleton width={60} height={14} radius={7} />
+                </View>
+                {rowIdx < 2 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 72 }} />}
+              </View>
+            ))}
+          </Card>
+        </View>
+      ))}
+    </View>
+  );
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -202,9 +231,7 @@ export default function TransactionsScreen() {
 
         {/* Loading state */}
         {loading && data.transactions.length === 0 && (
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.labelSecondary} />
-          </View>
+          <TransactionsSkeleton colors={colors} />
         )}
 
         {/* Empty state */}
