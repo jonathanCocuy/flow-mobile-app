@@ -67,7 +67,10 @@ export function useTransactions() {
     }
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    async function run() { await fetchData() }
+    run()
+  }, [fetchData])
 
   return { data, loading, error, refetch: fetchData }
 }
