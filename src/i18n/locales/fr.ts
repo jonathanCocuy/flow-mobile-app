@@ -69,6 +69,13 @@ export default {
   'onboarding.securityTitle': 'Sécurité totale',
   'onboarding.securityDesc': 'Vos données sont protégées par une technologie de grade bancaire et Supabase.',
 
+  // Tabs
+  'tabs.home': 'Accueil',
+  'tabs.activity': 'Activité',
+  'tabs.budgets': 'Budgets',
+  'tabs.goals': 'Objectifs',
+  'tabs.profile': 'Profil',
+
   // Dashboard
   'dashboard.greeting.morning': 'Bonjour',
   'dashboard.greeting.afternoon': 'Bon après-midi',
