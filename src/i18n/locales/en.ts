@@ -99,6 +99,8 @@ export default {
   'budget.add': 'New Budget',
   'budget.monthlyLimit': 'Monthly Limit',
   'budget.save': 'Create Budget',
+  'budget.edit': 'Edit Budget',
+  'budget.update': 'Save Changes',
   'budget.error.categoryRequired': 'Select a category.',
   'budget.error.limitInvalid': 'Enter a valid amount.',
 

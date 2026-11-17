@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -11,6 +11,8 @@ import {
   Dimensions,
   TextInput,
   ScrollView,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
@@ -22,14 +24,6 @@ import { getCategoryEmoji } from '@/utils/categoryEmoji';
 import type { UserCategory } from '@/types/finance';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-function XIcon({ color }: { color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path d="M18 6L6 18M6 6l12 12" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-    </Svg>
-  );
-}
 
 function CheckIcon({ color }: { color: string }) {
   return (
@@ -51,13 +45,23 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, categories, initia
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const isEditing = !!initialBudget?.id;
 
   const [category, setCategory] = useState('');
   const [limit, setLimit] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.setValue(SCREEN_HEIGHT);
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, bounciness: 2, speed: 18 }).start();
+    }
+  }, [visible, translateY]);
+
+  useEffect(() => {
     if (visible && initialBudget) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(initialBudget.category);
@@ -76,10 +80,28 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, categories, initia
     setError(null);
   };
 
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
+  function dismissSheet() {
+    Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+      reset();
+      onClose();
+    });
+  }
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, { dy }) => dy > 0,
+    onPanResponderMove: (_, { dy }) => { if (dy > 0) translateY.setValue(dy); },
+    onPanResponderRelease: (_, { dy, vy }) => {
+      if (dy > 100 || vy > 0.8) {
+        Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+          reset();
+          onClose();
+        });
+      } else {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  });
 
   const handleSave = async () => {
     if (!category) { setError(t('budget.error.categoryRequired')); return; }
@@ -118,119 +140,133 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, categories, initia
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.overlay} />
-      </TouchableWithoutFeedback>
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={dismissSheet}>
+      <View style={styles.root}>
+        <TouchableWithoutFeedback onPress={dismissSheet}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.kavWrapper}
-        pointerEvents="box-none"
-      >
-        <View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped }]}>
-          <View style={[styles.handle, { backgroundColor: colors.fillPrimary }]} />
-
-          <View style={styles.header}>
-            <Text variant="headline">{t('budget.add')}</Text>
-            <TouchableOpacity onPress={handleClose} hitSlop={12}>
-              <XIcon color={colors.labelSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.body}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] },
+            ]}
           >
-            {/* Category grid */}
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('transactions.add.category')}
-            </Text>
-            <View style={styles.categoryGrid}>
-              {categories.map(cat => {
-                const selected = category === cat.name;
-                return (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                      styles.categoryChip,
-                      {
-                        backgroundColor: selected ? `${cat.color}22` : colors.fillPrimary,
-                        borderColor: selected ? cat.color : colors.separator,
-                      },
-                    ]}
-                    onPress={() => setCategory(cat.name)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={{ fontSize: 16 }}>{getCategoryEmoji(cat.name, 'expense')}</Text>
-                    <Text
-                      variant="caption1"
-                      color={selected ? cat.color : colors.label}
-                      style={{ fontWeight: selected ? '600' : '400' }}
-                      numberOfLines={1}
-                    >
-                      {cat.label}
-                    </Text>
-                    {selected && <CheckIcon color={cat.color} />}
-                  </TouchableOpacity>
-                );
-              })}
+            {/* Handle — drag to close */}
+            <View style={styles.handleZone} {...panResponder.panHandlers}>
+              <View style={[styles.handle, { backgroundColor: colors.separator }]} />
             </View>
 
-            {/* Monthly limit */}
-            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 20 }]}>
-              {t('budget.monthlyLimit')}
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
-              value={limit}
-              onChangeText={setLimit}
-              placeholder="0.00"
-              placeholderTextColor={colors.labelTertiary}
-              keyboardType="decimal-pad"
-              returnKeyType="done"
-            />
-
-            {error && (
-              <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
-                {error}
+            {/* Header */}
+            <View style={styles.header}>
+              <Text variant="headline">
+                {isEditing ? t('budget.edit') : t('budget.add')}
               </Text>
-            )}
+            </View>
 
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.savings }, saving && { opacity: 0.6 }]}
-              onPress={handleSave}
-              disabled={saving}
-              activeOpacity={0.85}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.body}
             >
-              <Text variant="headline" color="#fff">
-                {saving ? '...' : t('budget.save')}
+              {/* Category grid */}
+              <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('transactions.add.category')}
               </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+              <View style={styles.categoryGrid}>
+                {categories.map(cat => {
+                  const selected = category === cat.name;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.categoryChip,
+                        {
+                          backgroundColor: selected ? `${cat.color}22` : colors.fillPrimary,
+                          borderColor: selected ? cat.color : colors.separator,
+                        },
+                      ]}
+                      onPress={() => !isEditing && setCategory(cat.name)}
+                      activeOpacity={isEditing ? 1 : 0.7}
+                    >
+                      <Text style={{ fontSize: 16 }}>{getCategoryEmoji(cat.name, 'expense')}</Text>
+                      <Text
+                        variant="caption1"
+                        color={selected ? cat.color : colors.label}
+                        style={{ fontWeight: selected ? '600' : '400' }}
+                        numberOfLines={1}
+                      >
+                        {cat.label}
+                      </Text>
+                      {selected && <CheckIcon color={cat.color} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Monthly limit */}
+              <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 20 }]}>
+                {t('budget.monthlyLimit')}
+              </Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
+                value={limit}
+                onChangeText={setLimit}
+                placeholder="0.00"
+                placeholderTextColor={colors.labelTertiary}
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+              />
+
+              {error && (
+                <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
+                  {error}
+                </Text>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.savings }, saving && { opacity: 0.6 }]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.85}
+              >
+                <Text variant="headline" color="#fff">
+                  {saving ? '...' : isEditing ? t('budget.update') : t('budget.save')}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  kavWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0 },
+  root: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  keyboardView: {
+    justifyContent: 'flex-end',
+  },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.85,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
-  handle: {
-    width: 36, height: 4, borderRadius: 2,
-    alignSelf: 'center', marginTop: 8, marginBottom: 4,
-  },
+  handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
+  handle: { width: 36, height: 4, borderRadius: 2 },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: 12,
   },
   body: { paddingHorizontal: Spacing.md, paddingBottom: 8 },
   fieldLabel: { marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
