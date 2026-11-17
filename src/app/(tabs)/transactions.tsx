@@ -20,7 +20,7 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { EditTransactionSheet } from '@/components/EditTransactionSheet';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
-import type { DashboardTransaction, UserCategory } from '@/types/finance';
+import type { DashboardTransaction, DashboardAccount, UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
 type FilterKey = 'all' | 'income' | 'expense' | 'transfer';
@@ -66,21 +66,29 @@ function PlusIcon({ color }: { color: string }) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+function getAccountName(accountId: string, accounts: DashboardAccount[]): string {
+  return accounts.find(a => a.id === accountId)?.name ?? '';
+}
+
 function TxRow({
   tx,
   isLast,
   colors,
   categories,
+  accounts,
   onPress,
 }: {
   tx: DashboardTransaction;
   isLast: boolean;
   colors: AppColors;
   categories: UserCategory[];
+  accounts: DashboardAccount[];
   onPress: () => void;
 }) {
   const emoji = getCategoryEmoji(tx.category, tx.type);
   const label = getCategoryLabel(tx.category, categories);
+  const accountName = getAccountName(tx.account_id, accounts);
+  const secondaryLine = accountName ? `${label} · ${accountName}` : label;
   const amountStr = formatAmount(tx);
   const amountColor =
     tx.type === 'income' ? colors.income :
@@ -99,7 +107,7 @@ function TxRow({
         </View>
         <View style={styles.txMiddle}>
           <Text variant="callout" style={{ fontWeight: '500' }}>{tx.description}</Text>
-          <Text variant="caption1" color={colors.labelSecondary}>{label}</Text>
+          <Text variant="caption1" color={colors.labelSecondary}>{secondaryLine}</Text>
         </View>
         <Text variant="callout" style={{ fontWeight: '600' }} color={amountColor}>
           {amountStr}
@@ -228,6 +236,7 @@ export default function TransactionsScreen() {
                     isLast={index === txs.length - 1}
                     colors={colors}
                     categories={data.categories}
+                    accounts={data.accounts}
                     onPress={() => setEditTx(tx)}
                   />
                 ))}
