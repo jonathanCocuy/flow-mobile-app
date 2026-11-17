@@ -69,6 +69,21 @@ export default {
   'onboarding.securityTitle': 'Segurança total',
   'onboarding.securityDesc': 'Seus dados são protegidos com tecnologia de grau bancário e Supabase.',
 
+  // Common actions
+  'common.cancel': 'Cancelar',
+  'common.delete': 'Excluir',
+
+  // Accounts screen
+  'accounts.title': 'Contas',
+  'accounts.totalBalance': 'Saldo total',
+  'accounts.count': '{{count}} conta',
+  'accounts.count_other': '{{count}} contas',
+  'accounts.empty': 'Nenhuma conta ainda',
+  'accounts.edit': 'Editar conta',
+  'accounts.initialBalance': 'Inicial',
+  'accounts.deleteTitle': 'Excluir conta',
+  'accounts.deleteMessage': 'Excluir "{{name}}"? Não pode ser desfeito.',
+
   // Account
   'account.add': 'Nova Conta',
   'account.name': 'Nome da conta',
@@ -125,9 +140,11 @@ export default {
   'dashboard.budgets': 'Orçamentos',
   'dashboard.seeAll': 'Ver tudo',
   'dashboard.noTransactions': 'Sem transações este mês',
+  'dashboard.noAccounts': 'Nenhuma conta ainda',
   'dashboard.savings': 'Poupança',
   'dashboard.thisMonth': 'este mês',
   'dashboard.action.add': 'Adicionar',
+  'dashboard.action.accounts': 'Contas',
   'dashboard.action.budgets': 'Orçamentos',
   'dashboard.action.goals': 'Metas',
   'dashboard.action.activity': 'Atividade',
@@ -163,4 +180,48 @@ export default {
   'transactions.add.error.account': 'Selecione uma conta.',
   'transactions.add.error.destinationAccount': 'Selecione uma conta destino.',
   'transactions.add.error.sameAccount': 'As contas devem ser diferentes.',
+
+  // Budgets screen
+  'budgets.empty': 'Nenhum orçamento ainda',
+  'budgets.deleteTitle': 'Excluir orçamento',
+  'budgets.deleteMessage': 'Excluir o orçamento "{{name}}"? Não pode ser desfeito.',
+  'budgets.remaining': 'restante',
+  'budgets.overspent': 'excedido',
+  'budgets.thisMonth': 'Este mês',
+  'budgets.usedLabel': 'do orçamento mensal usado',
+  'budgets.allBudgets': 'Todos os orçamentos',
+
+  // Goals screen
+  'goals.empty': 'Nenhuma meta ainda',
+  'goals.deleteTitle': 'Excluir meta',
+  'goals.deleteMessage': 'Excluir "{{name}}"? Não pode ser desfeito.',
+  'goals.contribute': 'Adicionar fundos',
+  'goals.saved': 'economizado',
+  'goals.toGo': 'restante',
+  'goals.daysLeft': '{{count}} dias restantes',
+  'goals.overdue': 'Vencida',
+  'goals.noDeadline': 'Sem prazo',
+  'goals.contributeTitle': 'Adicionar fundos',
+  'goals.amount': 'Valor',
+  'goals.recordTransaction': 'Registrar como despesa',
+  'goals.account': 'Conta',
+
+  // Categories
+  'profile.categories': 'Categorias',
+  'categories.empty': 'Nenhuma categoria ainda',
+  'categories.add': 'Adicionar categoria',
+  'categories.edit': 'Editar categoria',
+  'categories.deleteTitle': 'Excluir categoria',
+  'categories.deleteMessage': 'Excluir "{{name}}"? As transações não serão afetadas.',
+  'categories.label': 'Nome',
+  'categories.labelPlaceholder': 'Ex. Alimentação',
+  'categories.color': 'Cor',
+  'categories.icon': 'Ícone',
+  'categories.iconPlaceholder': 'Nome do ícone Lucide (ex. Utensils)',
+  'categories.save': 'Salvar categoria',
+  'categories.error.nameRequired': 'Digite um nome de categoria.',
+
+  // Dashboard quick actions (new)
+  'dashboard.action.addBudget': 'Orçamento',
+  'dashboard.action.addGoal': 'Meta',
 } as const;

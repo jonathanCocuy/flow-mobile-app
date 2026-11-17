@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   useColorScheme,
   ActivityIndicator,
-  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -24,6 +23,7 @@ import { AddAccountSheet } from '@/components/AddAccountSheet';
 import { AddBudgetSheet } from '@/components/AddBudgetSheet';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { GettingStartedChecklist } from '@/components/GettingStartedChecklist';
+import { BalanceFlipCard } from '@/components/BalanceFlipCard';
 import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
@@ -80,14 +80,6 @@ function AddCircleIcon({ color }: { color: string }) {
   );
 }
 
-function ListIcon({ color }: { color: string }) {
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
 function ChartIcon({ color }: { color: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -100,6 +92,16 @@ function TargetIcon({ color }: { color: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function WalletIcon({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M2 7a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7z" stroke={color} strokeWidth={1.8} />
+      <Path d="M2 10h20" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M16 15h2" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -182,10 +184,10 @@ export default function DashboardScreen() {
   const savings = data.currentMonthIncome - data.currentMonthExpenses;
 
   const quickActions = [
-    { key: 'add',      label: t('dashboard.action.add'),      icon: (c: string) => <AddCircleIcon color={c} />, onPress: () => setSheetOpen(true) },
-    { key: 'activity', label: t('dashboard.action.activity'), icon: (c: string) => <ListIcon color={c} />,      onPress: () => router.push('/(tabs)/transactions') },
-    { key: 'budgets',  label: t('dashboard.action.budgets'),  icon: (c: string) => <ChartIcon color={c} />,     onPress: () => router.push('/(tabs)/budgets') },
-    { key: 'goals',    label: t('dashboard.action.goals'),    icon: (c: string) => <TargetIcon color={c} />,    onPress: () => router.push('/(tabs)/goals') },
+    { key: 'add',       label: t('dashboard.action.add'),       icon: (c: string) => <AddCircleIcon color={c} />, onPress: () => setSheetOpen(true) },
+    { key: 'accounts',  label: t('dashboard.action.accounts'),  icon: (c: string) => <WalletIcon color={c} />,   onPress: () => router.push('/accounts') },
+    { key: 'addBudget', label: t('dashboard.action.addBudget'), icon: (c: string) => <ChartIcon color={c} />,    onPress: () => setBudgetSheetOpen(true) },
+    { key: 'addGoal',   label: t('dashboard.action.addGoal'),   icon: (c: string) => <TargetIcon color={c} />,   onPress: () => setGoalSheetOpen(true) },
   ];
 
   return (
@@ -194,13 +196,6 @@ export default function DashboardScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={refetch}
-            tintColor={colors.labelSecondary}
-          />
-        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -221,63 +216,68 @@ export default function DashboardScreen() {
 
         {/* Balance Card */}
         <View style={styles.section}>
-          <Card style={[styles.balanceCard, { backgroundColor: cardBg, borderWidth: StyleSheet.hairlineWidth, borderColor: cardBorder }]} padding={0} radius={Spacing.radius.xl}>
-            <View style={styles.balancePadding}>
-              {/* Label */}
-              <Text variant="footnote" color={cardTextSub} align="center">
-                {t('dashboard.totalBalance')}
-              </Text>
-
-              {/* Balance amount */}
-              {loading ? (
-                <View style={styles.balanceSkeleton}>
-                  <ActivityIndicator color={cardText} size="small" />
-                </View>
-              ) : (
-                <Text variant="displayMedium" color={cardText} align="center" style={styles.balanceAmount}>
-                  {formatCurrency(data.totalBalance)}
+          <BalanceFlipCard
+            accounts={data.accounts}
+            cardBg={cardBg}
+            cardBorder={cardBorder}
+            frontContent={
+              <View style={styles.balancePadding}>
+                {/* Label */}
+                <Text variant="footnote" color={cardTextSub} align="center">
+                  {t('dashboard.totalBalance')}
                 </Text>
-              )}
 
-              {/* Net savings badge */}
-              {!loading && (
-                <View style={styles.savingsBadge}>
-                  <TrendArrow up={savings >= 0} color={savings >= 0 ? colors.income : colors.expense} />
-                  <Text variant="caption1" color={savings >= 0 ? colors.income : colors.expense}>
-                    {savings >= 0 ? '+' : ''}{formatCurrency(savings, true)} {t('dashboard.thisMonth')}
+                {/* Balance amount */}
+                {loading ? (
+                  <View style={styles.balanceSkeleton}>
+                    <ActivityIndicator color={cardText} size="small" />
+                  </View>
+                ) : (
+                  <Text variant="displayMedium" color={cardText} align="center" style={styles.balanceAmount}>
+                    {formatCurrency(data.totalBalance)}
                   </Text>
-                </View>
-              )}
+                )}
 
-              {/* Floating stat chips */}
-              <View style={styles.chipRow}>
-                <StatChip
-                  label={t('dashboard.income')}
-                  value={loading ? '—' : formatCurrency(data.currentMonthIncome, true)}
-                  accent={colors.income}
-                  chipBg={chipBg}
-                  chipBorder={chipBorder}
-                  icon={<ArrowUpIcon color={colors.income} />}
-                />
-                <StatChip
-                  label={t('dashboard.expenses')}
-                  value={loading ? '—' : formatCurrency(Math.abs(data.currentMonthExpenses), true)}
-                  accent={colors.expense}
-                  chipBg={chipBg}
-                  chipBorder={chipBorder}
-                  icon={<ArrowDownIcon color={colors.expense} />}
-                />
-                <StatChip
-                  label={t('dashboard.savings')}
-                  value={loading ? '—' : formatCurrency(Math.abs(savings), true)}
-                  accent={colors.savings}
-                  chipBg={chipBg}
-                  chipBorder={chipBorder}
-                  icon={<PiggyBankIcon color={colors.savings} />}
-                />
+                {/* Net savings badge */}
+                {!loading && (
+                  <View style={styles.savingsBadge}>
+                    <TrendArrow up={savings >= 0} color={savings >= 0 ? colors.income : colors.expense} />
+                    <Text variant="caption1" color={savings >= 0 ? colors.income : colors.expense}>
+                      {savings >= 0 ? '+' : ''}{formatCurrency(savings, true)} {t('dashboard.thisMonth')}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Floating stat chips */}
+                <View style={styles.chipRow}>
+                  <StatChip
+                    label={t('dashboard.income')}
+                    value={loading ? '—' : formatCurrency(data.currentMonthIncome, true)}
+                    accent={colors.income}
+                    chipBg={chipBg}
+                    chipBorder={chipBorder}
+                    icon={<ArrowUpIcon color={colors.income} />}
+                  />
+                  <StatChip
+                    label={t('dashboard.expenses')}
+                    value={loading ? '—' : formatCurrency(Math.abs(data.currentMonthExpenses), true)}
+                    accent={colors.expense}
+                    chipBg={chipBg}
+                    chipBorder={chipBorder}
+                    icon={<ArrowDownIcon color={colors.expense} />}
+                  />
+                  <StatChip
+                    label={t('dashboard.savings')}
+                    value={loading ? '—' : formatCurrency(Math.abs(savings), true)}
+                    accent={colors.savings}
+                    chipBg={chipBg}
+                    chipBorder={chipBorder}
+                    icon={<PiggyBankIcon color={colors.savings} />}
+                  />
+                </View>
               </View>
-            </View>
-          </Card>
+            }
+          />
         </View>
 
         {/* Quick Actions */}

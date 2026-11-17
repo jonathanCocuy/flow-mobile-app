@@ -1,11 +1,16 @@
-import React from 'react';
-import { ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { CategoryModal, type CategoryData } from '@/components/CategoryModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import Svg, { Path } from 'react-native-svg';
 
 function ChevronRight({ color }: { color: string }) {
@@ -77,19 +82,36 @@ const SECTIONS = [
 ];
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { signOut, user } = useAuth();
 
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [editCategory, setEditCategory] = useState<CategoryData | null>(null);
+  const [signOutDialogVisible, setSignOutDialogVisible] = useState(false);
+
+  const fetchCategories = useCallback(async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const { data } = await supabase
+      .from('categories')
+      .select('id, label, color, icon')
+      .eq('user_id', authUser.id)
+      .order('created_at');
+    setCategories(data ?? []);
+  }, []);
+
+  useFocusEffect(useCallback(() => { fetchCategories(); }, [fetchCategories]));
+
+  const handleOpenCategoryModal = (cat?: CategoryData) => {
+    setEditCategory(cat ?? null);
+    setCategoryModalVisible(true);
+  };
+
   const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
-      ],
-    );
+    setSignOutDialogVisible(true);
   };
 
   return (
@@ -134,6 +156,45 @@ export default function ProfileScreen() {
           </Card>
         </View>
 
+        {/* Categories */}
+        <View style={styles.settingsSection}>
+          <View style={styles.sectionHeaderRow}>
+            <Text
+              variant="footnote"
+              color={colors.labelSecondary}
+              style={styles.sectionTitle}
+            >
+              {t('profile.categories').toUpperCase()}
+            </Text>
+            <TouchableOpacity onPress={() => handleOpenCategoryModal()} hitSlop={8}>
+              <Text variant="footnote" color={colors.tint} style={{ fontWeight: '600' }}>
+                + {t('categories.add')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {categories.length === 0 ? (
+            <Card radius={Spacing.radius.lg} padding={Spacing.md}>
+              <Text variant="callout" color={colors.labelSecondary} align="center">
+                {t('categories.empty')}
+              </Text>
+            </Card>
+          ) : (
+            <View style={styles.categoryChips}>
+              {categories.map(cat => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[styles.categoryChip, { backgroundColor: `${cat.color}18`, borderColor: `${cat.color}40` }]}
+                  onPress={() => handleOpenCategoryModal(cat)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                  <Text variant="caption1" numberOfLines={1}>{cat.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
         {/* Settings */}
         {SECTIONS.map((section) => (
           <View key={section.title} style={styles.settingsSection}>
@@ -172,6 +233,24 @@ export default function ProfileScreen() {
           FlowX v1.0.0
         </Text>
       </ScrollView>
+
+      <CategoryModal
+        visible={categoryModalVisible}
+        category={editCategory}
+        onClose={() => setCategoryModalVisible(false)}
+        onSuccess={() => { setCategoryModalVisible(false); fetchCategories(); }}
+      />
+
+      <ConfirmDialog
+        visible={signOutDialogVisible}
+        title="Sign Out"
+        message="Are you sure you want to sign out?"
+        confirmLabel="Sign Out"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={() => { setSignOutDialogVisible(false); signOut(); }}
+        onCancel={() => setSignOutDialogVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -223,4 +302,27 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   divider: { height: StyleSheet.hairlineWidth },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+    marginLeft: 2,
+    marginRight: 2,
+  },
+  categoryChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: Spacing.radius.full,
+    borderWidth: 1,
+  },
+  categoryDot: { width: 8, height: 8, borderRadius: 4 },
 });

@@ -9,7 +9,7 @@ export default function NotFoundScreen() {
       <View style={styles.container}>
         <Text variant="largeTitle" align="center">404</Text>
         <Text variant="body" color="gray" align="center" style={{ marginTop: 8 }}>
-          This screen doesn't exist.
+          {"This screen doesn't exist."}
         </Text>
         <Link href="/" style={{ marginTop: 24 }}>
           <Text variant="headline" color="#007AFF">Go home</Text>

@@ -1,113 +1,303 @@
-import React from 'react';
-import { ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { supabase } from '@/lib/supabase';
+import { AddBudgetSheet } from '@/components/AddBudgetSheet';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import type { UserCategory } from '@/types/finance';
 
-const BUDGETS = [
-  { id: '1', name: 'Groceries', emoji: '🛒', spent: 320, total: 500, color: '#FF9500' },
-  { id: '2', name: 'Entertainment', emoji: '🎬', spent: 60, total: 100, color: '#007AFF' },
-  { id: '3', name: 'Transport', emoji: '🚗', spent: 85, total: 150, color: '#34C759' },
-  { id: '4', name: 'Dining', emoji: '🍽️', spent: 180, total: 200, color: '#FF2D55' },
-  { id: '5', name: 'Shopping', emoji: '🛍️', spent: 44, total: 300, color: '#AF52DE' },
-  { id: '6', name: 'Health', emoji: '💊', spent: 55, total: 100, color: '#5AC8FA' },
-];
+type AppColors = typeof Colors[keyof typeof Colors];
 
-const TOTAL_SPENT = BUDGETS.reduce((s, b) => s + b.spent, 0);
-const TOTAL_BUDGET = BUDGETS.reduce((s, b) => s + b.total, 0);
+type BudgetRow = {
+  id: string;
+  category: string;
+  monthly_limit: number;
+  rollover_enabled: boolean;
+  spent: number;
+  remaining: number;
+  percentage: number;
+  isOverBudget: boolean;
+};
+
+function TrashIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function PlusIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function barColor(pct: number, colors: AppColors): string {
+  if (pct >= 100) return colors.expense;
+  if (pct >= 80) return colors.tintOrange;
+  return colors.income;
+}
 
 export default function BudgetsScreen() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
+  const [budgets, setBudgets] = useState<BudgetRow[]>([]);
+  const [categories, setCategories] = useState<UserCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addSheetVisible, setAddSheetVisible] = useState(false);
+  const [editBudget, setEditBudget] = useState<{ id: string; category: string; monthly_limit: number } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ id: string; label: string } | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        .toISOString().split('T')[0];
+
+      const [budgetsRes, txRes, catsRes] = await Promise.all([
+        supabase
+          .from('budgets')
+          .select('id, category, monthly_limit, rollover_enabled')
+          .eq('user_id', user.id),
+        supabase
+          .from('transactions')
+          .select('category, amount, exchange_rate')
+          .eq('user_id', user.id)
+          .eq('type', 'expense')
+          .gte('date', startOfMonth),
+        supabase
+          .from('categories')
+          .select('id, name, label, color, icon')
+          .eq('user_id', user.id),
+      ]);
+
+      const spentByCategory: Record<string, number> = {};
+      (txRes.data ?? []).forEach(tx => {
+        spentByCategory[tx.category] =
+          (spentByCategory[tx.category] ?? 0) + tx.amount * (tx.exchange_rate ?? 1);
+      });
+
+      const rows: BudgetRow[] = (budgetsRes.data ?? [])
+        .map(b => {
+          const spent = spentByCategory[b.category] ?? 0;
+          const remaining = b.monthly_limit - spent;
+          const percentage = b.monthly_limit > 0 ? (spent / b.monthly_limit) * 100 : 0;
+          return {
+            ...b,
+            rollover_enabled: b.rollover_enabled ?? false,
+            spent,
+            remaining,
+            percentage,
+            isOverBudget: spent > b.monthly_limit,
+          };
+        })
+        .sort((a, b) => b.percentage - a.percentage);
+
+      setBudgets(rows);
+      setCategories(catsRes.data ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
+  const getCategoryInfo = (catName: string) => {
+    const cat = categories.find(c => c.name === catName);
+    return { label: cat?.label ?? catName, color: cat?.color ?? '#8b5cf6' };
+  };
+
+  const handleDelete = (id: string, catName: string) => {
+    const { label } = getCategoryInfo(catName);
+    setDeleteDialog({ id, label });
+  };
+
+  const handleEdit = (budget: BudgetRow) => {
+    setEditBudget({ id: budget.id, category: budget.category, monthly_limit: budget.monthly_limit });
+    setAddSheetVisible(true);
+  };
+
+  const handleAdd = () => {
+    setEditBudget(null);
+    setAddSheetVisible(true);
+  };
+
+  const totalSpent = budgets.reduce((s, b) => s + b.spent, 0);
+  const totalLimit = budgets.reduce((s, b) => s + b.monthly_limit, 0);
+  const overallPct = totalLimit > 0 ? Math.min((totalSpent / totalLimit) * 100, 100) : 0;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.header}>
-          <Text variant="largeTitle">Budgets</Text>
-          <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.fillPrimary }]}>
-            <Text variant="headline" color={colors.tint}>+ New</Text>
+          <Text variant="largeTitle">{t('tabs.budgets')}</Text>
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: colors.fillPrimary }]}
+            onPress={handleAdd}
+            activeOpacity={0.7}
+          >
+            <PlusIcon color={colors.tint} />
           </TouchableOpacity>
         </View>
 
-        {/* Summary Card */}
-        <View style={[styles.section, { marginTop: Spacing.sm }]}>
-          <Card radius={Spacing.radius.xl} padding={Spacing.lg}>
-            <Text variant="footnote" color={colors.labelSecondary}>This month</Text>
-            <View style={styles.summaryRow}>
-              <Text variant="title1">${TOTAL_SPENT.toLocaleString()}</Text>
-              <Text variant="callout" color={colors.labelSecondary}>/ ${TOTAL_BUDGET.toLocaleString()}</Text>
-            </View>
-            {/* Overall progress */}
-            <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary, marginTop: Spacing.sm }]}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    backgroundColor: TOTAL_SPENT / TOTAL_BUDGET > 0.85 ? colors.expense : colors.tint,
-                    width: `${Math.min((TOTAL_SPENT / TOTAL_BUDGET) * 100, 100)}%`,
-                  },
-                ]}
-              />
-            </View>
-            <Text variant="caption1" color={colors.labelSecondary} style={{ marginTop: Spacing.xs }}>
-              {Math.round((TOTAL_SPENT / TOTAL_BUDGET) * 100)}% of monthly budget used
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color={colors.labelSecondary} />
+          </View>
+        ) : budgets.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>📊</Text>
+            <Text variant="callout" align="center" color={colors.labelSecondary}>
+              {t('budgets.empty')}
             </Text>
-          </Card>
-        </View>
-
-        {/* Budget list */}
-        <View style={[styles.section, { marginTop: Spacing.xl }]}>
-          <Text variant="title3" style={styles.listHeader}>All Budgets</Text>
-          <Card radius={Spacing.radius.lg} padding={0}>
-            {BUDGETS.map((budget, index) => {
-              const pct = (budget.spent / budget.total) * 100;
-              const isOver = pct > 90;
-              return (
-                <View key={budget.id}>
-                  <TouchableOpacity
-                    style={[styles.budgetRow, { paddingHorizontal: Spacing.md }]}
-                    activeOpacity={0.6}
-                  >
-                    <View style={[styles.emoji, { backgroundColor: `${budget.color}18` }]}>
-                      <Text variant="body" align="center">{budget.emoji}</Text>
-                    </View>
-                    <View style={styles.budgetContent}>
-                      <View style={styles.budgetTop}>
-                        <Text variant="callout" style={{ fontWeight: '500' }}>{budget.name}</Text>
-                        <Text
-                          variant="callout"
-                          style={{ fontWeight: '600' }}
-                          color={isOver ? colors.expense : colors.label}
-                        >
-                          ${budget.spent}
-                          <Text variant="caption1" color={colors.labelSecondary}> / ${budget.total}</Text>
-                        </Text>
-                      </View>
-                      <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary }]}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            {
-                              backgroundColor: isOver ? colors.expense : budget.color,
-                              width: `${Math.min(pct, 100)}%`,
-                            },
-                          ]}
-                        />
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                  {index < BUDGETS.length - 1 && (
-                    <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 72 }]} />
-                  )}
+            <TouchableOpacity
+              style={[styles.emptyBtn, { backgroundColor: colors.tint }]}
+              onPress={handleAdd}
+              activeOpacity={0.85}
+            >
+              <Text variant="callout" color={colors.tintForeground}>{t('budget.add')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {/* Summary card */}
+            <View style={[styles.section, { marginTop: Spacing.sm }]}>
+              <Card radius={Spacing.radius.xl} padding={Spacing.lg}>
+                <Text variant="footnote" color={colors.labelSecondary}>{t('budgets.thisMonth')}</Text>
+                <View style={styles.summaryRow}>
+                  <Text variant="title1">
+                    ${totalSpent.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </Text>
+                  <Text variant="callout" color={colors.labelSecondary}>
+                    {'/ $'}{totalLimit.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </Text>
                 </View>
-              );
-            })}
-          </Card>
-        </View>
+                <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary, marginTop: Spacing.sm }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${overallPct}%`, backgroundColor: barColor(overallPct, colors) },
+                    ]}
+                  />
+                </View>
+                <Text variant="caption1" color={colors.labelSecondary} style={{ marginTop: Spacing.xs }}>
+                  {Math.round(overallPct)}% {t('budgets.usedLabel')}
+                </Text>
+              </Card>
+            </View>
+
+            {/* Budget list */}
+            <View style={[styles.section, { marginTop: Spacing.xl }]}>
+              <Text variant="title3" style={{ marginBottom: Spacing.sm }}>{t('budgets.allBudgets')}</Text>
+              <Card radius={Spacing.radius.lg} padding={0}>
+                {budgets.map((budget, index) => {
+                  const { label, color } = getCategoryInfo(budget.category);
+                  const pct = budget.percentage;
+                  const fillColor = barColor(pct, colors);
+                  return (
+                    <View key={budget.id}>
+                      <TouchableOpacity
+                        style={[styles.budgetRow, { paddingHorizontal: Spacing.md }]}
+                        onPress={() => handleEdit(budget)}
+                        activeOpacity={0.6}
+                      >
+                        <View style={[styles.emoji, { backgroundColor: `${color}18` }]}>
+                          <Text variant="body" align="center">
+                            {getCategoryEmoji(budget.category, 'expense')}
+                          </Text>
+                        </View>
+                        <View style={styles.budgetContent}>
+                          <View style={styles.budgetTop}>
+                            <Text variant="callout" style={{ fontWeight: '500' }}>{label}</Text>
+                            <Text
+                              variant="callout"
+                              style={{ fontWeight: '600' }}
+                              color={budget.isOverBudget ? colors.expense : colors.label}
+                            >
+                              ${budget.spent.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                              <Text variant="caption1" color={colors.labelSecondary}>
+                                {' / $'}{budget.monthly_limit.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                              </Text>
+                            </Text>
+                          </View>
+                          <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary }]}>
+                            <View
+                              style={[styles.progressFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: fillColor }]}
+                            />
+                          </View>
+                          <Text
+                            variant="caption1"
+                            color={budget.isOverBudget ? colors.expense : colors.labelSecondary}
+                          >
+                            {budget.isOverBudget
+                              ? `$${Math.abs(budget.remaining).toLocaleString('en-US', { maximumFractionDigits: 0 })} ${t('budgets.overspent')}`
+                              : `$${budget.remaining.toLocaleString('en-US', { maximumFractionDigits: 0 })} ${t('budgets.remaining')}`}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          hitSlop={12}
+                          onPress={e => { e.stopPropagation(); handleDelete(budget.id, budget.category); }}
+                          style={styles.deleteBtn}
+                          activeOpacity={0.7}
+                        >
+                          <TrashIcon color={colors.labelTertiary} />
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+                      {index < budgets.length - 1 && (
+                        <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 72 }]} />
+                      )}
+                    </View>
+                  );
+                })}
+              </Card>
+            </View>
+          </>
+        )}
       </ScrollView>
+
+      <AddBudgetSheet
+        visible={addSheetVisible}
+        onClose={() => setAddSheetVisible(false)}
+        onSuccess={() => { setAddSheetVisible(false); fetchData(); }}
+        categories={categories}
+        initialBudget={editBudget}
+      />
+
+      <ConfirmDialog
+        visible={deleteDialog !== null}
+        title={t('budgets.deleteTitle')}
+        message={deleteDialog ? t('budgets.deleteMessage', { name: deleteDialog.label }) : ''}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        destructive
+        onConfirm={async () => {
+          if (!deleteDialog) return;
+          await supabase.from('budgets').delete().eq('id', deleteDialog.id);
+          setDeleteDialog(null);
+          fetchData();
+        }}
+        onCancel={() => setDeleteDialog(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -115,53 +305,27 @@ export default function BudgetsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.screenHorizontal,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.screenHorizontal, paddingTop: Spacing.md, paddingBottom: Spacing.sm,
   },
-  addBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 7,
-    borderRadius: Spacing.radius.full,
-  },
+  addBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  centered: { padding: 40, alignItems: 'center' },
+  emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
+  emptyEmoji: { fontSize: 40, marginBottom: 8 },
+  emptyBtn: { marginTop: 16, paddingHorizontal: Spacing.lg, paddingVertical: 12, borderRadius: Spacing.radius.full },
   section: { paddingHorizontal: Spacing.screenHorizontal },
   summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.xs,
-    marginTop: 4,
+    flexDirection: 'row', alignItems: 'baseline', gap: Spacing.xs, marginTop: 4,
   },
-  listHeader: { marginBottom: Spacing.sm },
-  progressTrack: {
-    height: 5,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 5,
-    borderRadius: 3,
-  },
+  progressTrack: { height: 5, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: 5, borderRadius: 3 },
   budgetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm + 2,
-    gap: Spacing.sm,
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: Spacing.sm + 2, gap: Spacing.sm,
   },
-  emoji: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  budgetContent: { flex: 1, gap: Spacing.xs },
-  budgetTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  emoji: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  budgetContent: { flex: 1, gap: 4 },
+  budgetTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  deleteBtn: { padding: 4 },
   divider: { height: StyleSheet.hairlineWidth },
 });

@@ -36,7 +36,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding';
 
     if (!user) {
       if (!inAuthGroup) router.replace('/(auth)/welcome');
@@ -51,6 +50,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         router.replace('/onboarding');
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, segments]);
 
   return <>{children}</>;
@@ -92,6 +92,7 @@ function RootLayoutInner() {
       <AuthGate>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="accounts" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="+not-found" options={{ headerShown: true, title: 'Not Found' }} />

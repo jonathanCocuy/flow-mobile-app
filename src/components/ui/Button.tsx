@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { Text } from './Text';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { Spacing } from '@/constants/Spacing';
 
 type Variant = 'filled' | 'tinted' | 'plain' | 'destructive';
 type Size = 'sm' | 'md' | 'lg';

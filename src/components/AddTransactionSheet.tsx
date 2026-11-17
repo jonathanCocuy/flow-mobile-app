@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -283,6 +283,7 @@ export function AddTransactionSheet({
 
   useEffect(() => {
     if (visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTxType('expense');
       setEmoji('');
       setDescription('');

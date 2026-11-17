@@ -69,6 +69,21 @@ export default {
   'onboarding.securityTitle': 'Seguridad total',
   'onboarding.securityDesc': 'Tus datos están protegidos con tecnología de grado bancario y Supabase.',
 
+  // Common actions
+  'common.cancel': 'Cancelar',
+  'common.delete': 'Eliminar',
+
+  // Accounts screen
+  'accounts.title': 'Cuentas',
+  'accounts.totalBalance': 'Saldo total',
+  'accounts.count': '{{count}} cuenta',
+  'accounts.count_other': '{{count}} cuentas',
+  'accounts.empty': 'Sin cuentas aún',
+  'accounts.edit': 'Editar',
+  'accounts.initialBalance': 'Inicial',
+  'accounts.deleteTitle': 'Eliminar cuenta',
+  'accounts.deleteMessage': '¿Eliminar "{{name}}"? No se puede deshacer.',
+
   // Account
   'account.add': 'Nueva Cuenta',
   'account.name': 'Nombre de la cuenta',
@@ -125,9 +140,11 @@ export default {
   'dashboard.budgets': 'Presupuestos',
   'dashboard.seeAll': 'Ver todo',
   'dashboard.noTransactions': 'Sin transacciones este mes',
+  'dashboard.noAccounts': 'Sin cuentas aún',
   'dashboard.savings': 'Ahorros',
   'dashboard.thisMonth': 'este mes',
   'dashboard.action.add': 'Agregar',
+  'dashboard.action.accounts': 'Cuentas',
   'dashboard.action.budgets': 'Presupuestos',
   'dashboard.action.goals': 'Metas',
   'dashboard.action.activity': 'Actividad',
@@ -163,4 +180,48 @@ export default {
   'transactions.add.error.account': 'Selecciona una cuenta.',
   'transactions.add.error.destinationAccount': 'Selecciona una cuenta destino.',
   'transactions.add.error.sameAccount': 'Las cuentas deben ser diferentes.',
+
+  // Budgets screen
+  'budgets.empty': 'Sin presupuestos aún',
+  'budgets.deleteTitle': 'Eliminar presupuesto',
+  'budgets.deleteMessage': '¿Eliminar el presupuesto "{{name}}"? No se puede deshacer.',
+  'budgets.remaining': 'restante',
+  'budgets.overspent': 'excedido',
+  'budgets.thisMonth': 'Este mes',
+  'budgets.usedLabel': 'del presupuesto mensual usado',
+  'budgets.allBudgets': 'Todos los presupuestos',
+
+  // Goals screen
+  'goals.empty': 'Sin metas aún',
+  'goals.deleteTitle': 'Eliminar meta',
+  'goals.deleteMessage': '¿Eliminar "{{name}}"? No se puede deshacer.',
+  'goals.contribute': 'Añadir fondos',
+  'goals.saved': 'ahorrado',
+  'goals.toGo': 'por ahorrar',
+  'goals.daysLeft': '{{count}} días restantes',
+  'goals.overdue': 'Vencida',
+  'goals.noDeadline': 'Sin fecha límite',
+  'goals.contributeTitle': 'Añadir fondos',
+  'goals.amount': 'Monto',
+  'goals.recordTransaction': 'Registrar como gasto',
+  'goals.account': 'Cuenta',
+
+  // Categories
+  'profile.categories': 'Categorías',
+  'categories.empty': 'Sin categorías aún',
+  'categories.add': 'Añadir categoría',
+  'categories.edit': 'Editar categoría',
+  'categories.deleteTitle': 'Eliminar categoría',
+  'categories.deleteMessage': '¿Eliminar "{{name}}"? Las transacciones no se verán afectadas.',
+  'categories.label': 'Nombre',
+  'categories.labelPlaceholder': 'Ej. Comida',
+  'categories.color': 'Color',
+  'categories.icon': 'Icono',
+  'categories.iconPlaceholder': 'Nombre de icono Lucide (ej. Utensils)',
+  'categories.save': 'Guardar categoría',
+  'categories.error.nameRequired': 'Ingresa un nombre de categoría.',
+
+  // Dashboard quick actions (new)
+  'dashboard.action.addBudget': 'Presupuesto',
+  'dashboard.action.addGoal': 'Meta',
 } as const;

@@ -44,9 +44,10 @@ interface Props {
   onClose: () => void;
   onSuccess: () => void;
   categories: UserCategory[];
+  initialBudget?: { id?: string; category: string; monthly_limit: number } | null;
 }
 
-export function AddBudgetSheet({ visible, onClose, onSuccess, categories }: Props) {
+export function AddBudgetSheet({ visible, onClose, onSuccess, categories, initialBudget }: Props) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -55,6 +56,19 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, categories }: Prop
   const [limit, setLimit] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (visible && initialBudget) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCategory(initialBudget.category);
+      setLimit(String(initialBudget.monthly_limit));
+      setError(null);
+    } else if (visible && !initialBudget) {
+      setCategory('');
+      setLimit('');
+      setError(null);
+    }
+  }, [visible, initialBudget]);
 
   const reset = () => {
     setCategory('');
@@ -78,12 +92,20 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, categories }: Prop
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error: dbError } = await supabase
-        .from('budgets')
-        .upsert(
-          { user_id: user.id, category, monthly_limit: amount, rollover_enabled: false },
-          { onConflict: 'user_id,category' }
-        );
+      let dbError;
+      if (initialBudget?.id) {
+        ({ error: dbError } = await supabase
+          .from('budgets')
+          .update({ category, monthly_limit: amount })
+          .eq('id', initialBudget.id));
+      } else {
+        ({ error: dbError } = await supabase
+          .from('budgets')
+          .upsert(
+            { user_id: user.id, category, monthly_limit: amount, rollover_enabled: false },
+            { onConflict: 'user_id,category' },
+          ));
+      }
       if (dbError) throw dbError;
 
       reset();

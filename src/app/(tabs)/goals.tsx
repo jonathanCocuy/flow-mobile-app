@@ -1,112 +1,264 @@
-import React from 'react';
-import { ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { supabase } from '@/lib/supabase';
+import { AddGoalSheet } from '@/components/AddGoalSheet';
+import { ContributeGoalSheet } from '@/components/ContributeGoalSheet';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import type { DashboardAccount } from '@/types/finance';
 
-const GOALS = [
-  { id: '1', name: 'Emergency Fund', emoji: '🛡️', saved: 3500, target: 5000, deadline: 'Dec 2026', color: '#007AFF' },
-  { id: '2', name: 'MacBook Pro', emoji: '💻', saved: 1200, target: 2499, deadline: 'Mar 2027', color: '#AF52DE' },
-  { id: '3', name: 'Vacation', emoji: '✈️', saved: 800, target: 3000, deadline: 'Jun 2027', color: '#FF9500' },
-  { id: '4', name: 'Car Down Payment', emoji: '🚗', saved: 5000, target: 10000, deadline: 'Jan 2028', color: '#34C759' },
-];
+type SavingsGoal = {
+  id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  deadline: string | null;
+  icon: string | null;
+};
 
-function daysLeft(deadline: string): number {
-  const [month, year] = deadline.split(' ');
-  const months: Record<string, number> = {
-    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-  };
-  const target = new Date(parseInt(year), months[month], 1);
+function TrashIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function PlusIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr + 'T00:00:00');
   const now = new Date();
-  return Math.max(0, Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+  now.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 export default function GoalsScreen() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
-  const totalSaved = GOALS.reduce((s, g) => s + g.saved, 0);
-  const totalTarget = GOALS.reduce((s, g) => s + g.target, 0);
+  const [goals, setGoals] = useState<SavingsGoal[]>([]);
+  const [accounts, setAccounts] = useState<DashboardAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addSheetVisible, setAddSheetVisible] = useState(false);
+  const [contributeGoal, setContributeGoal] = useState<SavingsGoal | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<SavingsGoal | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [goalsRes, accountsRes] = await Promise.all([
+        supabase
+          .from('savings_goals')
+          .select('id, name, target_amount, current_amount, deadline, icon')
+          .eq('user_id', user.id)
+          .order('created_at'),
+        supabase
+          .from('accounts')
+          .select('id, name, balance, initial_balance, color')
+          .eq('user_id', user.id),
+      ]);
+
+      setGoals(goalsRes.data ?? []);
+      setAccounts(accountsRes.data ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
+  const handleDelete = (goal: SavingsGoal) => {
+    setDeleteDialog(goal);
+  };
+
+  const totalSaved = goals.reduce((s, g) => s + (g.current_amount ?? 0), 0);
+  const totalTarget = goals.reduce((s, g) => s + g.target_amount, 0);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.header}>
-          <Text variant="largeTitle">Goals</Text>
-          <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.fillPrimary }]}>
-            <Text variant="headline" color={colors.tint}>+ New</Text>
+          <Text variant="largeTitle">{t('tabs.goals')}</Text>
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: colors.fillPrimary }]}
+            onPress={() => setAddSheetVisible(true)}
+            activeOpacity={0.7}
+          >
+            <PlusIcon color={colors.tint} />
           </TouchableOpacity>
         </View>
 
-        {/* Summary */}
-        <View style={[styles.section, { marginTop: Spacing.sm }]}>
-          <View style={styles.summaryRow}>
-            <Card style={{ flex: 1 }} radius={Spacing.radius.lg} padding={Spacing.md}>
-              <Text variant="caption1" color={colors.labelSecondary}>Total Saved</Text>
-              <Text variant="title3" style={{ marginTop: 4 }}>${totalSaved.toLocaleString()}</Text>
-            </Card>
-            <Card style={{ flex: 1 }} radius={Spacing.radius.lg} padding={Spacing.md}>
-              <Text variant="caption1" color={colors.labelSecondary}>Total Target</Text>
-              <Text variant="title3" style={{ marginTop: 4 }}>${totalTarget.toLocaleString()}</Text>
-            </Card>
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color={colors.labelSecondary} />
           </View>
-        </View>
+        ) : goals.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>🎯</Text>
+            <Text variant="callout" align="center" color={colors.labelSecondary}>
+              {t('goals.empty')}
+            </Text>
+            <TouchableOpacity
+              style={[styles.emptyBtn, { backgroundColor: colors.tint }]}
+              onPress={() => setAddSheetVisible(true)}
+              activeOpacity={0.85}
+            >
+              <Text variant="callout" color={colors.tintForeground}>{t('goal.add')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {/* Summary row */}
+            <View style={[styles.section, { marginTop: Spacing.sm }]}>
+              <View style={styles.summaryRow}>
+                <Card style={{ flex: 1 }} radius={Spacing.radius.lg} padding={Spacing.md}>
+                  <Text variant="caption1" color={colors.labelSecondary}>{t('goals.saved')}</Text>
+                  <Text variant="title3" style={{ marginTop: 4 }}>
+                    ${totalSaved.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </Text>
+                </Card>
+                <Card style={{ flex: 1 }} radius={Spacing.radius.lg} padding={Spacing.md}>
+                  <Text variant="caption1" color={colors.labelSecondary}>{t('goal.targetAmount')}</Text>
+                  <Text variant="title3" style={{ marginTop: 4 }}>
+                    ${totalTarget.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </Text>
+                </Card>
+              </View>
+            </View>
 
-        {/* Goals */}
-        <View style={[styles.section, { marginTop: Spacing.xl }]}>
-          <Text variant="title3" style={{ marginBottom: Spacing.sm }}>All Goals</Text>
-          <View style={styles.goalsList}>
-            {GOALS.map((goal) => {
-              const pct = (goal.saved / goal.target) * 100;
-              const days = daysLeft(goal.deadline);
-              return (
-                <TouchableOpacity key={goal.id} activeOpacity={0.75}>
-                  <Card radius={Spacing.radius.lg} padding={Spacing.md}>
+            {/* Goals list */}
+            <View style={[styles.section, { marginTop: Spacing.xl }]}>
+              {goals.map(goal => {
+                const current = goal.current_amount ?? 0;
+                const pct = goal.target_amount > 0
+                  ? Math.min((current / goal.target_amount) * 100, 100)
+                  : 0;
+                const isComplete = pct >= 100;
+                const fillColor = isComplete ? colors.income : colors.savings;
+
+                let deadlineText = t('goals.noDeadline');
+                let deadlineIsOverdue = false;
+                if (goal.deadline) {
+                  const days = daysUntil(goal.deadline);
+                  deadlineIsOverdue = days < 0;
+                  deadlineText = deadlineIsOverdue
+                    ? t('goals.overdue')
+                    : t('goals.daysLeft', { count: days });
+                }
+
+                return (
+                  <Card key={goal.id} radius={Spacing.radius.lg} padding={Spacing.md} style={{ marginBottom: Spacing.sm }}>
+                    {/* Header row */}
                     <View style={styles.goalHeader}>
-                      <View style={[styles.goalEmoji, { backgroundColor: `${goal.color}18` }]}>
-                        <Text variant="title3" align="center">{goal.emoji}</Text>
+                      <View style={[styles.goalEmoji, { backgroundColor: `${fillColor}18` }]}>
+                        <Text variant="title3" align="center">{goal.icon ?? '🎯'}</Text>
                       </View>
                       <View style={styles.goalInfo}>
                         <Text variant="headline">{goal.name}</Text>
-                        <Text variant="caption1" color={colors.labelSecondary}>
-                          {days} days left · {goal.deadline}
+                        <Text
+                          variant="caption1"
+                          color={deadlineIsOverdue ? colors.expense : colors.labelSecondary}
+                        >
+                          {deadlineText}
                         </Text>
                       </View>
-                      <View style={styles.goalPct}>
-                        <Text variant="footnote" color={goal.color} style={{ fontWeight: '700' }}>
+                      <View style={styles.goalActions}>
+                        <Text variant="footnote" color={fillColor} style={{ fontWeight: '700' }}>
                           {Math.round(pct)}%
+                        </Text>
+                        <TouchableOpacity hitSlop={12} onPress={() => handleDelete(goal)}>
+                          <TrashIcon color={colors.labelTertiary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Progress bar */}
+                    <View style={{ marginTop: Spacing.sm, gap: 4 }}>
+                      <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary }]}>
+                        <View
+                          style={[styles.progressFill, { width: `${pct}%`, backgroundColor: fillColor }]}
+                        />
+                      </View>
+                      <View style={styles.amountRow}>
+                        <Text variant="caption1" color={colors.labelSecondary}>
+                          ${current.toLocaleString('en-US', { maximumFractionDigits: 0 })} {t('goals.saved')}
+                        </Text>
+                        <Text variant="caption1" color={colors.labelSecondary}>
+                          ${Math.max(0, goal.target_amount - current).toLocaleString('en-US', { maximumFractionDigits: 0 })} {t('goals.toGo')}
                         </Text>
                       </View>
                     </View>
 
-                    <View style={{ marginTop: Spacing.sm, gap: Spacing.xs }}>
-                      <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary }]}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            { backgroundColor: goal.color, width: `${pct}%` },
-                          ]}
-                        />
-                      </View>
-                      <View style={styles.goalAmounts}>
-                        <Text variant="caption1" color={colors.labelSecondary}>
-                          ${goal.saved.toLocaleString()} saved
+                    {/* Contribute button */}
+                    {!isComplete && (
+                      <TouchableOpacity
+                        style={[styles.contributeBtn, { backgroundColor: `${fillColor}14`, borderColor: `${fillColor}33` }]}
+                        onPress={() => setContributeGoal(goal)}
+                        activeOpacity={0.75}
+                      >
+                        <Text variant="footnote" color={fillColor} style={{ fontWeight: '600' }}>
+                          + {t('goals.contribute')}
                         </Text>
-                        <Text variant="caption1" color={colors.labelSecondary}>
-                          ${(goal.target - goal.saved).toLocaleString()} to go
-                        </Text>
-                      </View>
-                    </View>
+                      </TouchableOpacity>
+                    )}
                   </Card>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+                );
+              })}
+            </View>
+          </>
+        )}
       </ScrollView>
+
+      <AddGoalSheet
+        visible={addSheetVisible}
+        onClose={() => setAddSheetVisible(false)}
+        onSuccess={() => { setAddSheetVisible(false); fetchData(); }}
+      />
+
+      <ContributeGoalSheet
+        visible={contributeGoal !== null}
+        goal={contributeGoal}
+        accounts={accounts}
+        onClose={() => setContributeGoal(null)}
+        onSuccess={() => { setContributeGoal(null); fetchData(); }}
+      />
+
+      <ConfirmDialog
+        visible={deleteDialog !== null}
+        title={t('goals.deleteTitle')}
+        message={deleteDialog ? t('goals.deleteMessage', { name: deleteDialog.name }) : ''}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        destructive
+        onConfirm={async () => {
+          if (!deleteDialog) return;
+          await supabase.from('savings_goals').delete().eq('id', deleteDialog.id);
+          setDeleteDialog(null);
+          fetchData();
+        }}
+        onCancel={() => setDeleteDialog(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -114,39 +266,25 @@ export default function GoalsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.screenHorizontal,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.screenHorizontal, paddingTop: Spacing.md, paddingBottom: Spacing.sm,
   },
-  addBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 7,
-    borderRadius: Spacing.radius.full,
-  },
+  addBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  centered: { padding: 40, alignItems: 'center' },
+  emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
+  emptyEmoji: { fontSize: 40, marginBottom: 8 },
+  emptyBtn: { marginTop: 16, paddingHorizontal: Spacing.lg, paddingVertical: 12, borderRadius: Spacing.radius.full },
   section: { paddingHorizontal: Spacing.screenHorizontal },
   summaryRow: { flexDirection: 'row', gap: Spacing.sm },
-  goalsList: { gap: Spacing.sm },
-  goalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  goalEmoji: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  goalHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  goalEmoji: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   goalInfo: { flex: 1, gap: 2 },
-  goalPct: { alignItems: 'flex-end' },
+  goalActions: { alignItems: 'flex-end', gap: 6 },
   progressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: 6, borderRadius: 3 },
-  goalAmounts: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  amountRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  contributeBtn: {
+    marginTop: 12, paddingVertical: 8,
+    borderRadius: Spacing.radius.md, alignItems: 'center', borderWidth: 1,
   },
 });

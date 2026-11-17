@@ -33,6 +33,7 @@ export async function initI18n() {
 
   const lng = stored ?? getDeviceLanguage();
 
+  // eslint-disable-next-line import/no-named-as-default-member
   await i18n.use(initReactI18next).init({
     resources: { en: { translation: en }, es: { translation: es }, fr: { translation: fr }, pt: { translation: pt } },
     lng,
@@ -42,6 +43,7 @@ export async function initI18n() {
 }
 
 export async function changeLanguage(code: LanguageCode) {
+  // eslint-disable-next-line import/no-named-as-default-member
   await i18n.changeLanguage(code);
   try {
     await AsyncStorage.setItem(LANG_KEY, code);

@@ -107,7 +107,7 @@ export default function ResetPasswordScreen() {
               <Text variant="displayLarge" align="center">⚠️</Text>
               <Text variant="title2" align="center">Link Invalid or Expired</Text>
               <Text variant="callout" color={colors.labelSecondary} align="center" style={{ lineHeight: 24 }}>
-                The reset link didn't work. It may have expired or already been used. Request a new one.
+                {"The reset link didn't work. It may have expired or already been used. Request a new one."}
               </Text>
               <View style={{ gap: Spacing.xs, alignSelf: 'stretch' }}>
                 <TouchableOpacity

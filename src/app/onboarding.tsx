@@ -124,7 +124,6 @@ export default function OnboardingScreen() {
   const flatRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const tint = colors.tint;
   const accentMap: Record<string, string> = {
     income: colors.income,
     savings: colors.savings,
@@ -139,12 +138,11 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)');
   }, [router]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: any[] }) => {
+  const [onViewableItemsChanged] = useState<({ viewableItems }: { viewableItems: any[] }) => void>(() => ({ viewableItems }: { viewableItems: any[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
       setActiveIndex(viewableItems[0].index);
     }
-  }).current;
+  });
 
   const goNext = () => {
     if (activeIndex < SLIDES.length - 1) {

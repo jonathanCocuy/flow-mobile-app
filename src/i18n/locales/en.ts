@@ -69,6 +69,21 @@ export default {
   'onboarding.securityTitle': 'Total security',
   'onboarding.securityDesc': 'Your data is protected with bank-grade technology and Supabase.',
 
+  // Common actions
+  'common.cancel': 'Cancel',
+  'common.delete': 'Delete',
+
+  // Accounts screen
+  'accounts.title': 'Accounts',
+  'accounts.totalBalance': 'Total balance',
+  'accounts.count': '{{count}} account',
+  'accounts.count_other': '{{count}} accounts',
+  'accounts.empty': 'No accounts yet',
+  'accounts.edit': 'Edit',
+  'accounts.initialBalance': 'Initial',
+  'accounts.deleteTitle': 'Delete Account',
+  'accounts.deleteMessage': 'Delete "{{name}}"? This cannot be undone.',
+
   // Account
   'account.add': 'New Account',
   'account.name': 'Account Name',
@@ -125,9 +140,11 @@ export default {
   'dashboard.budgets': 'Budgets',
   'dashboard.seeAll': 'See all',
   'dashboard.noTransactions': 'No transactions this month',
+  'dashboard.noAccounts': 'No accounts yet',
   'dashboard.savings': 'Savings',
   'dashboard.thisMonth': 'this month',
   'dashboard.action.add': 'Add',
+  'dashboard.action.accounts': 'Accounts',
   'dashboard.action.budgets': 'Budgets',
   'dashboard.action.goals': 'Goals',
   'dashboard.action.activity': 'Activity',
@@ -163,4 +180,48 @@ export default {
   'transactions.add.error.account': 'Select an account.',
   'transactions.add.error.destinationAccount': 'Select a destination account.',
   'transactions.add.error.sameAccount': 'Accounts must be different.',
+
+  // Budgets screen
+  'budgets.empty': 'No budgets yet',
+  'budgets.deleteTitle': 'Delete Budget',
+  'budgets.deleteMessage': 'Delete "{{name}}" budget? This cannot be undone.',
+  'budgets.remaining': 'remaining',
+  'budgets.overspent': 'overspent',
+  'budgets.thisMonth': 'This month',
+  'budgets.usedLabel': 'of monthly budget used',
+  'budgets.allBudgets': 'All Budgets',
+
+  // Goals screen
+  'goals.empty': 'No goals yet',
+  'goals.deleteTitle': 'Delete Goal',
+  'goals.deleteMessage': 'Delete "{{name}}"? This cannot be undone.',
+  'goals.contribute': 'Add Funds',
+  'goals.saved': 'saved',
+  'goals.toGo': 'to go',
+  'goals.daysLeft': '{{count}} days left',
+  'goals.overdue': 'Overdue',
+  'goals.noDeadline': 'No deadline',
+  'goals.contributeTitle': 'Add Funds',
+  'goals.amount': 'Amount',
+  'goals.recordTransaction': 'Record as expense',
+  'goals.account': 'Account',
+
+  // Categories
+  'profile.categories': 'Categories',
+  'categories.empty': 'No categories yet',
+  'categories.add': 'Add Category',
+  'categories.edit': 'Edit Category',
+  'categories.deleteTitle': 'Delete Category',
+  'categories.deleteMessage': 'Delete "{{name}}"? Transactions using it will not be affected.',
+  'categories.label': 'Name',
+  'categories.labelPlaceholder': 'e.g. Food',
+  'categories.color': 'Color',
+  'categories.icon': 'Icon',
+  'categories.iconPlaceholder': 'Lucide icon name (e.g. Utensils)',
+  'categories.save': 'Save Category',
+  'categories.error.nameRequired': 'Enter a category name.',
+
+  // Dashboard quick actions (new)
+  'dashboard.action.addBudget': 'Budget',
+  'dashboard.action.addGoal': 'Goal',
 } as const;

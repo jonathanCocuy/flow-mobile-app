@@ -101,7 +101,7 @@ export default function ForgotPasswordScreen() {
               <View style={styles.header}>
                 <Text variant="title1">Forgot Password?</Text>
                 <Text variant="callout" color={colors.labelSecondary} style={{ marginTop: 6 }}>
-                  Enter your email and we'll send you a reset link.
+                  {"Enter your email and we'll send you a reset link."}
                 </Text>
               </View>
 
