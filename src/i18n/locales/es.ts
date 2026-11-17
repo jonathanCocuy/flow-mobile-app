@@ -91,6 +91,7 @@ export default {
   'account.balance': 'Saldo actual',
   'account.color': 'Color',
   'account.save': 'Crear cuenta',
+  'account.update': 'Guardar cambios',
   'account.error.nameRequired': 'Ingresa un nombre.',
   'account.error.balanceInvalid': 'Ingresa un saldo válido.',
 

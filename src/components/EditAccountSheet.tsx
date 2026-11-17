@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -10,6 +10,9 @@ import {
   useColorScheme,
   Dimensions,
   TextInput,
+  ScrollView,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
@@ -25,14 +28,6 @@ const COLOR_OPTIONS = [
   '#f97316', '#ef4444', '#eab308', '#6366f1',
   '#14b8a6', '#06b6d4',
 ];
-
-function XIcon({ color }: { color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path d="M18 6L6 18M6 6l12 12" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-    </Svg>
-  );
-}
 
 function CheckIcon({ color }: { color: string }) {
   return (
@@ -65,6 +60,15 @@ export function EditAccountSheet({ visible, account, onClose, onSuccess }: Props
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.setValue(SCREEN_HEIGHT);
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, bounciness: 2, speed: 18 }).start();
+    }
+  }, [visible, translateY]);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setName(account.name);
@@ -72,10 +76,26 @@ export function EditAccountSheet({ visible, account, onClose, onSuccess }: Props
     setError(null);
   }, [account]);
 
-  const handleClose = () => {
-    setError(null);
-    onClose();
-  };
+  function dismissSheet() {
+    Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+      onClose();
+    });
+  }
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, { dy }) => dy > 0,
+    onPanResponderMove: (_, { dy }) => { if (dy > 0) translateY.setValue(dy); },
+    onPanResponderRelease: (_, { dy, vy }) => {
+      if (dy > 100 || vy > 0.8) {
+        Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+          onClose();
+        });
+      } else {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  });
 
   const handleSave = async () => {
     const trimmed = name.trim();
@@ -98,96 +118,112 @@ export function EditAccountSheet({ visible, account, onClose, onSuccess }: Props
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.overlay} />
-      </TouchableWithoutFeedback>
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={dismissSheet}>
+      <View style={styles.root}>
+        <TouchableWithoutFeedback onPress={dismissSheet}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.kavWrapper}
-        pointerEvents="box-none"
-      >
-        <View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped }]}>
-          <View style={[styles.handle, { backgroundColor: colors.fillPrimary }]} />
-
-          <View style={styles.header}>
-            <Text variant="headline">{t('accounts.edit')}</Text>
-            <TouchableOpacity onPress={handleClose} hitSlop={12}>
-              <XIcon color={colors.labelSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.body}>
-            {/* Name */}
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('account.name')}
-            </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
-              value={name}
-              onChangeText={setName}
-              placeholder={t('account.namePlaceholder')}
-              placeholderTextColor={colors.labelTertiary}
-              returnKeyType="done"
-            />
-
-            {/* Color picker */}
-            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 20 }]}>
-              {t('account.color')}
-            </Text>
-            <View style={styles.colorGrid}>
-              {COLOR_OPTIONS.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.colorSwatch, { backgroundColor: c }, color === c && styles.colorSwatchSelected]}
-                  onPress={() => setColor(c)}
-                  activeOpacity={0.75}
-                >
-                  {color === c && <CheckIcon color="#fff" />}
-                </TouchableOpacity>
-              ))}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] },
+            ]}
+          >
+            {/* Handle — drag to close */}
+            <View style={styles.handleZone} {...panResponder.panHandlers}>
+              <View style={[styles.handle, { backgroundColor: colors.separator }]} />
             </View>
 
-            {error && (
-              <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
-                {error}
-              </Text>
-            )}
+            {/* Header */}
+            <View style={styles.header}>
+              <Text variant="headline">{t('accounts.edit')}</Text>
+            </View>
 
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.tint }, saving && { opacity: 0.6 }]}
-              onPress={handleSave}
-              disabled={saving}
-              activeOpacity={0.85}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.body}
             >
-              <Text variant="headline" color={colors.tintForeground}>
-                {saving ? '...' : t('account.save')}
+              {/* Name */}
+              <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('account.name')}
               </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
+                value={name}
+                onChangeText={setName}
+                placeholder={t('account.namePlaceholder')}
+                placeholderTextColor={colors.labelTertiary}
+                returnKeyType="done"
+              />
+
+              {/* Color picker */}
+              <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 20 }]}>
+                {t('account.color')}
+              </Text>
+              <View style={styles.colorGrid}>
+                {COLOR_OPTIONS.map(c => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.colorSwatch, { backgroundColor: c }, color === c && styles.colorSwatchSelected]}
+                    onPress={() => setColor(c)}
+                    activeOpacity={0.75}
+                  >
+                    {color === c && <CheckIcon color="#fff" />}
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {error && (
+                <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
+                  {error}
+                </Text>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.tint }, saving && { opacity: 0.6 }]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.85}
+              >
+                <Text variant="headline" color={colors.tintForeground}>
+                  {saving ? '...' : t('account.update')}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  kavWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0 },
+  root: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  keyboardView: {
+    justifyContent: 'flex-end',
+  },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.75,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
-  handle: {
-    width: 36, height: 4, borderRadius: 2,
-    alignSelf: 'center', marginTop: 8, marginBottom: 4,
-  },
+  handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
+  handle: { width: 36, height: 4, borderRadius: 2 },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: 12,
   },
   body: { paddingHorizontal: Spacing.md, paddingBottom: 8 },
   fieldLabel: { marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -11,9 +11,10 @@ import {
   Dimensions,
   TextInput,
   ScrollView,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
@@ -26,14 +27,6 @@ const ACCOUNT_COLORS = [
   '#f97316', '#ef4444', '#eab308', '#6366f1',
   '#14b8a6', '#06b6d4',
 ];
-
-function XIcon({ color }: { color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path d="M18 6L6 18M6 6l12 12" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-    </Svg>
-  );
-}
 
 interface Props {
   visible: boolean;
@@ -52,6 +45,15 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.setValue(SCREEN_HEIGHT);
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, bounciness: 2, speed: 18 }).start();
+    }
+  }, [visible, translateY]);
+
   const reset = () => {
     setName('');
     setBalance('');
@@ -59,10 +61,28 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
     setError(null);
   };
 
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
+  function dismissSheet() {
+    Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+      reset();
+      onClose();
+    });
+  }
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, { dy }) => dy > 0,
+    onPanResponderMove: (_, { dy }) => { if (dy > 0) translateY.setValue(dy); },
+    onPanResponderRelease: (_, { dy, vy }) => {
+      if (dy > 100 || vy > 0.8) {
+        Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+          reset();
+          onClose();
+        });
+      } else {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  });
 
   const handleSave = async () => {
     if (!name.trim()) { setError(t('account.error.nameRequired')); return; }
@@ -103,114 +123,117 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.overlay} />
-      </TouchableWithoutFeedback>
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={dismissSheet}>
+      <View style={styles.root}>
+        <TouchableWithoutFeedback onPress={dismissSheet}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.kavWrapper}
-        pointerEvents="box-none"
-      >
-        <View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped }]}>
-          {/* Handle */}
-          <View style={[styles.handle, { backgroundColor: colors.fillPrimary }]} />
-
-          {/* Header */}
-          <View style={styles.header}>
-            <Text variant="headline">{t('account.add')}</Text>
-            <TouchableOpacity onPress={handleClose} hitSlop={12}>
-              <XIcon color={colors.labelSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.body}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] },
+            ]}
           >
-            {/* Name */}
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('account.name')}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              value={name}
-              onChangeText={setName}
-              placeholder={t('account.namePlaceholder')}
-              placeholderTextColor={colors.labelTertiary}
-              autoCapitalize="words"
-              returnKeyType="next"
-            />
-
-            {/* Balance */}
-            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
-              {t('account.balance')}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              value={balance}
-              onChangeText={setBalance}
-              placeholder="0.00"
-              placeholderTextColor={colors.labelTertiary}
-              keyboardType="decimal-pad"
-              returnKeyType="done"
-            />
-
-            {/* Color picker */}
-            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
-              {t('account.color')}
-            </Text>
-            <View style={styles.colorRow}>
-              {ACCOUNT_COLORS.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[
-                    styles.colorDot,
-                    { backgroundColor: c },
-                    color === c && styles.colorDotSelected,
-                  ]}
-                  onPress={() => setColor(c)}
-                  activeOpacity={0.8}
-                />
-              ))}
+            {/* Handle — drag to close */}
+            <View style={styles.handleZone} {...panResponder.panHandlers}>
+              <View style={[styles.handle, { backgroundColor: colors.separator }]} />
             </View>
 
-            {error && (
-              <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
-                {error}
-              </Text>
-            )}
+            {/* Header */}
+            <View style={styles.header}>
+              <Text variant="headline">{t('account.add')}</Text>
+            </View>
 
-            {/* Save button */}
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.income }, saving && { opacity: 0.6 }]}
-              onPress={handleSave}
-              disabled={saving}
-              activeOpacity={0.85}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.body}
             >
-              <Text variant="headline" color="#fff">
-                {saving ? '...' : t('account.save')}
+              {/* Name */}
+              <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('account.name')}
               </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+              <TextInput
+                style={inputStyle}
+                value={name}
+                onChangeText={setName}
+                placeholder={t('account.namePlaceholder')}
+                placeholderTextColor={colors.labelTertiary}
+                autoCapitalize="words"
+                returnKeyType="next"
+              />
+
+              {/* Balance */}
+              <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
+                {t('account.balance')}
+              </Text>
+              <TextInput
+                style={inputStyle}
+                value={balance}
+                onChangeText={setBalance}
+                placeholder="0.00"
+                placeholderTextColor={colors.labelTertiary}
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+              />
+
+              {/* Color picker */}
+              <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
+                {t('account.color')}
+              </Text>
+              <View style={styles.colorRow}>
+                {ACCOUNT_COLORS.map(c => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[
+                      styles.colorDot,
+                      { backgroundColor: c },
+                      color === c && styles.colorDotSelected,
+                    ]}
+                    onPress={() => setColor(c)}
+                    activeOpacity={0.8}
+                  />
+                ))}
+              </View>
+
+              {error && (
+                <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
+                  {error}
+                </Text>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.income }, saving && { opacity: 0.6 }]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.85}
+              >
+                <Text variant="headline" color="#fff">
+                  {saving ? '...' : t('account.save')}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  root: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
-  kavWrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  keyboardView: {
+    justifyContent: 'flex-end',
   },
   sheet: {
     borderTopLeftRadius: 20,
@@ -218,20 +241,11 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_HEIGHT * 0.85,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 8,
-    marginBottom: 4,
-  },
+  handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
+  handle: { width: 36, height: 4, borderRadius: 2 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
+    paddingBottom: 12,
   },
   body: {
     paddingHorizontal: Spacing.md,
