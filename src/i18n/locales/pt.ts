@@ -56,6 +56,19 @@ export default {
   'register.error.passwordMismatch': 'As senhas não coincidem.',
   'register.error.emailTaken': 'Este e-mail já está registrado. Tente entrar.',
 
+  // Onboarding
+  'onboarding.next': 'Próximo',
+  'onboarding.skip': 'Pular',
+  'onboarding.getStarted': 'Começar agora',
+  'onboarding.welcome.title': 'Bem-vindo ao FlowX!',
+  'onboarding.welcome.description': 'A ferramenta definitiva para ter controle total do seu dinheiro de forma simples.',
+  'onboarding.accounts.title': 'Gerencie suas contas',
+  'onboarding.accounts.description': 'Adicione suas contas bancárias ou poupanças e veja todos os seus saldos em um só lugar.',
+  'onboarding.expenses.title': 'Analise seus gastos',
+  'onboarding.expenses.description': 'Veja para onde vai o seu dinheiro com gráficos limpos e detalhados.',
+  'onboarding.security.title': 'Segurança total',
+  'onboarding.security.description': 'Seus dados são protegidos com tecnologia de grau bancário e Supabase.',
+
   // Dashboard
   'dashboard.greeting.morning': 'Bom dia',
   'dashboard.greeting.afternoon': 'Boa tarde',

@@ -56,6 +56,19 @@ export default {
   'register.error.passwordMismatch': 'Passwords do not match.',
   'register.error.emailTaken': 'This email is already registered. Try signing in.',
 
+  // Onboarding
+  'onboarding.next': 'Next',
+  'onboarding.skip': 'Skip',
+  'onboarding.getStarted': 'Get started',
+  'onboarding.welcome.title': 'Welcome to FlowX!',
+  'onboarding.welcome.description': 'The ultimate tool to take full control of your money in a simple way.',
+  'onboarding.accounts.title': 'Manage your accounts',
+  'onboarding.accounts.description': 'Add your bank accounts or cash savings and see all your balances in one place.',
+  'onboarding.expenses.title': 'Analyze your expenses',
+  'onboarding.expenses.description': 'See where your money goes with clean and detailed charts.',
+  'onboarding.security.title': 'Total security',
+  'onboarding.security.description': 'Your data is protected with bank-grade technology and Supabase.',
+
   // Dashboard
   'dashboard.greeting.morning': 'Good morning',
   'dashboard.greeting.afternoon': 'Good afternoon',
