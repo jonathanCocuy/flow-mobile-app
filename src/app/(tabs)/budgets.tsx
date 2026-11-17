@@ -13,7 +13,6 @@ import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { AddBudgetSheet } from '@/components/AddBudgetSheet';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
 import type { UserCategory } from '@/types/finance';
 
@@ -29,14 +28,6 @@ type BudgetRow = {
   percentage: number;
   isOverBudget: boolean;
 };
-
-function TrashIcon({ color }: { color: string }) {
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
 
 function PlusIcon({ color }: { color: string }) {
   return (
@@ -62,8 +53,6 @@ export default function BudgetsScreen() {
   const [loading, setLoading] = useState(true);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [editBudget, setEditBudget] = useState<{ id: string; category: string; monthly_limit: number } | null>(null);
-  const [deleteDialog, setDeleteDialog] = useState<{ id: string; label: string } | null>(null);
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -125,11 +114,6 @@ export default function BudgetsScreen() {
   const getCategoryInfo = (catName: string) => {
     const cat = categories.find(c => c.name === catName);
     return { label: cat?.label ?? catName, color: cat?.color ?? '#8b5cf6' };
-  };
-
-  const handleDelete = (id: string, catName: string) => {
-    const { label } = getCategoryInfo(catName);
-    setDeleteDialog({ id, label });
   };
 
   const handleEdit = (budget: BudgetRow) => {
@@ -254,14 +238,6 @@ export default function BudgetsScreen() {
                               : `$${budget.remaining.toLocaleString('en-US', { maximumFractionDigits: 0 })} ${t('budgets.remaining')}`}
                           </Text>
                         </View>
-                        <TouchableOpacity
-                          hitSlop={12}
-                          onPress={e => { e.stopPropagation(); handleDelete(budget.id, budget.category); }}
-                          style={styles.deleteBtn}
-                          activeOpacity={0.7}
-                        >
-                          <TrashIcon color={colors.labelTertiary} />
-                        </TouchableOpacity>
                       </TouchableOpacity>
                       {index < budgets.length - 1 && (
                         <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 72 }]} />
@@ -279,24 +255,13 @@ export default function BudgetsScreen() {
         visible={addSheetVisible}
         onClose={() => setAddSheetVisible(false)}
         onSuccess={() => { setAddSheetVisible(false); fetchData(); }}
-        categories={categories}
-        initialBudget={editBudget}
-      />
-
-      <ConfirmDialog
-        visible={deleteDialog !== null}
-        title={t('budgets.deleteTitle')}
-        message={deleteDialog ? t('budgets.deleteMessage', { name: deleteDialog.label }) : ''}
-        confirmLabel={t('common.delete')}
-        cancelLabel={t('common.cancel')}
-        destructive
-        onConfirm={async () => {
-          if (!deleteDialog) return;
-          await supabase.from('budgets').delete().eq('id', deleteDialog.id);
-          setDeleteDialog(null);
+        onDelete={async (id) => {
+          await supabase.from('budgets').delete().eq('id', id);
+          setAddSheetVisible(false);
           fetchData();
         }}
-        onCancel={() => setDeleteDialog(null)}
+        categories={categories}
+        initialBudget={editBudget}
       />
     </SafeAreaView>
   );
@@ -326,6 +291,5 @@ const styles = StyleSheet.create({
   emoji: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   budgetContent: { flex: 1, gap: 4 },
   budgetTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  deleteBtn: { padding: 4 },
   divider: { height: StyleSheet.hairlineWidth },
 });

@@ -21,6 +21,7 @@ import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { UserCategory } from '@/types/finance';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -37,11 +38,12 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onDelete?: (id: string) => void;
   categories: UserCategory[];
   initialBudget?: { id?: string; category: string; monthly_limit: number } | null;
 }
 
-export function AddBudgetSheet({ visible, onClose, onSuccess, categories, initialBudget }: Props) {
+export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categories, initialBudget }: Props) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -51,6 +53,7 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, categories, initia
   const [limit, setLimit] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
 
@@ -239,10 +242,36 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, categories, initia
                   {saving ? '...' : isEditing ? t('budget.update') : t('budget.save')}
                 </Text>
               </TouchableOpacity>
+
+              {isEditing && onDelete && (
+                <TouchableOpacity
+                  style={[styles.deleteBtn, { borderColor: colors.expense }]}
+                  onPress={() => setDeleteConfirm(true)}
+                  activeOpacity={0.85}
+                >
+                  <Text variant="headline" color={colors.expense}>
+                    {t('common.delete')}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </Animated.View>
         </KeyboardAvoidingView>
       </View>
+
+      <ConfirmDialog
+        visible={deleteConfirm}
+        title={t('budgets.deleteTitle')}
+        message={t('budgets.deleteMessage', { name: categories.find(c => c.name === category)?.label ?? category })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        destructive
+        onConfirm={() => {
+          setDeleteConfirm(false);
+          if (initialBudget?.id && onDelete) onDelete(initialBudget.id);
+        }}
+        onCancel={() => setDeleteConfirm(false)}
+      />
     </Modal>
   );
 }
@@ -283,5 +312,10 @@ const styles = StyleSheet.create({
   saveBtn: {
     marginTop: 24, height: 52,
     borderRadius: Spacing.radius.lg, alignItems: 'center', justifyContent: 'center',
+  },
+  deleteBtn: {
+    marginTop: 12, height: 52,
+    borderRadius: Spacing.radius.lg, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
   },
 });

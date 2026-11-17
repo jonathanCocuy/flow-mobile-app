@@ -14,7 +14,6 @@ import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { ContributeGoalSheet } from '@/components/ContributeGoalSheet';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { DashboardAccount } from '@/types/finance';
 
 type SavingsGoal = {
@@ -25,14 +24,6 @@ type SavingsGoal = {
   deadline: string | null;
   icon: string | null;
 };
-
-function TrashIcon({ color }: { color: string }) {
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
 
 function PlusIcon({ color }: { color: string }) {
   return (
@@ -58,8 +49,8 @@ export default function GoalsScreen() {
   const [accounts, setAccounts] = useState<DashboardAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
+  const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null);
   const [contributeGoal, setContributeGoal] = useState<SavingsGoal | null>(null);
-  const [deleteDialog, setDeleteDialog] = useState<SavingsGoal | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -87,10 +78,6 @@ export default function GoalsScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
-
-  const handleDelete = (goal: SavingsGoal) => {
-    setDeleteDialog(goal);
-  };
 
   const totalSaved = goals.reduce((s, g) => s + (g.current_amount ?? 0), 0);
   const totalTarget = goals.reduce((s, g) => s + g.target_amount, 0);
@@ -169,8 +156,12 @@ export default function GoalsScreen() {
 
                 return (
                   <Card key={goal.id} radius={Spacing.radius.lg} padding={Spacing.md} style={{ marginBottom: Spacing.sm }}>
-                    {/* Header row */}
-                    <View style={styles.goalHeader}>
+                    {/* Header row — tap to edit */}
+                    <TouchableOpacity
+                      style={styles.goalHeader}
+                      onPress={() => setEditGoal(goal)}
+                      activeOpacity={0.6}
+                    >
                       <View style={[styles.goalEmoji, { backgroundColor: `${fillColor}18` }]}>
                         <Text variant="title3" align="center">{goal.icon ?? '🎯'}</Text>
                       </View>
@@ -187,11 +178,8 @@ export default function GoalsScreen() {
                         <Text variant="footnote" color={fillColor} style={{ fontWeight: '700' }}>
                           {Math.round(pct)}%
                         </Text>
-                        <TouchableOpacity hitSlop={12} onPress={() => handleDelete(goal)}>
-                          <TrashIcon color={colors.labelTertiary} />
-                        </TouchableOpacity>
                       </View>
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Progress bar */}
                     <View style={{ marginTop: Spacing.sm, gap: 4 }}>
@@ -236,28 +224,24 @@ export default function GoalsScreen() {
         onSuccess={() => { setAddSheetVisible(false); fetchData(); }}
       />
 
+      <AddGoalSheet
+        visible={editGoal !== null}
+        initialGoal={editGoal}
+        onClose={() => setEditGoal(null)}
+        onSuccess={() => { setEditGoal(null); fetchData(); }}
+        onDelete={async (id) => {
+          await supabase.from('savings_goals').delete().eq('id', id);
+          setEditGoal(null);
+          fetchData();
+        }}
+      />
+
       <ContributeGoalSheet
         visible={contributeGoal !== null}
         goal={contributeGoal}
         accounts={accounts}
         onClose={() => setContributeGoal(null)}
         onSuccess={() => { setContributeGoal(null); fetchData(); }}
-      />
-
-      <ConfirmDialog
-        visible={deleteDialog !== null}
-        title={t('goals.deleteTitle')}
-        message={deleteDialog ? t('goals.deleteMessage', { name: deleteDialog.name }) : ''}
-        confirmLabel={t('common.delete')}
-        cancelLabel={t('common.cancel')}
-        destructive
-        onConfirm={async () => {
-          if (!deleteDialog) return;
-          await supabase.from('savings_goals').delete().eq('id', deleteDialog.id);
-          setDeleteDialog(null);
-          fetchData();
-        }}
-        onCancel={() => setDeleteDialog(null)}
       />
     </SafeAreaView>
   );

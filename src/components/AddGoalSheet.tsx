@@ -19,6 +19,7 @@ import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -27,16 +28,27 @@ const GOAL_EMOJIS = [
   '💍','🏋️','🎸','🐾','🍽️','⛵','🎁','🌿','🏖️','🏔️',
 ];
 
+interface InitialGoal {
+  id: string;
+  name: string;
+  target_amount: number;
+  deadline: string | null;
+  icon: string | null;
+}
+
 interface Props {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onDelete?: (id: string) => void;
+  initialGoal?: InitialGoal | null;
 }
 
-export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
+export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoal }: Props) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const isEditing = !!initialGoal?.id;
 
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
@@ -44,6 +56,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
   const [icon, setIcon] = useState('🎯');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
 
@@ -53,6 +66,23 @@ export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
       Animated.spring(translateY, { toValue: 0, useNativeDriver: true, bounciness: 2, speed: 18 }).start();
     }
   }, [visible, translateY]);
+
+  useEffect(() => {
+    if (visible && initialGoal) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setName(initialGoal.name);
+      setTargetAmount(String(initialGoal.target_amount));
+      setDeadline(initialGoal.deadline ?? '');
+      setIcon(initialGoal.icon ?? '🎯');
+      setError(null);
+    } else if (visible && !initialGoal) {
+      setName('');
+      setTargetAmount('');
+      setDeadline('');
+      setIcon('🎯');
+      setError(null);
+    }
+  }, [visible, initialGoal]);
 
   const reset = () => {
     setName('');
@@ -103,13 +133,21 @@ export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error: dbError } = await supabase.from('savings_goals').insert({
-        user_id: user.id,
-        name: name.trim(),
-        target_amount: amount,
-        deadline: deadlineISO,
-        icon,
-      });
+      let dbError;
+      if (initialGoal?.id) {
+        ({ error: dbError } = await supabase
+          .from('savings_goals')
+          .update({ name: name.trim(), target_amount: amount, deadline: deadlineISO, icon })
+          .eq('id', initialGoal.id));
+      } else {
+        ({ error: dbError } = await supabase.from('savings_goals').insert({
+          user_id: user.id,
+          name: name.trim(),
+          target_amount: amount,
+          deadline: deadlineISO,
+          icon,
+        }));
+      }
       if (dbError) throw dbError;
 
       reset();
@@ -151,7 +189,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
 
             {/* Header */}
             <View style={styles.header}>
-              <Text variant="headline">{t('goal.add')}</Text>
+              <Text variant="headline">{isEditing ? t('goal.edit') : t('goal.add')}</Text>
             </View>
 
             <ScrollView
@@ -237,13 +275,39 @@ export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
                 activeOpacity={0.85}
               >
                 <Text variant="headline" color="#fff">
-                  {saving ? '...' : t('goal.save')}
+                  {saving ? '...' : isEditing ? t('goal.update') : t('goal.save')}
                 </Text>
               </TouchableOpacity>
+
+              {isEditing && onDelete && (
+                <TouchableOpacity
+                  style={[styles.deleteBtn, { borderColor: colors.expense }]}
+                  onPress={() => setDeleteConfirm(true)}
+                  activeOpacity={0.85}
+                >
+                  <Text variant="headline" color={colors.expense}>
+                    {t('common.delete')}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </Animated.View>
         </KeyboardAvoidingView>
       </View>
+
+      <ConfirmDialog
+        visible={deleteConfirm}
+        title={t('goals.deleteTitle')}
+        message={t('goals.deleteMessage', { name })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        destructive
+        onConfirm={() => {
+          setDeleteConfirm(false);
+          if (initialGoal?.id && onDelete) onDelete(initialGoal.id);
+        }}
+        onCancel={() => setDeleteConfirm(false)}
+      />
     </Modal>
   );
 }
@@ -277,5 +341,10 @@ const styles = StyleSheet.create({
   saveBtn: {
     marginTop: 24, height: 52,
     borderRadius: Spacing.radius.lg, alignItems: 'center', justifyContent: 'center',
+  },
+  deleteBtn: {
+    marginTop: 12, height: 52,
+    borderRadius: Spacing.radius.lg, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
   },
 });
