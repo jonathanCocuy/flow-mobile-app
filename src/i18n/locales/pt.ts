@@ -181,6 +181,13 @@ export default {
   'transactions.add.error.destinationAccount': 'Selecione uma conta destino.',
   'transactions.add.error.sameAccount': 'As contas devem ser diferentes.',
 
+  // Edit transaction
+  'transactions.edit.title': 'Editar transação',
+  'transactions.edit.save': 'Salvar alterações',
+  'transactions.edit.delete': 'Excluir',
+  'transactions.edit.deleteTitle': 'Excluir transação',
+  'transactions.edit.deleteMessage': 'Excluir "{{name}}"? Esta ação não pode ser desfeita.',
+
   // Budgets screen
   'budgets.empty': 'Nenhum orçamento ainda',
   'budgets.deleteTitle': 'Excluir orçamento',

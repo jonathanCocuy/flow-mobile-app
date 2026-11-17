@@ -80,7 +80,7 @@ export function useDashboard() {
 
       const recentTransactions: DashboardTransaction[] = txData.slice(0, 10).map(tx => ({
         id: tx.id,
-        date: tx.date ?? '',
+        date: (tx.date ?? '').substring(0, 10),
         rawDate: tx.date ?? '',
         category: tx.category,
         description: tx.description,

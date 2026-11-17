@@ -17,6 +17,7 @@ import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { useTransactions } from '@/hooks/useTransactions';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
+import { EditTransactionSheet } from '@/components/EditTransactionSheet';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
 import type { DashboardTransaction, UserCategory } from '@/types/finance';
 
@@ -69,11 +70,13 @@ function TxRow({
   isLast,
   colors,
   categories,
+  onPress,
 }: {
   tx: DashboardTransaction;
   isLast: boolean;
   colors: AppColors;
   categories: UserCategory[];
+  onPress: () => void;
 }) {
   const emoji = getCategoryEmoji(tx.category, tx.type);
   const label = getCategoryLabel(tx.category, categories);
@@ -88,6 +91,7 @@ function TxRow({
       <TouchableOpacity
         style={[styles.txRow, { paddingHorizontal: Spacing.md }]}
         activeOpacity={0.6}
+        onPress={onPress}
       >
         <View style={[styles.txIcon, { backgroundColor: colors.fillTertiary }]}>
           <Text variant="body" align="center">{emoji}</Text>
@@ -116,6 +120,7 @@ export default function TransactionsScreen() {
   const { data, loading, refetch } = useTransactions();
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editTx, setEditTx] = useState<DashboardTransaction | null>(null);
 
   const FILTERS: { key: FilterKey; label: string }[] = [
     { key: 'all', label: t('transactions.filter.all') },
@@ -222,6 +227,7 @@ export default function TransactionsScreen() {
                     isLast={index === txs.length - 1}
                     colors={colors}
                     categories={data.categories}
+                    onPress={() => setEditTx(tx)}
                   />
                 ))}
               </Card>
@@ -244,6 +250,16 @@ export default function TransactionsScreen() {
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onSuccess={() => { setSheetOpen(false); refetch(); }}
+        accounts={data.accounts}
+        categories={data.categories}
+      />
+
+      {/* Edit transaction sheet */}
+      <EditTransactionSheet
+        visible={!!editTx}
+        transaction={editTx}
+        onClose={() => setEditTx(null)}
+        onSuccess={() => { setEditTx(null); refetch(); }}
         accounts={data.accounts}
         categories={data.categories}
       />

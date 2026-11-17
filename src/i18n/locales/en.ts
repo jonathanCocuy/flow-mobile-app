@@ -181,6 +181,13 @@ export default {
   'transactions.add.error.destinationAccount': 'Select a destination account.',
   'transactions.add.error.sameAccount': 'Accounts must be different.',
 
+  // Edit transaction
+  'transactions.edit.title': 'Edit Transaction',
+  'transactions.edit.save': 'Save Changes',
+  'transactions.edit.delete': 'Delete',
+  'transactions.edit.deleteTitle': 'Delete Transaction',
+  'transactions.edit.deleteMessage': 'Delete "{{name}}"? This cannot be undone.',
+
   // Budgets screen
   'budgets.empty': 'No budgets yet',
   'budgets.deleteTitle': 'Delete Budget',

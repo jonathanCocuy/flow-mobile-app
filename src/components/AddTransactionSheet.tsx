@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -12,6 +12,8 @@ import {
   Dimensions,
   ActivityIndicator,
   TextInput,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import Svg, { Path, Polyline } from 'react-native-svg';
 import { router } from 'expo-router';
@@ -66,6 +68,14 @@ function ChevronRightIcon({ color }: { color: string }) {
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
       <Path d="M9 18l6-6-6-6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function ChevronDownIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Path d="M6 9l6 6 6-6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -240,6 +250,15 @@ function formatBalance(value: number): string {
   return Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatThousands(value: string): string {
+  if (!value) return '';
+  const stripped = value.replace(/,/g, '');
+  const clean = stripped.replace(/[^0-9.]/g, '');
+  const parts = clean.split('.');
+  const intFormatted = parts[0] ? parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+  return parts.length > 1 ? `${intFormatted}.${parts[1]}` : intFormatted;
+}
+
 function formatDate(d: Date): string {
   return d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
@@ -300,10 +319,41 @@ export function AddTransactionSheet({
     }
   }, [visible, accounts]);
 
+  const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.setValue(SCREEN_HEIGHT);
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, bounciness: 2, speed: 18 }).start();
+    }
+  }, [visible, translateY]);
+
+  function dismissSheet() {
+    Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+      onClose();
+    });
+  }
+
+  // PanResponder created each render (acceptable — component renders rarely)
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, { dy }) => dy > 0,
+    onPanResponderMove: (_, { dy }) => { if (dy > 0) translateY.setValue(dy); },
+    onPanResponderRelease: (_, { dy, vy }) => {
+      if (dy > 100 || vy > 0.8) {
+        Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+          onClose();
+        });
+      } else {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  });
+
   async function handleSubmit() {
     const newErrors: Record<string, string> = {};
     if (!description.trim()) newErrors.description = t('transactions.add.error.description');
-    const amountNum = parseFloat(amount.replace(',', '.'));
+    const amountNum = parseFloat(amount.replace(/,/g, ''));
     if (isNaN(amountNum) || amountNum <= 0) newErrors.amount = t('transactions.add.error.amount');
     if (!selectedAccountId) newErrors.account = t('transactions.add.error.account');
     if (txType !== 'transfer' && !selectedCategory) newErrors.category = t('transactions.add.error.category');
@@ -321,7 +371,10 @@ export function AddTransactionSheet({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setServerError('Not authenticated'); setSaving(false); return; }
 
-      const dateISO = selectedDate.toISOString();
+      const y = selectedDate.getFullYear();
+      const mo = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const d = String(selectedDate.getDate()).padStart(2, '0');
+      const dateISO = `${y}-${mo}-${d}`;
       const descTrimmed = description.trim();
       const iconVal = emoji || (txType === 'transfer' ? 'ArrowRightLeft' : selectedCategory?.icon ?? 'Wallet');
 
@@ -377,9 +430,9 @@ export function AddTransactionSheet({
 
   return (
     <>
-      <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
+      <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
         <View style={styles.root}>
-          <TouchableWithoutFeedback onPress={onClose}>
+          <TouchableWithoutFeedback onPress={dismissSheet}>
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
@@ -387,9 +440,11 @@ export function AddTransactionSheet({
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.keyboardView}
           >
-            <View style={[styles.sheet, { backgroundColor: colors.backgroundGroupedSecondary }]}>
-              {/* Handle */}
-              <View style={[styles.handle, { backgroundColor: colors.separator }]} />
+            <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGroupedSecondary, transform: [{ translateY }] }]}>
+              {/* Handle — drag here to close */}
+              <View style={styles.handleZone} {...panResponder.panHandlers}>
+                <View style={[styles.handle, { backgroundColor: colors.separator }]} />
+              </View>
 
               {/* Header */}
               <View style={styles.header}>
@@ -475,7 +530,7 @@ export function AddTransactionSheet({
                       placeholder="0.00"
                       placeholderTextColor={colors.labelTertiary}
                       value={amount}
-                      onChangeText={v => { setAmount(v); setErrors(e => ({ ...e, amount: '' })); }}
+                      onChangeText={v => { setAmount(formatThousands(v)); setErrors(e => ({ ...e, amount: '' })); }}
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                     />
@@ -569,7 +624,7 @@ export function AddTransactionSheet({
                       ? t('transactions.add.fromAccount').toUpperCase()
                       : t('transactions.add.account').toUpperCase()}
                   </Text>
-                  <AccountList
+                  <AccountSelect
                     accounts={accounts}
                     selectedId={selectedAccountId}
                     onSelect={id => { setSelectedAccountId(id); setErrors(e => ({ ...e, account: '' })); }}
@@ -607,7 +662,7 @@ export function AddTransactionSheet({
                       </View>
                     ) : (
                       <>
-                        <AccountList
+                        <AccountSelect
                           accounts={destinationAccounts}
                           selectedId={destinationAccountId}
                           onSelect={id => { setDestinationAccountId(id); setErrors(e => ({ ...e, destination: '' })); }}
@@ -639,7 +694,7 @@ export function AddTransactionSheet({
                   }
                 </TouchableOpacity>
               </ScrollView>
-            </View>
+            </Animated.View>
           </KeyboardAvoidingView>
         </View>
       </Modal>
@@ -655,9 +710,9 @@ export function AddTransactionSheet({
   );
 }
 
-// ── AccountList sub-component ─────────────────────────────────────────────────
+// ── AccountSelect sub-component ───────────────────────────────────────────────
 
-function AccountList({
+function AccountSelect({
   accounts,
   selectedId,
   onSelect,
@@ -668,30 +723,53 @@ function AccountList({
   onSelect: (id: string) => void;
   colors: AppColors;
 }) {
+  const [open, setOpen] = useState(false);
+  const selected = accounts.find(a => a.id === selectedId);
+
   return (
-    <View style={[styles.accountList, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
-      {accounts.map((acc, index) => {
-        const active = selectedId === acc.id;
-        return (
-          <View key={acc.id}>
-            <TouchableOpacity
-              onPress={() => onSelect(acc.id)}
-              style={styles.accountRow}
-              activeOpacity={0.6}
-            >
-              <View style={[styles.accountDot, { backgroundColor: acc.color || colors.tint }]} />
-              <View style={styles.accountMiddle}>
-                <Text variant="callout" style={{ fontWeight: '500' }}>{acc.name}</Text>
-                <Text variant="caption1" color={colors.labelSecondary}>${formatBalance(acc.balance)}</Text>
-              </View>
-              {active && <CheckIcon color={colors.tint} />}
-            </TouchableOpacity>
-            {index < accounts.length - 1 && (
-              <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 48 }]} />
-            )}
-          </View>
-        );
-      })}
+    <View>
+      <TouchableOpacity
+        style={[styles.selectTrigger, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}
+        onPress={() => setOpen(v => !v)}
+        activeOpacity={0.7}
+      >
+        {selected ? (
+          <>
+            <View style={[styles.accountDot, { backgroundColor: selected.color || colors.tint }]} />
+            <View style={styles.accountMiddle}>
+              <Text variant="callout" style={{ fontWeight: '500' }}>{selected.name}</Text>
+              <Text variant="caption1" color={colors.labelSecondary}>${formatBalance(selected.balance)}</Text>
+            </View>
+          </>
+        ) : (
+          <Text variant="callout" color={colors.labelTertiary} style={{ flex: 1 }}>—</Text>
+        )}
+        <ChevronDownIcon color={open ? colors.tint : colors.labelTertiary} />
+      </TouchableOpacity>
+
+      {open && (
+        <View style={[styles.selectDropdown, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
+          {accounts.map((acc, index) => (
+            <View key={acc.id}>
+              <TouchableOpacity
+                onPress={() => { onSelect(acc.id); setOpen(false); }}
+                style={styles.accountRow}
+                activeOpacity={0.6}
+              >
+                <View style={[styles.accountDot, { backgroundColor: acc.color || colors.tint }]} />
+                <View style={styles.accountMiddle}>
+                  <Text variant="callout" style={{ fontWeight: '500' }}>{acc.name}</Text>
+                  <Text variant="caption1" color={colors.labelSecondary}>${formatBalance(acc.balance)}</Text>
+                </View>
+                {selectedId === acc.id && <CheckIcon color={colors.tint} />}
+              </TouchableOpacity>
+              {index < accounts.length - 1 && (
+                <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 48 }]} />
+              )}
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -699,7 +777,7 @@ function AccountList({
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end' },
+  root: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     maxHeight: SCREEN_HEIGHT * 0.92,
@@ -707,7 +785,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: Spacing.radius.xxl,
     paddingBottom: 32,
   },
-  handle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 4 },
+  handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
+  handle: { width: 36, height: 4, borderRadius: 2 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -768,7 +847,18 @@ const styles = StyleSheet.create({
   },
   categoryDot: { width: 8, height: 8, borderRadius: 4 },
 
-  accountList: { overflow: 'hidden' },
+  selectTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    minHeight: 52,
+  },
+  selectDropdown: {
+    overflow: 'hidden',
+    marginTop: 4,
+  },
   accountRow: {
     flexDirection: 'row',
     alignItems: 'center',

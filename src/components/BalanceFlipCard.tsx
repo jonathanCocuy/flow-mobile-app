@@ -3,6 +3,7 @@ import {
   Animated,
   PanResponder,
   ScrollView,
+  TouchableOpacity,
   View,
   StyleSheet,
   useColorScheme,
@@ -122,7 +123,7 @@ export function BalanceFlipCard({ frontContent, accounts, cardBg, cardBorder }: 
   const totalBalance = accounts.reduce((s, a) => s + (a.balance ?? 0), 0);
 
   return (
-    <View style={styles.container} {...panResponder.panHandlers}>
+    <View style={styles.container} {...(!isFlipped ? panResponder.panHandlers : {})}>
       {/* ── FRONT ── */}
       <Animated.View
         style={[
@@ -157,13 +158,13 @@ export function BalanceFlipCard({ frontContent, accounts, cardBg, cardBorder }: 
         pointerEvents={isFlipped ? 'box-none' : 'none'}
       >
         <View style={styles.backPadding}>
-          {/* Header */}
-          <View style={styles.backHeader}>
+          {/* Header — tap to flip back */}
+          <TouchableOpacity style={styles.backHeader} onPress={() => flip(false)} activeOpacity={0.7}>
             <Text variant="footnote" color={cardTextSub}>
               {t('dashboard.totalBalance')}
             </Text>
             <FlipHintIcon color={cardTextSub} />
-          </View>
+          </TouchableOpacity>
 
           <Text variant="title2" color={cardText} style={styles.backTotal}>
             {formatCurrency(totalBalance)}
@@ -178,6 +179,7 @@ export function BalanceFlipCard({ frontContent, accounts, cardBg, cardBorder }: 
             contentContainerStyle={styles.accountsContent}
             showsVerticalScrollIndicator={false}
             bounces={accounts.length > 3}
+            nestedScrollEnabled
           >
             {accounts.length === 0 ? (
               <Text variant="caption1" color={cardTextSub} align="center">

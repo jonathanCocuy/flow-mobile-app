@@ -181,6 +181,13 @@ export default {
   'transactions.add.error.destinationAccount': 'Sélectionnez un compte destinataire.',
   'transactions.add.error.sameAccount': 'Les comptes doivent être différents.',
 
+  // Edit transaction
+  'transactions.edit.title': 'Modifier la transaction',
+  'transactions.edit.save': 'Enregistrer',
+  'transactions.edit.delete': 'Supprimer',
+  'transactions.edit.deleteTitle': 'Supprimer la transaction',
+  'transactions.edit.deleteMessage': 'Supprimer "{{name}}" ? Cette action est irréversible.',
+
   // Budgets screen
   'budgets.empty': 'Aucun budget encore',
   'budgets.deleteTitle': 'Supprimer le budget',

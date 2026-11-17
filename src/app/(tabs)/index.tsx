@@ -19,6 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/hooks/useDashboard';
 import { getCategoryEmoji } from '@/utils/categoryEmoji';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
+import { EditTransactionSheet } from '@/components/EditTransactionSheet';
 import { AddAccountSheet } from '@/components/AddAccountSheet';
 import { AddBudgetSheet } from '@/components/AddBudgetSheet';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
@@ -161,6 +162,7 @@ export default function DashboardScreen() {
   const colors = Colors[colorScheme];
   const { data, loading, refetch } = useDashboard();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editTx, setEditTx] = useState<DashboardTransaction | null>(null);
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
   const [budgetSheetOpen, setBudgetSheetOpen] = useState(false);
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
@@ -373,6 +375,7 @@ export default function DashboardScreen() {
                   categories={data.categories}
                   colors={colors}
                   isLast={index === data.recentTransactions.length - 1}
+                  onPress={() => setEditTx(tx)}
                 />
               ))
             )}
@@ -384,6 +387,14 @@ export default function DashboardScreen() {
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onSuccess={() => { setSheetOpen(false); refetch(); }}
+        accounts={data.accounts}
+        categories={data.categories}
+      />
+      <EditTransactionSheet
+        visible={!!editTx}
+        transaction={editTx}
+        onClose={() => setEditTx(null)}
+        onSuccess={() => { setEditTx(null); refetch(); }}
         accounts={data.accounts}
         categories={data.categories}
       />
@@ -499,11 +510,13 @@ function TransactionRow({
   categories,
   colors,
   isLast,
+  onPress,
 }: {
   tx: DashboardTransaction;
   categories: UserCategory[];
   colors: AppColors;
   isLast: boolean;
+  onPress: () => void;
 }) {
   const emoji = getCategoryEmoji(tx.category, tx.type);
   const label = getCategoryLabel(tx.category, categories);
@@ -515,6 +528,7 @@ function TransactionRow({
       <TouchableOpacity
         style={[styles.txItem, { paddingHorizontal: Spacing.md }]}
         activeOpacity={0.6}
+        onPress={onPress}
       >
         <View style={[styles.txIcon, { backgroundColor: isIncome ? `${colors.income}18` : colors.fillTertiary }]}>
           <Text variant="footnote" align="center">{emoji}</Text>
