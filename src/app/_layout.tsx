@@ -6,9 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nextProvider } from 'react-i18next';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n, { initI18n } from '@/i18n';
-import { ONBOARDING_KEY } from './onboarding';
 
 import {
   PlusJakartaSans_400Regular,
@@ -47,18 +45,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
     // User is authenticated
     if (inAuthGroup) {
-      // Check onboarding status before sending to tabs
-      AsyncStorage.getItem(ONBOARDING_KEY(user.id))
-        .then(done => {
-          if (done === 'done') {
-            router.replace('/(tabs)');
-          } else {
-            router.replace('/onboarding');
-          }
-        })
-        .catch(() => router.replace('/(tabs)'));
-    } else if (!inOnboarding) {
-      // Already inside the app, do nothing
+      if (user.user_metadata?.onboarding_done) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/onboarding');
+      }
     }
   }, [user, loading, segments]);
 

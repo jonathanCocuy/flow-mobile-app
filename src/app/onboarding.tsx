@@ -10,15 +10,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { Colors } from '@/constants/Colors';
-import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-export const ONBOARDING_KEY = (userId: string) => `flowx_onboarding_done_${userId}`;
 
 // ── Slide icons ───────────────────────────────────────────────────────────────
 
@@ -122,7 +119,6 @@ const SLIDES: { key: SlideKey; accentKey: 'tint' | 'income' | 'savings' | 'expen
 export default function OnboardingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const flatRef = useRef<FlatList>(null);
@@ -137,13 +133,11 @@ export default function OnboardingScreen() {
   };
 
   const finish = useCallback(async () => {
-    if (user) {
-      try {
-        await AsyncStorage.setItem(ONBOARDING_KEY(user.id), 'done');
-      } catch {}
-    }
+    try {
+      await supabase.auth.updateUser({ data: { onboarding_done: true } });
+    } catch {}
     router.replace('/(tabs)');
-  }, [user, router]);
+  }, [router]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: any[] }) => {
