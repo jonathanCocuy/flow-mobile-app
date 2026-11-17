@@ -218,6 +218,17 @@ export default {
   'goals.recordTransaction': 'Record as expense',
   'goals.account': 'Account',
 
+  // Profile
+  'profile.preferences': 'Preferences',
+  'profile.language': 'Language',
+  'profile.currency': 'Currency',
+  'profile.signOut': 'Sign Out',
+  'profile.signOutTitle': 'Sign Out',
+  'profile.signOutMessage': 'Are you sure you want to sign out?',
+  'profile.stats.budgets': 'Budgets',
+  'profile.stats.goals': 'Goals',
+  'profile.stats.transactions': 'Transactions',
+
   // Categories
   'profile.categories': 'Categories',
   'categories.empty': 'No categories yet',

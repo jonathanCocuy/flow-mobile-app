@@ -218,6 +218,17 @@ export default {
   'goals.recordTransaction': 'Registrar como gasto',
   'goals.account': 'Cuenta',
 
+  // Profile
+  'profile.preferences': 'Preferencias',
+  'profile.language': 'Idioma',
+  'profile.currency': 'Moneda',
+  'profile.signOut': 'Cerrar sesión',
+  'profile.signOutTitle': 'Cerrar sesión',
+  'profile.signOutMessage': '¿Seguro que quieres cerrar sesión?',
+  'profile.stats.budgets': 'Presupuestos',
+  'profile.stats.goals': 'Metas',
+  'profile.stats.transactions': 'Transacciones',
+
   // Categories
   'profile.categories': 'Categorías',
   'categories.empty': 'Sin categorías aún',

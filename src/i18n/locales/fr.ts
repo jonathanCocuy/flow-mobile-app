@@ -218,6 +218,17 @@ export default {
   'goals.recordTransaction': 'Enregistrer comme dépense',
   'goals.account': 'Compte',
 
+  // Profile
+  'profile.preferences': 'Préférences',
+  'profile.language': 'Langue',
+  'profile.currency': 'Devise',
+  'profile.signOut': 'Se déconnecter',
+  'profile.signOutTitle': 'Se déconnecter',
+  'profile.signOutMessage': 'Voulez-vous vraiment vous déconnecter ?',
+  'profile.stats.budgets': 'Budgets',
+  'profile.stats.goals': 'Objectifs',
+  'profile.stats.transactions': 'Transactions',
+
   // Categories
   'profile.categories': 'Catégories',
   'categories.empty': 'Aucune catégorie encore',

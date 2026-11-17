@@ -218,6 +218,17 @@ export default {
   'goals.recordTransaction': 'Registrar como despesa',
   'goals.account': 'Conta',
 
+  // Profile
+  'profile.preferences': 'Preferências',
+  'profile.language': 'Idioma',
+  'profile.currency': 'Moeda',
+  'profile.signOut': 'Sair',
+  'profile.signOutTitle': 'Sair',
+  'profile.signOutMessage': 'Tem certeza que deseja sair?',
+  'profile.stats.budgets': 'Orçamentos',
+  'profile.stats.goals': 'Metas',
+  'profile.stats.transactions': 'Transações',
+
   // Categories
   'profile.categories': 'Categorias',
   'categories.empty': 'Nenhuma categoria ainda',
