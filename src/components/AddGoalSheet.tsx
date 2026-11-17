@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -11,9 +11,10 @@ import {
   Dimensions,
   TextInput,
   ScrollView,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
@@ -25,14 +26,6 @@ const GOAL_EMOJIS = [
   '🎯','🏠','🚗','✈️','💻','📱','🎓','💰','🛡️','🌴',
   '💍','🏋️','🎸','🐾','🍽️','⛵','🎁','🌿','🏖️','🏔️',
 ];
-
-function XIcon({ color }: { color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path d="M18 6L6 18M6 6l12 12" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-    </Svg>
-  );
-}
 
 interface Props {
   visible: boolean;
@@ -52,6 +45,15 @@ export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.setValue(SCREEN_HEIGHT);
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, bounciness: 2, speed: 18 }).start();
+    }
+  }, [visible, translateY]);
+
   const reset = () => {
     setName('');
     setTargetAmount('');
@@ -60,10 +62,28 @@ export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
     setError(null);
   };
 
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
+  function dismissSheet() {
+    Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+      reset();
+      onClose();
+    });
+  }
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, { dy }) => dy > 0,
+    onPanResponderMove: (_, { dy }) => { if (dy > 0) translateY.setValue(dy); },
+    onPanResponderRelease: (_, { dy, vy }) => {
+      if (dy > 100 || vy > 0.8) {
+        Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+          reset();
+          onClose();
+        });
+      } else {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  });
 
   const handleSave = async () => {
     if (!name.trim()) { setError(t('goal.error.nameRequired')); return; }
@@ -107,134 +127,141 @@ export function AddGoalSheet({ visible, onClose, onSuccess }: Props) {
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.overlay} />
-      </TouchableWithoutFeedback>
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={dismissSheet}>
+      <View style={styles.root}>
+        <TouchableWithoutFeedback onPress={dismissSheet}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.kavWrapper}
-        pointerEvents="box-none"
-      >
-        <View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped }]}>
-          <View style={[styles.handle, { backgroundColor: colors.fillPrimary }]} />
-
-          <View style={styles.header}>
-            <Text variant="headline">{t('goal.add')}</Text>
-            <TouchableOpacity onPress={handleClose} hitSlop={12}>
-              <XIcon color={colors.labelSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.body}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] },
+            ]}
           >
-            {/* Emoji picker */}
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('goal.icon')}
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiScroll}>
-              <View style={styles.emojiRow}>
-                {GOAL_EMOJIS.map(e => (
-                  <TouchableOpacity
-                    key={e}
-                    style={[
-                      styles.emojiBtn,
-                      { backgroundColor: colors.fillPrimary },
-                      icon === e && { backgroundColor: `${colors.savings}22`, borderColor: colors.savings, borderWidth: 1.5 },
-                    ]}
-                    onPress={() => setIcon(e)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={{ fontSize: 20 }}>{e}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            {/* Handle — drag to close */}
+            <View style={styles.handleZone} {...panResponder.panHandlers}>
+              <View style={[styles.handle, { backgroundColor: colors.separator }]} />
+            </View>
 
-            {/* Name */}
-            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
-              {t('goal.name')}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              value={name}
-              onChangeText={setName}
-              placeholder={t('goal.namePlaceholder')}
-              placeholderTextColor={colors.labelTertiary}
-              autoCapitalize="sentences"
-              returnKeyType="next"
-            />
+            {/* Header */}
+            <View style={styles.header}>
+              <Text variant="headline">{t('goal.add')}</Text>
+            </View>
 
-            {/* Target amount */}
-            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
-              {t('goal.targetAmount')}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              value={targetAmount}
-              onChangeText={setTargetAmount}
-              placeholder="0.00"
-              placeholderTextColor={colors.labelTertiary}
-              keyboardType="decimal-pad"
-              returnKeyType="next"
-            />
-
-            {/* Deadline (optional) */}
-            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
-              {t('goal.deadline')}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              value={deadline}
-              onChangeText={setDeadline}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.labelTertiary}
-              keyboardType="numbers-and-punctuation"
-              returnKeyType="done"
-            />
-
-            {error && (
-              <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
-                {error}
-              </Text>
-            )}
-
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.savings }, saving && { opacity: 0.6 }]}
-              onPress={handleSave}
-              disabled={saving}
-              activeOpacity={0.85}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.body}
             >
-              <Text variant="headline" color="#fff">
-                {saving ? '...' : t('goal.save')}
+              {/* Emoji picker */}
+              <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('goal.icon')}
               </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiScroll}>
+                <View style={styles.emojiRow}>
+                  {GOAL_EMOJIS.map(e => (
+                    <TouchableOpacity
+                      key={e}
+                      style={[
+                        styles.emojiBtn,
+                        { backgroundColor: colors.fillPrimary },
+                        icon === e && { backgroundColor: `${colors.savings}22`, borderColor: colors.savings, borderWidth: 1.5 },
+                      ]}
+                      onPress={() => setIcon(e)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ fontSize: 20 }}>{e}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* Name */}
+              <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
+                {t('goal.name')}
+              </Text>
+              <TextInput
+                style={inputStyle}
+                value={name}
+                onChangeText={setName}
+                placeholder={t('goal.namePlaceholder')}
+                placeholderTextColor={colors.labelTertiary}
+                autoCapitalize="sentences"
+                returnKeyType="next"
+              />
+
+              {/* Target amount */}
+              <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
+                {t('goal.targetAmount')}
+              </Text>
+              <TextInput
+                style={inputStyle}
+                value={targetAmount}
+                onChangeText={setTargetAmount}
+                placeholder="0.00"
+                placeholderTextColor={colors.labelTertiary}
+                keyboardType="decimal-pad"
+                returnKeyType="next"
+              />
+
+              {/* Deadline (optional) */}
+              <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
+                {t('goal.deadline')}
+              </Text>
+              <TextInput
+                style={inputStyle}
+                value={deadline}
+                onChangeText={setDeadline}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.labelTertiary}
+                keyboardType="numbers-and-punctuation"
+                returnKeyType="done"
+              />
+
+              {error && (
+                <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
+                  {error}
+                </Text>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.savings }, saving && { opacity: 0.6 }]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.85}
+              >
+                <Text variant="headline" color="#fff">
+                  {saving ? '...' : t('goal.save')}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  kavWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0 },
+  root: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: 20, borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.85, paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
-  handle: {
-    width: 36, height: 4, borderRadius: 2,
-    alignSelf: 'center', marginTop: 8, marginBottom: 4,
-  },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
-  },
+  handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
+  handle: { width: 36, height: 4, borderRadius: 2 },
+  header: { paddingHorizontal: Spacing.md, paddingBottom: 12 },
   body: { paddingHorizontal: Spacing.md, paddingBottom: 8 },
   fieldLabel: { marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
   emojiScroll: { marginBottom: 4 },
