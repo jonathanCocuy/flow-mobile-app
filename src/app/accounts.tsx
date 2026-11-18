@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   useColorScheme,
   RefreshControl,
-  ActivityIndicator,
   Animated,
   PanResponder,
 } from 'react-native';
@@ -23,6 +22,7 @@ import { useAuth } from '@/context/AuthContext';
 import { AddAccountSheet } from '@/components/AddAccountSheet';
 import { EditAccountSheet } from '@/components/EditAccountSheet';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -261,7 +261,7 @@ export default function AccountsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={fetchAccounts} tintColor={colors.labelSecondary} />
+          <RefreshControl refreshing={false} onRefresh={fetchAccounts} />
         }
       >
         {/* Summary card */}
@@ -280,9 +280,21 @@ export default function AccountsScreen() {
         {/* Accounts list */}
         <View style={styles.section}>
           {loading ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator color={colors.labelSecondary} />
-            </View>
+            <Card radius={Spacing.radius.xl} padding={0} style={styles.listCard}>
+              {[1, 2, 3].map((i) => (
+                <View key={i}>
+                  <View style={[styles.accountRow, { backgroundColor: colors.card }]}>
+                    <View style={[styles.colorDot, { backgroundColor: colors.separator }]} />
+                    <View style={{ flex: 1, gap: 6 }}>
+                      <Skeleton width="50%" height={14} radius={7} />
+                      <Skeleton width="35%" height={12} radius={6} />
+                    </View>
+                    <Skeleton width={72} height={14} radius={7} />
+                  </View>
+                  {i < 3 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />}
+                </View>
+              ))}
+            </Card>
           ) : accounts.length === 0 ? (
             <View style={styles.emptyState}>
               <WalletBgIcon color={colors.labelTertiary} />

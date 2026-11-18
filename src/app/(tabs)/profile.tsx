@@ -5,7 +5,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
@@ -300,6 +300,24 @@ export default function ProfileScreen() {
               ))}
             </View>
           )}
+        </View>
+
+        {/* Tools */}
+        <View style={styles.section}>
+          <Text variant="footnote" color={colors.labelSecondary} style={styles.sectionTitle}>
+            {t('profile.tools').toUpperCase()}
+          </Text>
+          <Card radius={Spacing.radius.lg} padding={0}>
+            <View style={{ paddingHorizontal: Spacing.md }}>
+              <SettingsRow emoji="🏦" label={t('profile.accounts')} onPress={() => router.push('/accounts')} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow emoji="📈" label={t('profile.investments')} onPress={() => router.push('/investments')} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow emoji="🔄" label={t('profile.recurring')} onPress={() => router.push('/recurring')} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow emoji="📊" label={t('profile.reports')} onPress={() => router.push('/reports')} />
+            </View>
+          </Card>
         </View>
 
         {/* Preferences */}

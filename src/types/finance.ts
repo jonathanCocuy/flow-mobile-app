@@ -40,6 +40,31 @@ export type BudgetWithProgress = {
   isOverBudget: boolean
 }
 
+export type InvestmentRecord = {
+  id: string
+  name: string
+  type: 'etf' | 'stock' | 'crypto' | 'fund' | 'other'
+  amount: number
+  currency: 'COP' | 'USD'
+  date: string
+  notes: string | null
+}
+
+export type RecurringTemplate = {
+  id: string
+  description: string
+  icon: string
+  amount: number
+  currency: string
+  category: string
+  type: 'income' | 'expense'
+  interval: 'monthly' | 'weekly'
+  day_of_month: number | null
+  day_of_week: number | null
+  is_active: boolean
+  account_id: string
+}
+
 export type DashboardData = {
   accounts: DashboardAccount[]
   totalBalance: number
