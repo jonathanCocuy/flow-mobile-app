@@ -388,10 +388,16 @@ export default function ReportsScreen() {
                   {topCategories.map((cat, i) => (
                     <View key={i}>
                       <View style={styles.catRow}>
-                        <View style={[styles.catDot, { backgroundColor: cat.color }]}>
-                          <Text variant="caption1" align="center">{cat.icon}</Text>
+                        <View style={[styles.catDot, { backgroundColor: cat.color + '33' }]}>
+                          {cat.icon && !/^[a-zA-Z\s]+$/.test(cat.icon) ? (
+                            <Text style={{ fontSize: 18, lineHeight: 22, textAlign: 'center' }}>{cat.icon}</Text>
+                          ) : (
+                            <Text style={{ fontSize: 14, fontWeight: '700', textAlign: 'center', color: cat.color }}>
+                              {cat.name.charAt(0).toUpperCase()}
+                            </Text>
+                          )}
                         </View>
-                        <Text variant="callout" style={{ flex: 1 }} numberOfLines={1}>{cat.name}</Text>
+                        <Text variant="callout" style={{ flex: 1 }} numberOfLines={1}>{cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}</Text>
                         <View style={{ alignItems: 'flex-end', gap: 2 }}>
                           <Text variant="callout" style={{ fontWeight: '600' }}>{fmtCOP(cat.total)}</Text>
                           <Text variant="caption2" color={colors.labelSecondary}>{cat.percentage.toFixed(1)}%</Text>

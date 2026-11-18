@@ -19,6 +19,13 @@ const CATEGORY_COLORS = [
   '#22c55e', '#db2777', '#06b6d4', '#14b8a6', '#6366f1',
 ];
 
+const CATEGORY_EMOJIS = [
+  '🏠','🍕','🚗','💊','🛒','✈️','🎬','👕','📚','💪',
+  '🐾','🎮','💳','💰','🏦','🎁','🍺','☕','🚌','💡',
+  '🏥','📱','🎵','🌳','👶','🎓','🔧','🍔','🛍️','💄',
+  '🏖️','🍷','🎸','📺','🎯','⚡','🌮','🧴','🏋️','🎪',
+];
+
 export interface CategoryData {
   id: string;
   label: string;
@@ -56,7 +63,7 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
 
   const [label, setLabel] = useState('');
   const [color, setColor] = useState(CATEGORY_COLORS[0]);
-  const [icon, setIcon] = useState('Tag');
+  const [icon, setIcon] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
@@ -67,11 +74,11 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLabel(category.label);
       setColor(category.color);
-      setIcon(category.icon || 'Tag');
+      setIcon(category.icon || '');
     } else {
       setLabel('');
       setColor(CATEGORY_COLORS[0]);
-      setIcon('Tag');
+      setIcon('');
     }
     setError(null);
   }, [visible, category]);
@@ -84,7 +91,7 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
   const handleSave = async () => {
     const trimmedLabel = label.trim();
     if (!trimmedLabel) { setError(t('categories.error.nameRequired')); return; }
-    const trimmedIcon = icon.trim() || 'Tag';
+    const trimmedIcon = icon.trim();
 
     setSaving(true);
     setError(null);
@@ -200,20 +207,47 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
               ))}
             </View>
 
-            {/* Icon name */}
+            {/* Emoji picker */}
             <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 20 }]}>
               {t('categories.icon')}
             </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
-              value={icon}
-              onChangeText={setIcon}
-              placeholder={t('categories.iconPlaceholder')}
-              placeholderTextColor={colors.labelTertiary}
-              autoCapitalize="words"
-              autoCorrect={false}
-              returnKeyType="done"
-            />
+
+            {/* Preview */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <View style={[styles.emojiPreview, { backgroundColor: color + '33' }]}>
+                {icon ? (
+                  <Text style={{ fontSize: 22, lineHeight: 28, textAlign: 'center' }}>{icon}</Text>
+                ) : (
+                  <Text style={{ fontSize: 16, fontWeight: '700', color, textAlign: 'center' }}>
+                    {label.charAt(0).toUpperCase() || '?'}
+                  </Text>
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator, fontSize: 20, textAlign: 'center' }]}
+                  value={icon}
+                  onChangeText={setIcon}
+                  placeholder="😀"
+                  placeholderTextColor={colors.labelTertiary}
+                  maxLength={4}
+                />
+              </View>
+            </View>
+
+            {/* Grid */}
+            <View style={styles.emojiGrid}>
+              {CATEGORY_EMOJIS.map(e => (
+                <TouchableOpacity
+                  key={e}
+                  style={[styles.emojiBtn, icon === e && { backgroundColor: color + '33', borderColor: color, borderWidth: 2 }]}
+                  onPress={() => setIcon(e)}
+                  activeOpacity={0.6}
+                >
+                  <Text style={{ fontSize: 20, textAlign: 'center' }}>{e}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {error && (
               <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
@@ -278,6 +312,9 @@ const styles = StyleSheet.create({
   },
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   colorBtn: { width: 32, height: 32, borderRadius: 16 },
+  emojiPreview: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  emojiBtn: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   saveBtn: {
     marginTop: 24, height: 52,
     borderRadius: Spacing.radius.lg, alignItems: 'center', justifyContent: 'center',
