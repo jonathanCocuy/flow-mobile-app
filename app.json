@@ -9,7 +9,8 @@
     "scheme": "flowx",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.flowx.mobile"
+      "bundleIdentifier": "com.flowx.mobile",
+      "infoPlist": {}
     },
     "android": {
       "package": "com.flowx.mobile",
@@ -34,6 +35,16 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "494b8a9f-6668-4fd1-920a-861a4396bbe7"
+      }
     }
   }
 }
