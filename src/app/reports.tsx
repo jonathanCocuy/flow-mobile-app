@@ -58,57 +58,83 @@ interface CategoryStat {
 
 // ── Bar Chart ─────────────────────────────────────────────────────────────────
 
-const MONTH_ABBREVS = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+const MONTH_ABBREVS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CHART_H = 160;
-const CHART_W = 320;
-const BAR_GROUP = CHART_W / 12;
-const BAR_W = (BAR_GROUP - 8) / 2;
+const BAR_GROUP_W = 56;
+const BAR_W = 14;
+const BAR_GAP = 4;
+const CHART_TOTAL_W = BAR_GROUP_W * 12;
 
-function BarChart({ data, incomeColor, expenseColor }: {
+function InteractiveBarChart({ data, incomeColor, expenseColor, labelColor, selected, onSelect }: {
   data: MonthData[];
   incomeColor: string;
   expenseColor: string;
+  labelColor: string;
+  selected: number | null;
+  onSelect: (i: number | null) => void;
 }) {
   const max = Math.max(...data.flatMap(d => [d.income, d.expenses]), 1);
+  const barStart = (BAR_GROUP_W - BAR_W * 2 - BAR_GAP) / 2;
 
   return (
-    <Svg width="100%" height={CHART_H + 24} viewBox={`0 0 ${CHART_W} ${CHART_H + 24}`}>
-      {data.map((d, i) => {
-        const x = i * BAR_GROUP + 4;
-        const incH = Math.max(2, (d.income / max) * CHART_H);
-        const expH = Math.max(2, (d.expenses / max) * CHART_H);
-        return (
-          <React.Fragment key={i}>
-            <Rect
-              x={x}
-              y={CHART_H - incH}
-              width={BAR_W}
-              height={incH}
-              fill={incomeColor + 'CC'}
-              rx={2}
-            />
-            <Rect
-              x={x + BAR_W + 2}
-              y={CHART_H - expH}
-              width={BAR_W}
-              height={expH}
-              fill={expenseColor + 'CC'}
-              rx={2}
-            />
-            <SvgText
-              x={x + BAR_GROUP / 2 - 4}
-              y={CHART_H + 16}
-              fontSize={9}
-              fill={expenseColor}
-              textAnchor="middle"
-              opacity={0.7}
-            >
-              {MONTH_ABBREVS[i]}
-            </SvgText>
-          </React.Fragment>
-        );
-      })}
-    </Svg>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+      <Svg width={CHART_TOTAL_W} height={CHART_H + 32}>
+        {data.map((d, i) => {
+          const gx = i * BAR_GROUP_W;
+          const x = gx + barStart;
+          const incH = Math.max(3, (d.income / max) * CHART_H);
+          const expH = Math.max(3, (d.expenses / max) * CHART_H);
+          const isSel = selected === i;
+
+          return (
+            <React.Fragment key={i}>
+              {/* Full-height tap target + highlight background */}
+              <Rect
+                x={gx + 2}
+                y={0}
+                width={BAR_GROUP_W - 4}
+                height={CHART_H + 24}
+                fill={isSel ? incomeColor + '18' : 'transparent'}
+                rx={6}
+                onPress={() => onSelect(isSel ? null : i)}
+              />
+              {/* Income bar */}
+              <Rect
+                x={x}
+                y={CHART_H - incH}
+                width={BAR_W}
+                height={incH}
+                fill={incomeColor + (isSel ? 'FF' : 'BB')}
+                rx={3}
+                onPress={() => onSelect(isSel ? null : i)}
+              />
+              {/* Expense bar */}
+              <Rect
+                x={x + BAR_W + BAR_GAP}
+                y={CHART_H - expH}
+                width={BAR_W}
+                height={expH}
+                fill={expenseColor + (isSel ? 'FF' : 'BB')}
+                rx={3}
+                onPress={() => onSelect(isSel ? null : i)}
+              />
+              {/* Month label */}
+              <SvgText
+                x={gx + BAR_GROUP_W / 2}
+                y={CHART_H + 20}
+                fontSize={10}
+                fill={isSel ? incomeColor : labelColor}
+                fontWeight={isSel ? 'bold' : 'normal'}
+                textAnchor="middle"
+                opacity={isSel ? 1 : 0.65}
+              >
+                {MONTH_ABBREVS[i]}
+              </SvgText>
+            </React.Fragment>
+          );
+        })}
+      </Svg>
+    </ScrollView>
   );
 }
 
@@ -126,9 +152,12 @@ function KpiCard({ label, value, color }: { label: string; value: string; color:
 // ── Format ────────────────────────────────────────────────────────────────────
 
 function fmtCOP(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${Math.round(n)}`;
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1_000_000_000) return `${sign}$${(abs / 1_000_000_000).toFixed(1)}B`;
+  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(0)}K`;
+  return `${sign}$${Math.round(abs)}`;
 }
 
 function fmtRate(r: number): string {
@@ -175,6 +204,7 @@ export default function ReportsScreen() {
   const [loading, setLoading] = useState(true);
   const [monthlyData, setMonthlyData] = useState<MonthData[]>([]);
   const [topCategories, setTopCategories] = useState<CategoryStat[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -206,7 +236,8 @@ export default function ReportsScreen() {
       let totalExpenses = 0;
 
       for (const tx of transactions) {
-        const m = new Date(tx.date + 'T00:00:00').getMonth();
+        const m = parseInt(tx.date.substring(5, 7), 10) - 1;
+        if (m < 0 || m > 11) continue;
         if (tx.type === 'income') {
           buckets[m].income += tx.amount;
         } else {
@@ -259,11 +290,11 @@ export default function ReportsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Year selector */}
         <View style={styles.yearRow}>
-          <TouchableOpacity onPress={() => setYear(y => y - 1)} hitSlop={12} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => { setYear(y => y - 1); setSelectedMonth(null); }} hitSlop={12} activeOpacity={0.7}>
             <ChevronLeft color={colors.tint} />
           </TouchableOpacity>
           <Text variant="title3" style={{ marginHorizontal: Spacing.md }}>{year}</Text>
-          <TouchableOpacity onPress={() => setYear(y => y + 1)} hitSlop={12} activeOpacity={0.7} disabled={year >= new Date().getFullYear()}>
+          <TouchableOpacity onPress={() => { setYear(y => y + 1); setSelectedMonth(null); }} hitSlop={12} activeOpacity={0.7} disabled={year >= new Date().getFullYear()}>
             <ChevronRight color={year >= new Date().getFullYear() ? colors.labelTertiary : colors.tint} />
           </TouchableOpacity>
         </View>
@@ -290,9 +321,53 @@ export default function ReportsScreen() {
             {/* Bar chart */}
             <View style={styles.chartSection}>
               <Text variant="title3" style={{ marginBottom: Spacing.sm }}>{t('reports.byMonth')}</Text>
-              <Card radius={Spacing.radius.lg} padding={Spacing.md}>
-                <BarChart data={monthlyData} incomeColor={colors.income} expenseColor={colors.expense} />
-                <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: 4 }}>
+              <Card radius={Spacing.radius.lg} padding={0} style={{ overflow: 'hidden' }}>
+                <View style={{ paddingTop: Spacing.md, paddingHorizontal: 4 }}>
+                  <InteractiveBarChart
+                    data={monthlyData}
+                    incomeColor={colors.income}
+                    expenseColor={colors.expense}
+                    labelColor={colors.labelSecondary}
+                    selected={selectedMonth}
+                    onSelect={setSelectedMonth}
+                  />
+                </View>
+
+                {/* Selected month detail */}
+                {selectedMonth !== null && monthlyData[selectedMonth] && (
+                  <View style={[styles.monthDetail, { borderTopColor: colors.separator }]}>
+                    <Text variant="footnote" color={colors.labelSecondary} style={{ fontWeight: '600' }}>
+                      {MONTH_ABBREVS[selectedMonth]} {year}
+                    </Text>
+                    <View style={styles.monthDetailRow}>
+                      <View style={[styles.monthDetailDot, { backgroundColor: colors.income }]} />
+                      <Text variant="caption1" color={colors.labelSecondary} style={{ flex: 1 }}>{t('reports.income')}</Text>
+                      <Text variant="callout" color={colors.income} style={{ fontWeight: '600' }}>
+                        {fmtCOP(monthlyData[selectedMonth].income)}
+                      </Text>
+                    </View>
+                    <View style={styles.monthDetailRow}>
+                      <View style={[styles.monthDetailDot, { backgroundColor: colors.expense }]} />
+                      <Text variant="caption1" color={colors.labelSecondary} style={{ flex: 1 }}>{t('reports.expenses')}</Text>
+                      <Text variant="callout" color={colors.expense} style={{ fontWeight: '600' }}>
+                        {fmtCOP(monthlyData[selectedMonth].expenses)}
+                      </Text>
+                    </View>
+                    <View style={styles.monthDetailRow}>
+                      <View style={[styles.monthDetailDot, { backgroundColor: colors.savings }]} />
+                      <Text variant="caption1" color={colors.labelSecondary} style={{ flex: 1 }}>{t('reports.savings')}</Text>
+                      <Text
+                        variant="callout"
+                        style={{ fontWeight: '600' }}
+                        color={(monthlyData[selectedMonth].income - monthlyData[selectedMonth].expenses) >= 0 ? colors.income : colors.expense}
+                      >
+                        {fmtCOP(monthlyData[selectedMonth].income - monthlyData[selectedMonth].expenses)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <View style={{ flexDirection: 'row', gap: Spacing.md, paddingHorizontal: Spacing.md, paddingBottom: Spacing.md, marginTop: 4 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: colors.income + 'CC' }} />
                     <Text variant="caption1" color={colors.labelSecondary}>{t('reports.income')}</Text>
@@ -368,4 +443,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingTop: Spacing.sm, paddingBottom: 4, gap: Spacing.sm,
   },
   catDot: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  monthDetail: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
+    gap: 6,
+  },
+  monthDetailRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+  },
+  monthDetailDot: { width: 8, height: 8, borderRadius: 4 },
 });
