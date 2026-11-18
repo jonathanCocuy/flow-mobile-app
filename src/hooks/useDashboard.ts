@@ -3,12 +3,11 @@ import { supabase } from '@/lib/supabase'
 import type { DashboardData, DashboardTransaction, DashboardAccount, BudgetWithProgress, UserCategory } from '@/types/finance'
 
 const DEFAULT_CATEGORIES: Omit<UserCategory, 'id'>[] = [
-  { name: 'food',      label: 'Food',      color: '#f97316', icon: 'Utensils' },
-  { name: 'home',      label: 'Home',      color: '#3b82f6', icon: 'Home' },
-  { name: 'transport', label: 'Transport', color: '#8b5cf6', icon: 'Car' },
-  { name: 'health',    label: 'Health',    color: '#ef4444', icon: 'Heart' },
-  { name: 'leisure',   label: 'Leisure',   color: '#fbbf24', icon: 'Gamepad2' },
-  { name: 'income',    label: 'Income',    color: '#22c55e', icon: 'TrendingUp' },
+  { name: 'food',      label: 'Food',      color: '#f97316', icon: '🍕' },
+  { name: 'home',      label: 'Home',      color: '#3b82f6', icon: '🏠' },
+  { name: 'transport', label: 'Transport', color: '#8b5cf6', icon: '🚗' },
+  { name: 'health',    label: 'Health',    color: '#ef4444', icon: '💊' },
+  { name: 'leisure',   label: 'Leisure',   color: '#fbbf24', icon: '🎮' },
 ]
 
 const empty: DashboardData = {

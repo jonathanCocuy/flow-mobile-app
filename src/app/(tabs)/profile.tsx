@@ -274,11 +274,11 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           {loading ? (
-            <View style={styles.categoryChips}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryChips}>
               {([80, 96, 72, 88] as const).map((w) => (
                 <Skeleton key={w} width={w} height={30} radius={Spacing.radius.full} />
               ))}
-            </View>
+            </ScrollView>
           ) : categories.length === 0 ? (
             <Card radius={Spacing.radius.lg} padding={Spacing.md}>
               <Text variant="callout" color={colors.labelSecondary} align="center">
@@ -286,7 +286,7 @@ export default function ProfileScreen() {
               </Text>
             </Card>
           ) : (
-            <View style={styles.categoryChips}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryChips}>
               {categories.map(cat => (
                 <TouchableOpacity
                   key={cat.id}
@@ -294,11 +294,15 @@ export default function ProfileScreen() {
                   onPress={() => { setEditCategory(cat); setCategoryModalVisible(true); }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                  {cat.icon && /[^\x20-\x7E]/.test(cat.icon) ? (
+                    <Text style={{ fontSize: 14 }}>{cat.icon}</Text>
+                  ) : (
+                    <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                  )}
                   <Text variant="caption1" numberOfLines={1}>{cat.label}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           )}
         </View>
 
@@ -405,7 +409,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: Spacing.xs, marginLeft: 2, marginRight: 2,
   },
-  categoryChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  categoryChips: { flexDirection: 'row', gap: 8, paddingVertical: 2, paddingHorizontal: 2 },
   categoryChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 10, paddingVertical: 7,

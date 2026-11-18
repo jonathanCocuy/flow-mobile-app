@@ -213,25 +213,15 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
             </Text>
 
             {/* Preview */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <View style={{ marginBottom: 12 }}>
               <View style={[styles.emojiPreview, { backgroundColor: color + '33' }]}>
-                {icon ? (
+                {icon && /[^\x20-\x7E]/.test(icon) ? (
                   <Text style={{ fontSize: 22, lineHeight: 28, textAlign: 'center' }}>{icon}</Text>
                 ) : (
                   <Text style={{ fontSize: 16, fontWeight: '700', color, textAlign: 'center' }}>
                     {label.charAt(0).toUpperCase() || '?'}
                   </Text>
                 )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator, fontSize: 20, textAlign: 'center' }]}
-                  value={icon}
-                  onChangeText={setIcon}
-                  placeholder="😀"
-                  placeholderTextColor={colors.labelTertiary}
-                  maxLength={4}
-                />
               </View>
             </View>
 

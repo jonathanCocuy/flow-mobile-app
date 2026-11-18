@@ -124,21 +124,13 @@ function ArrowDownIcon({ color }: { color: string }) {
   );
 }
 
-function PiggyBankIcon({ color }: { color: string }) {
+function FlowXLogo({ color, size = 20 }: { color: string; size?: number }) {
   return (
-    <Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
-      {/* Body */}
-      <Path d="M9.5 7C9.5 9.5 8.3 11 7 11C5.7 11 2.5 9.8 2.5 7C2.5 4.2 4.5 3 7 3C8.3 3 9.5 4.5 9.5 7Z"
-        stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
-      {/* Snout */}
-      <Path d="M9.5 6.2C10 5.5 12 5.5 12.5 7C13 8.5 11 9.2 9.5 7.8"
-        stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
-      {/* Coin slot on top */}
-      <Path d="M5.5 3L8.5 3" stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
-      {/* Eye */}
-      <Path d="M6.5 6.8L6.5 6.8" stroke={color} strokeWidth={2} strokeLinecap="round"/>
-      {/* Legs */}
-      <Path d="M4.5 11L4 13M7.5 11L7.5 13" stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" />
+      <Path d="M7 14h.01" />
+      <Path d="M9 5v2" />
+      <Path d="M15 5v2" />
     </Svg>
   );
 }
@@ -202,11 +194,20 @@ export default function DashboardScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text variant="footnote" color={colors.labelSecondary}>
-              {greeting}{firstName ? `, ${firstName}` : ''}
-            </Text>
-            <Text variant="title2">FlowX</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{
+              width: 36, height: 36, borderRadius: 10,
+              backgroundColor: colors.tint,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <FlowXLogo color="#000" size={20} />
+            </View>
+            <View>
+              <Text variant="footnote" color={colors.labelSecondary}>
+                {greeting}{firstName ? `, ${firstName}` : ''}
+              </Text>
+              <Text variant="title2">FlowX</Text>
+            </View>
           </View>
           <TouchableOpacity
             style={[styles.addButton, { backgroundColor: colors.tint }]}
@@ -275,7 +276,7 @@ export default function DashboardScreen() {
                     accent={colors.savings}
                     chipBg={chipBg}
                     chipBorder={chipBorder}
-                    icon={<PiggyBankIcon color={colors.savings} />}
+                    icon={<FlowXLogo color={colors.savings} />}
                   />
                 </View>
               </View>

@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import type { InvestmentRecord } from '@/types/finance';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -108,13 +109,17 @@ function InvestmentSheet({
   const isEdit = record !== null;
 
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [saving, setSaving] = useState(false);
 
   React.useEffect(() => {
     if (visible) {
+      const f = record ? recordToForm(record) : emptyForm();
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setForm(record ? recordToForm(record) : emptyForm()); setErrors({});
+      setForm(f); setErrors({});
+      const parts = f.date.split('-').map(Number);
+      setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
     }
   }, [visible, record?.id]);
 
@@ -123,7 +128,7 @@ function InvestmentSheet({
     if (!form.name.trim()) e.name = t('investment.error.nameRequired');
     const amt = parseFloat(form.amount.replace(',', '.'));
     if (!form.amount || isNaN(amt) || amt <= 0) e.amount = t('investment.error.amountInvalid');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) e.date = t('investment.error.dateInvalid');
+    if (!selectedDate) e.date = t('investment.error.dateInvalid');
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -137,7 +142,7 @@ function InvestmentSheet({
       type: form.type,
       amount: parseFloat(form.amount.replace(',', '.')),
       currency: form.currency,
-      date: form.date,
+      date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`,
       notes: form.notes.trim() || null,
     };
     if (isEdit && record) {
@@ -160,18 +165,17 @@ function InvestmentSheet({
               <Text variant="callout" color={colors.tint}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <Text variant="headline">{isEdit ? t('investments.edit') : t('investments.add')}</Text>
-            <TouchableOpacity onPress={handleSave} hitSlop={12} disabled={saving}>
-              <Text variant="callout" color={colors.tint} style={{ fontWeight: '600', opacity: saving ? 0.5 : 1 }}>
-                {isEdit ? t('investment.update') : t('investment.save')}
-              </Text>
-            </TouchableOpacity>
+            <View style={{ width: 60 }} />
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: Spacing.screenHorizontal, gap: Spacing.md }}>
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
             {/* Name */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('investment.name').toUpperCase()}</Text>
-              <Card radius={Spacing.radius.lg} padding={0}>
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('investment.name').toUpperCase()}
+              </Text>
+              <View style={[styles.inputRow, { backgroundColor: colors.fillTertiary }]}>
                 <TextInput
                   style={[styles.textInput, { color: colors.label }]}
                   placeholder={t('investment.namePlaceholder')}
@@ -179,99 +183,117 @@ function InvestmentSheet({
                   value={form.name}
                   onChangeText={v => setForm(f => ({ ...f, name: v }))}
                 />
-              </Card>
-              {errors.name && <Text variant="caption1" color={colors.expense} style={{ marginTop: 4 }}>{errors.name}</Text>}
+              </View>
+              {errors.name && <Text variant="caption1" color={colors.expense} style={styles.fieldError}>{errors.name}</Text>}
             </View>
 
             {/* Type */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('investment.type').toUpperCase()}</Text>
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('investment.type').toUpperCase()}
+              </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs }}>
-                {INVESTMENT_TYPES.map(tp => (
-                  <TouchableOpacity
-                    key={tp}
-                    style={[styles.chip, {
-                      backgroundColor: form.type === tp ? TYPE_COLOR[tp] + '22' : colors.fillPrimary,
-                      borderColor: form.type === tp ? TYPE_COLOR[tp] : 'transparent',
-                      borderWidth: 1,
-                    }]}
-                    onPress={() => setForm(f => ({ ...f, type: tp }))}
-                    activeOpacity={0.7}
-                  >
-                    <Text variant="caption1">{TYPE_EMOJI[tp]} {t(`investment.type.${tp}`)}</Text>
-                  </TouchableOpacity>
-                ))}
+                {INVESTMENT_TYPES.map(tp => {
+                  const active = form.type === tp;
+                  const tpColor = TYPE_COLOR[tp];
+                  return (
+                    <TouchableOpacity
+                      key={tp}
+                      style={[styles.typePill, {
+                        backgroundColor: active ? tpColor + '20' : colors.fillPrimary,
+                        borderColor: active ? tpColor : 'transparent',
+                      }]}
+                      onPress={() => setForm(f => ({ ...f, type: tp }))}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ fontSize: 14 }}>{TYPE_EMOJI[tp]}</Text>
+                      <Text variant="subheadline" color={active ? tpColor : colors.label} style={{ fontWeight: active ? '600' : '400' }}>
+                        {t(`investment.type.${tp}`)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
-            {/* Amount + Currency */}
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('investment.amount').toUpperCase()}</Text>
-                <Card radius={Spacing.radius.lg} padding={0}>
-                  <TextInput
-                    style={[styles.textInput, { color: colors.label }]}
-                    placeholder="0"
-                    placeholderTextColor={colors.labelTertiary}
-                    keyboardType="decimal-pad"
-                    value={form.amount}
-                    onChangeText={v => setForm(f => ({ ...f, amount: v }))}
-                  />
-                </Card>
-                {errors.amount && <Text variant="caption1" color={colors.expense} style={{ marginTop: 4 }}>{errors.amount}</Text>}
-              </View>
-              <View style={{ width: 100 }}>
-                <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('investment.currency').toUpperCase()}</Text>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
+            {/* Amount */}
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('investment.amount').toUpperCase()}
+              </Text>
+              <View style={[styles.amountRow, { backgroundColor: colors.fillTertiary }]}>
+                <Text variant="title3" color={colors.labelSecondary} style={{ paddingLeft: Spacing.md }}>$</Text>
+                <TextInput
+                  style={[styles.amountInput, { color: colors.label }]}
+                  placeholder="0"
+                  placeholderTextColor={colors.labelTertiary}
+                  keyboardType="decimal-pad"
+                  value={form.amount}
+                  onChangeText={v => setForm(f => ({ ...f, amount: v }))}
+                />
+                <View style={styles.currencyRow}>
                   {CURRENCIES.map(cur => (
                     <TouchableOpacity
                       key={cur}
-                      style={[styles.chip, {
-                        flex: 1,
-                        backgroundColor: form.currency === cur ? colors.tint + '22' : colors.fillPrimary,
+                      style={[styles.currencyBtn, {
+                        backgroundColor: form.currency === cur ? colors.tint + '18' : colors.fillPrimary,
                         borderColor: form.currency === cur ? colors.tint : 'transparent',
-                        borderWidth: 1,
                       }]}
                       onPress={() => setForm(f => ({ ...f, currency: cur }))}
                       activeOpacity={0.7}
                     >
-                      <Text variant="caption1" align="center">{cur}</Text>
+                      <Text variant="caption2" color={form.currency === cur ? colors.tint : colors.labelSecondary} style={{ fontWeight: form.currency === cur ? '700' : '400' }}>
+                        {cur}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
+              {errors.amount && <Text variant="caption1" color={colors.expense} style={styles.fieldError}>{errors.amount}</Text>}
             </View>
 
             {/* Date */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('investment.date').toUpperCase()}</Text>
-              <Card radius={Spacing.radius.lg} padding={0}>
-                <TextInput
-                  style={[styles.textInput, { color: colors.label }]}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.labelTertiary}
-                  value={form.date}
-                  onChangeText={v => setForm(f => ({ ...f, date: v }))}
-                  keyboardType="numbers-and-punctuation"
-                />
-              </Card>
-              {errors.date && <Text variant="caption1" color={colors.expense} style={{ marginTop: 4 }}>{errors.date}</Text>}
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('investment.date').toUpperCase()}
+              </Text>
+              <DatePickerField
+                value={selectedDate}
+                onChange={d => setSelectedDate(d)}
+                colors={colors}
+              />
+              {errors.date && <Text variant="caption1" color={colors.expense} style={styles.fieldError}>{errors.date}</Text>}
             </View>
 
             {/* Notes */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('investment.notes').toUpperCase()}</Text>
-              <Card radius={Spacing.radius.lg} padding={0}>
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('investment.notes').toUpperCase()}
+              </Text>
+              <View style={[styles.notesRow, { backgroundColor: colors.fillTertiary }]}>
                 <TextInput
-                  style={[styles.textInput, { color: colors.label, minHeight: 72, textAlignVertical: 'top', paddingTop: 14 }]}
+                  style={[styles.textInput, { color: colors.label, textAlignVertical: 'top' }]}
                   placeholder={t('investment.notesPh')}
                   placeholderTextColor={colors.labelTertiary}
                   multiline
+                  numberOfLines={3}
                   value={form.notes}
                   onChangeText={v => setForm(f => ({ ...f, notes: v }))}
                 />
-              </Card>
+              </View>
             </View>
+
+            {/* Save */}
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: colors.tint, opacity: saving ? 0.6 : 1 }]}
+              onPress={handleSave}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              <Text variant="headline" color={colors.tintForeground}>
+                {saving ? '...' : isEdit ? t('investment.update') : t('investment.save')}
+              </Text>
+            </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
@@ -357,13 +379,7 @@ export default function InvestmentsScreen() {
           <BackIcon color={colors.label} />
         </TouchableOpacity>
         <Text variant="headline" style={{ flex: 1 }} align="center">{t('investments.title')}</Text>
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.tint }]}
-          onPress={() => { setEditing(null); setSheetOpen(true); }}
-          hitSlop={8}
-        >
-          <PlusIcon color={colors.tintForeground} />
-        </TouchableOpacity>
+        <View style={{ width: 32 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -371,15 +387,8 @@ export default function InvestmentsScreen() {
           <InvestmentsSkeleton />
         ) : records.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📈</Text>
+            <View style={styles.emptyIcon}><Text style={{ fontSize: 40, lineHeight: 40 }}>💎</Text></View>
             <Text variant="callout" align="center" color={colors.labelSecondary}>{t('investments.empty')}</Text>
-            <TouchableOpacity
-              style={[styles.emptyBtn, { backgroundColor: colors.tint }]}
-              onPress={() => { setEditing(null); setSheetOpen(true); }}
-              activeOpacity={0.85}
-            >
-              <Text variant="callout" color={colors.tintForeground}>{t('investments.add')}</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <>
@@ -439,6 +448,18 @@ export default function InvestmentsScreen() {
             </View>
           </>
         )}
+
+        {/* Add button — always visible at bottom */}
+        <TouchableOpacity
+          style={[styles.addBottomBtn, { backgroundColor: colors.tint }]}
+          onPress={() => { setEditing(null); setSheetOpen(true); }}
+          activeOpacity={0.85}
+        >
+          <PlusIcon color={colors.tintForeground} />
+          <Text variant="callout" color={colors.tintForeground} style={{ fontWeight: '600' }}>
+            {t('investments.add')}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <InvestmentSheet
@@ -476,13 +497,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 12,
   },
   backBtn: { width: 32 },
-  addBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingBottom: 40 },
   section: { paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md },
   summaryRow: { flexDirection: 'row', gap: Spacing.sm },
   emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
-  emptyEmoji: { fontSize: 40, marginBottom: 8 },
-  emptyBtn: { marginTop: 16, paddingHorizontal: Spacing.lg, paddingVertical: 12, borderRadius: Spacing.radius.full },
+  emptyIcon: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  addBottomBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md, marginBottom: 8,
+    height: 52, borderRadius: Spacing.radius.lg,
+  },
   row: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm,
@@ -495,13 +519,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenHorizontal, paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  fieldLabel: { letterSpacing: 0.5, marginBottom: 6, marginLeft: 2 },
-  textInput: {
-    paddingHorizontal: Spacing.md, paddingVertical: 14,
-    fontSize: 16, fontFamily: 'System',
+  // Sheet form
+  scrollContent: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: Spacing.sm, paddingBottom: 24, gap: Spacing.md },
+  fieldGroup: { gap: 6 },
+  fieldLabel: { letterSpacing: 0.5, marginLeft: 2 },
+  fieldError: { marginLeft: 2, marginTop: 2 },
+  inputRow: { borderRadius: Spacing.radius.md, overflow: 'hidden' },
+  textInput: { paddingHorizontal: Spacing.md, paddingVertical: 14, fontSize: 16 },
+  typePill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: Spacing.sm, paddingVertical: 8,
+    borderRadius: Spacing.radius.full, borderWidth: 1.5,
   },
-  chip: {
-    paddingHorizontal: Spacing.md, paddingVertical: 8,
-    borderRadius: Spacing.radius.full,
+  amountRow: {
+    flexDirection: 'row', alignItems: 'center',
+    height: 52, borderRadius: Spacing.radius.md, overflow: 'hidden',
+  },
+  amountInput: { flex: 1, height: 52, paddingHorizontal: Spacing.sm, fontSize: 20, fontWeight: '600' },
+  currencyRow: { flexDirection: 'row', marginRight: Spacing.sm, gap: 4 },
+  currencyBtn: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6, borderWidth: 1.5, alignItems: 'center' },
+  notesRow: { borderRadius: Spacing.radius.md, overflow: 'hidden', minHeight: 90 },
+  saveBtn: {
+    height: 52, borderRadius: Spacing.radius.lg,
+    alignItems: 'center', justifyContent: 'center',
+    marginTop: Spacing.xs,
   },
 });

@@ -223,12 +223,17 @@ export default function ReportsScreen() {
           .neq('type', 'transfer'),
         supabase
           .from('categories')
-          .select('id, label, icon, color')
+          .select('id, name, label, icon, color')
           .eq('user_id', user.id),
       ]);
 
       const transactions = txRes.data ?? [];
-      const catMap = Object.fromEntries((catRes.data ?? []).map(c => [c.id, c]));
+      const catList = catRes.data ?? [];
+      const catMap: Record<string, typeof catList[0]> = {};
+      for (const c of catList) {
+        catMap[c.id] = c;
+        if (c.name) catMap[c.name] = c;
+      }
 
       // Build monthly buckets
       const buckets: MonthData[] = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, income: 0, expenses: 0 }));
@@ -388,11 +393,11 @@ export default function ReportsScreen() {
                   {topCategories.map((cat, i) => (
                     <View key={i}>
                       <View style={styles.catRow}>
-                        <View style={[styles.catDot, { backgroundColor: cat.color + '33' }]}>
-                          {cat.icon && !/^[a-zA-Z\s]+$/.test(cat.icon) ? (
+                        <View style={[styles.catDot, { backgroundColor: cat.color }]}>
+                          {cat.icon && /[^\x20-\x7E]/.test(cat.icon) ? (
                             <Text style={{ fontSize: 18, lineHeight: 22, textAlign: 'center' }}>{cat.icon}</Text>
                           ) : (
-                            <Text style={{ fontSize: 14, fontWeight: '700', textAlign: 'center', color: cat.color }}>
+                            <Text style={{ fontSize: 14, fontWeight: '700', textAlign: 'center', color: '#fff' }}>
                               {cat.name.charAt(0).toUpperCase()}
                             </Text>
                           )}

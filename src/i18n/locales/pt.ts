@@ -290,6 +290,7 @@ export default {
   // Recurring
   'recurring.title': 'Recorrentes',
   'recurring.empty': 'Nenhum pagamento recorrente ainda',
+  'recurring.selectAccount': 'Selecionar conta',
   'recurring.add': 'Novo recorrente',
   'recurring.edit': 'Editar recorrente',
   'recurring.deleteTitle': 'Excluir recorrente',

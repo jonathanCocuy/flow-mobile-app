@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
@@ -52,7 +53,8 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
 
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [deadlineEnabled, setDeadlineEnabled] = useState(false);
+  const [selectedDeadline, setSelectedDeadline] = useState(new Date());
   const [icon, setIcon] = useState('🎯');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,13 +74,21 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(initialGoal.name);
       setTargetAmount(String(initialGoal.target_amount));
-      setDeadline(initialGoal.deadline ?? '');
+      if (initialGoal.deadline) {
+        setDeadlineEnabled(true);
+        const parts = initialGoal.deadline.split('-').map(Number);
+        setSelectedDeadline(new Date(parts[0], parts[1] - 1, parts[2]));
+      } else {
+        setDeadlineEnabled(false);
+        setSelectedDeadline(new Date());
+      }
       setIcon(initialGoal.icon ?? '🎯');
       setError(null);
     } else if (visible && !initialGoal) {
       setName('');
       setTargetAmount('');
-      setDeadline('');
+      setDeadlineEnabled(false);
+      setSelectedDeadline(new Date());
       setIcon('🎯');
       setError(null);
     }
@@ -87,7 +97,8 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
   const reset = () => {
     setName('');
     setTargetAmount('');
-    setDeadline('');
+    setDeadlineEnabled(false);
+    setSelectedDeadline(new Date());
     setIcon('🎯');
     setError(null);
   };
@@ -120,12 +131,9 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
     const amount = parseFloat(targetAmount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) { setError(t('goal.error.amountInvalid')); return; }
 
-    let deadlineISO: string | null = null;
-    if (deadline.trim()) {
-      const parsed = new Date(deadline.trim());
-      if (isNaN(parsed.getTime())) { setError(t('goal.error.deadlineInvalid')); return; }
-      deadlineISO = parsed.toISOString().split('T')[0];
-    }
+    const deadlineISO: string | null = deadlineEnabled
+      ? `${selectedDeadline.getFullYear()}-${String(selectedDeadline.getMonth() + 1).padStart(2, '0')}-${String(selectedDeadline.getDate()).padStart(2, '0')}`
+      : null;
 
     setSaving(true);
     setError(null);
@@ -249,18 +257,31 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
               />
 
               {/* Deadline (optional) */}
-              <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 16 }]}>
-                {t('goal.deadline')}
-              </Text>
-              <TextInput
-                style={inputStyle}
-                value={deadline}
-                onChangeText={setDeadline}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.labelTertiary}
-                keyboardType="numbers-and-punctuation"
-                returnKeyType="done"
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 8 }}>
+                <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginBottom: 0, flex: 1 }]}>
+                  {t('goal.deadline')}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setDeadlineEnabled(v => !v)}
+                  style={[
+                    { width: 44, height: 26, borderRadius: 13, padding: 2, justifyContent: 'center' },
+                    { backgroundColor: deadlineEnabled ? colors.savings : colors.fillPrimary },
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <View style={[
+                    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
+                    { transform: [{ translateX: deadlineEnabled ? 18 : 0 }] },
+                  ]} />
+                </TouchableOpacity>
+              </View>
+              {deadlineEnabled && (
+                <DatePickerField
+                  value={selectedDeadline}
+                  onChange={d => setSelectedDeadline(d)}
+                  colors={colors}
+                />
+              )}
 
               {error && (
                 <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>

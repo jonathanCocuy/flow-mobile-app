@@ -35,6 +35,22 @@ function PlusIcon({ color }: { color: string }) {
   );
 }
 
+function ChevronDownIcon({ color, open }: { color: string; open?: boolean }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
+      <Path d="M6 9l6 6 6-6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function CheckIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M20 6L9 17l-5-5" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const WEEKDAY_KEYS = ['weekdays.sunday', 'weekdays.monday', 'weekdays.tuesday', 'weekdays.wednesday', 'weekdays.thursday', 'weekdays.friday', 'weekdays.saturday'] as const;
@@ -117,6 +133,7 @@ function RecurringSheet({
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [saving, setSaving] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -162,6 +179,8 @@ function RecurringSheet({
 
   const f = (key: keyof FormState) => (val: string | boolean) => setForm(prev => ({ ...prev, [key]: val }));
 
+  const typeColor = form.type === 'income' ? colors.income : colors.expense;
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -171,175 +190,223 @@ function RecurringSheet({
               <Text variant="callout" color={colors.tint}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <Text variant="headline">{isEdit ? t('recurring.edit') : t('recurring.add')}</Text>
-            <TouchableOpacity onPress={handleSave} hitSlop={12} disabled={saving}>
-              <Text variant="callout" color={colors.tint} style={{ fontWeight: '600', opacity: saving ? 0.5 : 1 }}>
-                {isEdit ? t('recurring.update') : t('recurring.save')}
-              </Text>
-            </TouchableOpacity>
+            <View style={{ width: 60 }} />
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: Spacing.screenHorizontal, gap: Spacing.md }}>
-            {/* Icon + Description */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('recurring.description').toUpperCase()}</Text>
-              <Card radius={Spacing.radius.lg} padding={0}>
-                <View style={{ flexDirection: 'row' }}>
-                  <TextInput
-                    style={[styles.textInput, { width: 54, textAlign: 'center' }]}
-                    value={form.icon}
-                    onChangeText={f('icon')}
-                    maxLength={4}
-                    placeholder="💳"
-                    placeholderTextColor={colors.labelTertiary}
-                  />
-                  <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />
-                  <TextInput
-                    style={[styles.textInput, { flex: 1, color: colors.label }]}
-                    placeholder={t('recurring.descriptionPh')}
-                    placeholderTextColor={colors.labelTertiary}
-                    value={form.description}
-                    onChangeText={v => setForm(p => ({ ...p, description: v }))}
-                  />
-                </View>
-              </Card>
-              {errors.description && <Text variant="caption1" color={colors.expense} style={{ marginTop: 4 }}>{errors.description}</Text>}
-            </View>
-
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Type */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('recurring.type').toUpperCase()}</Text>
-              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                {TYPES.map(tp => (
-                  <TouchableOpacity
-                    key={tp}
-                    style={[styles.chip, {
-                      flex: 1,
-                      backgroundColor: form.type === tp ? (tp === 'income' ? colors.income : colors.expense) + '22' : colors.fillPrimary,
-                      borderColor: form.type === tp ? (tp === 'income' ? colors.income : colors.expense) : 'transparent',
-                      borderWidth: 1,
-                    }]}
-                    onPress={() => setForm(p => ({ ...p, type: tp }))}
-                    activeOpacity={0.7}
-                  >
-                    <Text variant="callout" align="center">{tp === 'income' ? '📥' : '📤'} {t(`transaction.type.${tp}`)}</Text>
-                  </TouchableOpacity>
-                ))}
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('recurring.type').toUpperCase()}
+              </Text>
+              <View style={styles.typeRow}>
+                {TYPES.map(tp => {
+                  const tpColor = tp === 'income' ? colors.income : colors.expense;
+                  const active = form.type === tp;
+                  return (
+                    <TouchableOpacity
+                      key={tp}
+                      style={[styles.typeBtn, {
+                        backgroundColor: active ? `${tpColor}18` : colors.fillPrimary,
+                        borderColor: active ? tpColor : 'transparent',
+                      }]}
+                      onPress={() => setForm(p => ({ ...p, type: tp }))}
+                      activeOpacity={0.7}
+                    >
+                      <Text variant="subheadline" color={active ? tpColor : colors.labelSecondary} style={{ fontWeight: '600' }}>
+                        {t(`transactions.add.${tp}`)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
-            {/* Amount + Currency */}
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('recurring.amount').toUpperCase()}</Text>
-                <Card radius={Spacing.radius.lg} padding={0}>
-                  <TextInput
-                    style={[styles.textInput, { color: colors.label }]}
-                    placeholder="0"
-                    placeholderTextColor={colors.labelTertiary}
-                    keyboardType="decimal-pad"
-                    value={form.amount}
-                    onChangeText={v => setForm(p => ({ ...p, amount: v }))}
-                  />
-                </Card>
-                {errors.amount && <Text variant="caption1" color={colors.expense} style={{ marginTop: 4 }}>{errors.amount}</Text>}
+            {/* Description */}
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('recurring.description').toUpperCase()}
+              </Text>
+              <View style={[styles.descRow, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
+                <TextInput
+                  style={[styles.iconInput, { borderRightColor: colors.separator }]}
+                  value={form.icon}
+                  onChangeText={f('icon')}
+                  maxLength={4}
+                  placeholder="💳"
+                  placeholderTextColor={colors.labelTertiary}
+                />
+                <TextInput
+                  style={[styles.descInput, { color: colors.label }]}
+                  placeholder={t('recurring.descriptionPh')}
+                  placeholderTextColor={colors.labelTertiary}
+                  value={form.description}
+                  onChangeText={v => setForm(p => ({ ...p, description: v }))}
+                  autoCapitalize="sentences"
+                />
               </View>
-              <View style={{ width: 80 }}>
-                <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>CUR</Text>
-                <View style={{ gap: 4 }}>
+              {errors.description && (
+                <Text variant="caption1" color={colors.expense} style={styles.fieldError}>{errors.description}</Text>
+              )}
+            </View>
+
+            {/* Amount */}
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('recurring.amount').toUpperCase()}
+              </Text>
+              <View style={[styles.amountRow, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
+                <Text variant="title3" color={colors.labelSecondary} style={{ marginLeft: Spacing.md }}>$</Text>
+                <TextInput
+                  style={[styles.amountInput, { color: colors.label }]}
+                  placeholder="0"
+                  placeholderTextColor={colors.labelTertiary}
+                  keyboardType="decimal-pad"
+                  value={form.amount}
+                  onChangeText={v => setForm(p => ({ ...p, amount: v }))}
+                />
+                <View style={{ flexDirection: 'row', marginRight: Spacing.sm, gap: 4 }}>
                   {['COP', 'USD'].map(cur => (
                     <TouchableOpacity
                       key={cur}
-                      style={[styles.chip, {
-                        backgroundColor: form.currency === cur ? colors.tint + '22' : colors.fillPrimary,
-                        borderColor: form.currency === cur ? colors.tint : 'transparent',
-                        borderWidth: 1, alignItems: 'center',
+                      style={[styles.currencyBtn, {
+                        backgroundColor: form.currency === cur ? typeColor + '18' : colors.fillPrimary,
+                        borderColor: form.currency === cur ? typeColor : 'transparent',
                       }]}
                       onPress={() => setForm(p => ({ ...p, currency: cur }))}
                       activeOpacity={0.7}
                     >
-                      <Text variant="caption1">{cur}</Text>
+                      <Text
+                        variant="caption2"
+                        color={form.currency === cur ? typeColor : colors.labelSecondary}
+                        style={{ fontWeight: form.currency === cur ? '700' : '400' }}
+                      >
+                        {cur}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
+              {errors.amount && (
+                <Text variant="caption1" color={colors.expense} style={styles.fieldError}>{errors.amount}</Text>
+              )}
             </View>
 
             {/* Account */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('recurring.account').toUpperCase()}</Text>
-              <Card radius={Spacing.radius.lg} padding={0}>
-                {accounts.map((acc, i) => (
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('recurring.account').toUpperCase()}
+              </Text>
+              <View style={[{ borderRadius: Spacing.radius.md, overflow: 'hidden', backgroundColor: colors.fillTertiary }]}>
+                <TouchableOpacity
+                  style={styles.selectTrigger}
+                  onPress={() => setAccountOpen(v => !v)}
+                  activeOpacity={0.7}
+                >
+                  <Text variant="callout" color={form.account_id ? colors.label : colors.labelTertiary} style={{ flex: 1 }}>
+                    {accounts.find(a => a.id === form.account_id)?.name ?? t('recurring.selectAccount')}
+                  </Text>
+                  <ChevronDownIcon color={colors.labelSecondary} open={accountOpen} />
+                </TouchableOpacity>
+                {accountOpen && accounts.map((acc, i) => (
                   <View key={acc.id}>
+                    <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: Spacing.md }} />
                     <TouchableOpacity
-                      style={styles.pickerRow}
-                      onPress={() => setForm(p => ({ ...p, account_id: acc.id }))}
+                      style={styles.selectOption}
+                      onPress={() => { setForm(p => ({ ...p, account_id: acc.id })); setAccountOpen(false); }}
                       activeOpacity={0.6}
                     >
                       <Text variant="callout" style={{ flex: 1 }}>{acc.name}</Text>
-                      {form.account_id === acc.id && (
-                        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                          <Path d="M20 6L9 17l-5-5" stroke={colors.tint} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-                        </Svg>
-                      )}
+                      {form.account_id === acc.id && <CheckIcon color={colors.tint} />}
                     </TouchableOpacity>
-                    {i < accounts.length - 1 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: Spacing.md }} />}
                   </View>
                 ))}
-              </Card>
-              {errors.account_id && <Text variant="caption1" color={colors.expense} style={{ marginTop: 4 }}>{errors.account_id}</Text>}
+              </View>
+              {errors.account_id && (
+                <Text variant="caption1" color={colors.expense} style={styles.fieldError}>{errors.account_id}</Text>
+              )}
             </View>
 
             {/* Category */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('recurring.category').toUpperCase()}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {categories.map(cat => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[styles.chip, {
-                      backgroundColor: form.category_id === cat.id ? cat.color + '22' : colors.fillPrimary,
-                      borderColor: form.category_id === cat.id ? cat.color : 'transparent',
-                      borderWidth: 1,
-                    }]}
-                    onPress={() => setForm(p => ({ ...p, category_id: cat.id }))}
-                    activeOpacity={0.7}
-                  >
-                    <Text variant="caption1">{cat.icon} {cat.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {errors.category_id && <Text variant="caption1" color={colors.expense} style={{ marginTop: 4 }}>{errors.category_id}</Text>}
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('recurring.category').toUpperCase()}
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                {categories.map(cat => {
+                  const isEmoji = cat.icon && /[^\x20-\x7E]/.test(cat.icon);
+                  const selected = form.category_id === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      onPress={() => setForm(p => ({ ...p, category_id: cat.id }))}
+                      style={[styles.categoryPill, {
+                        backgroundColor: selected ? `${cat.color}20` : colors.fillPrimary,
+                        borderColor: selected ? cat.color : 'transparent',
+                      }]}
+                      activeOpacity={0.7}
+                    >
+                      {isEmoji ? (
+                        <Text style={{ fontSize: 14, lineHeight: 18 }}>{cat.icon}</Text>
+                      ) : (
+                        <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                      )}
+                      <Text
+                        variant="subheadline"
+                        color={selected ? cat.color : colors.label}
+                        style={{ fontWeight: selected ? '600' : '400' }}
+                      >
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+              {errors.category_id && (
+                <Text variant="caption1" color={colors.expense} style={styles.fieldError}>{errors.category_id}</Text>
+              )}
             </View>
 
             {/* Interval */}
-            <View>
-              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('recurring.interval').toUpperCase()}</Text>
-              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                {INTERVALS.map(iv => (
-                  <TouchableOpacity
-                    key={iv}
-                    style={[styles.chip, {
-                      flex: 1,
-                      backgroundColor: form.interval === iv ? colors.tint + '22' : colors.fillPrimary,
-                      borderColor: form.interval === iv ? colors.tint : 'transparent',
-                      borderWidth: 1,
-                    }]}
-                    onPress={() => setForm(p => ({ ...p, interval: iv }))}
-                    activeOpacity={0.7}
-                  >
-                    <Text variant="callout" align="center">{t(`recurring.${iv}`)}</Text>
-                  </TouchableOpacity>
-                ))}
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('recurring.interval').toUpperCase()}
+              </Text>
+              <View style={styles.typeRow}>
+                {INTERVALS.map(iv => {
+                  const active = form.interval === iv;
+                  return (
+                    <TouchableOpacity
+                      key={iv}
+                      style={[styles.typeBtn, {
+                        backgroundColor: active ? colors.tint + '18' : colors.fillPrimary,
+                        borderColor: active ? colors.tint : 'transparent',
+                      }]}
+                      onPress={() => setForm(p => ({ ...p, interval: iv }))}
+                      activeOpacity={0.7}
+                    >
+                      <Text variant="subheadline" color={active ? colors.tint : colors.labelSecondary} style={{ fontWeight: active ? '600' : '400' }}>
+                        {t(`recurring.${iv}`)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
             {/* Day */}
             {form.interval === 'monthly' ? (
-              <View>
-                <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('recurring.dayOfMonth').toUpperCase()}</Text>
-                <Card radius={Spacing.radius.lg} padding={0}>
+              <View style={styles.fieldGroup}>
+                <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                  {t('recurring.dayOfMonth').toUpperCase()}
+                </Text>
+                <View style={[styles.amountRow, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
                   <TextInput
-                    style={[styles.textInput, { color: colors.label }]}
+                    style={[styles.amountInput, { color: colors.label }]}
                     placeholder="1–31"
                     placeholderTextColor={colors.labelTertiary}
                     keyboardType="number-pad"
@@ -347,32 +414,38 @@ function RecurringSheet({
                     onChangeText={v => setForm(p => ({ ...p, day_of_month: v }))}
                     maxLength={2}
                   />
-                </Card>
+                </View>
               </View>
             ) : (
-              <View>
-                <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>{t('recurring.dayOfWeek').toUpperCase()}</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {WEEKDAY_KEYS.map((key, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      style={[styles.chip, {
-                        backgroundColor: form.day_of_week === String(idx) ? colors.tint + '22' : colors.fillPrimary,
-                        borderColor: form.day_of_week === String(idx) ? colors.tint : 'transparent',
-                        borderWidth: 1,
-                      }]}
-                      onPress={() => setForm(p => ({ ...p, day_of_week: String(idx) }))}
-                      activeOpacity={0.7}
-                    >
-                      <Text variant="caption1">{t(key).slice(0, 3)}</Text>
-                    </TouchableOpacity>
-                  ))}
+              <View style={styles.fieldGroup}>
+                <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                  {t('recurring.dayOfWeek').toUpperCase()}
+                </Text>
+                <View style={styles.typeRow}>
+                  {WEEKDAY_KEYS.map((key, idx) => {
+                    const active = form.day_of_week === String(idx);
+                    return (
+                      <TouchableOpacity
+                        key={idx}
+                        style={[styles.dayBtn, {
+                          backgroundColor: active ? colors.tint + '18' : colors.fillPrimary,
+                          borderColor: active ? colors.tint : 'transparent',
+                        }]}
+                        onPress={() => setForm(p => ({ ...p, day_of_week: String(idx) }))}
+                        activeOpacity={0.7}
+                      >
+                        <Text variant="caption1" color={active ? colors.tint : colors.labelSecondary} style={{ fontWeight: active ? '700' : '400' }}>
+                          {t(key).slice(0, 1).toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
             )}
 
             {/* Active */}
-            <View style={[styles.pickerRow, { paddingHorizontal: 0 }]}>
+            <View style={[styles.activeRow, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
               <Text variant="callout" style={{ flex: 1 }}>{t('recurring.active')}</Text>
               <Switch
                 value={form.is_active}
@@ -380,6 +453,18 @@ function RecurringSheet({
                 trackColor={{ true: colors.tint }}
               />
             </View>
+
+            {/* Save button */}
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: typeColor, opacity: saving ? 0.6 : 1 }]}
+              onPress={handleSave}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              <Text variant="headline" color="#ffffff">
+                {saving ? '...' : isEdit ? t('recurring.update') : t('recurring.save')}
+              </Text>
+            </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
@@ -461,13 +546,7 @@ export default function RecurringScreen() {
           <BackIcon color={colors.label} />
         </TouchableOpacity>
         <Text variant="headline" style={{ flex: 1 }} align="center">{t('recurring.title')}</Text>
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.tint }]}
-          onPress={() => { setEditing(null); setSheetOpen(true); }}
-          hitSlop={8}
-        >
-          <PlusIcon color={colors.tintForeground} />
-        </TouchableOpacity>
+        <View style={{ width: 32 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -475,15 +554,8 @@ export default function RecurringScreen() {
           <RecurringSkeleton />
         ) : templates.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🔄</Text>
+            <View style={styles.emptyIcon}><Text style={{ fontSize: 40, lineHeight: 40 }}>📅</Text></View>
             <Text variant="callout" align="center" color={colors.labelSecondary}>{t('recurring.empty')}</Text>
-            <TouchableOpacity
-              style={[styles.emptyBtn, { backgroundColor: colors.tint }]}
-              onPress={() => { setEditing(null); setSheetOpen(true); }}
-              activeOpacity={0.85}
-            >
-              <Text variant="callout" color={colors.tintForeground}>{t('recurring.add')}</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <View style={{ paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md }}>
@@ -525,6 +597,18 @@ export default function RecurringScreen() {
             </Card>
           </View>
         )}
+
+        {/* Add button — always visible at bottom */}
+        <TouchableOpacity
+          style={[styles.addBottomBtn, { backgroundColor: colors.tint }]}
+          onPress={() => { setEditing(null); setSheetOpen(true); }}
+          activeOpacity={0.85}
+        >
+          <PlusIcon color={colors.tintForeground} />
+          <Text variant="callout" color={colors.tintForeground} style={{ fontWeight: '600' }}>
+            {t('recurring.add')}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <RecurringSheet
@@ -564,11 +648,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 12,
   },
   backBtn: { width: 32 },
-  addBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingBottom: 40 },
   emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
-  emptyEmoji: { fontSize: 40, marginBottom: 8 },
-  emptyBtn: { marginTop: 16, paddingHorizontal: Spacing.lg, paddingVertical: 12, borderRadius: Spacing.radius.full },
+  emptyIcon: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  addBottomBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    marginHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md, marginBottom: 8,
+    height: 52, borderRadius: Spacing.radius.lg,
+  },
   row: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm,
@@ -581,17 +668,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenHorizontal, paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  fieldLabel: { letterSpacing: 0.5, marginBottom: 6, marginLeft: 2 },
-  textInput: {
-    paddingHorizontal: Spacing.md, paddingVertical: 14,
-    fontSize: 16, fontFamily: 'System',
+  scrollContent: {
+    paddingHorizontal: Spacing.screenHorizontal,
+    paddingTop: Spacing.sm,
+    paddingBottom: 24,
+    gap: Spacing.md,
   },
-  chip: {
-    paddingHorizontal: Spacing.md, paddingVertical: 8,
-    borderRadius: Spacing.radius.full, alignItems: 'center',
+  fieldGroup: { gap: 6 },
+  fieldLabel: { letterSpacing: 0.5, marginLeft: 2 },
+  fieldError: { marginLeft: 2, marginTop: 2 },
+  typeRow: { flexDirection: 'row', gap: Spacing.xs },
+  typeBtn: {
+    flex: 1, height: 44,
+    borderRadius: Spacing.radius.md,
+    borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center',
   },
-  pickerRow: {
+  descRow: { flexDirection: 'row', alignItems: 'center', overflow: 'hidden' },
+  iconInput: {
+    width: 52, height: 52, textAlign: 'center', fontSize: 22,
+    borderRightWidth: StyleSheet.hairlineWidth,
+  },
+  descInput: { flex: 1, height: 52, paddingHorizontal: Spacing.sm, fontSize: 16 },
+  amountRow: { flexDirection: 'row', alignItems: 'center', height: 52, overflow: 'hidden' },
+  amountInput: { flex: 1, height: 52, paddingHorizontal: Spacing.sm, fontSize: 20, fontWeight: '600' },
+  currencyBtn: {
+    paddingHorizontal: 8, paddingVertical: 5,
+    borderRadius: 6, borderWidth: 1.5, alignItems: 'center',
+  },
+  selectTrigger: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md, paddingVertical: 14, gap: 8, minHeight: 52,
+  },
+  selectOption: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2, gap: 8,
+  },
+  categoryScroll: { gap: Spacing.xs, paddingRight: 4 },
+  categoryPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: Spacing.sm, paddingVertical: 8,
+    borderRadius: Spacing.radius.full, borderWidth: 1.5,
+  },
+  categoryDot: { width: 8, height: 8, borderRadius: 4 },
+  dayBtn: {
+    flex: 1, height: 38,
+    borderRadius: Spacing.radius.md, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  activeRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: Spacing.md, paddingVertical: 12,
+  },
+  saveBtn: {
+    height: 52, borderRadius: Spacing.radius.lg,
+    alignItems: 'center', justifyContent: 'center',
+    marginTop: Spacing.xs,
   },
 });

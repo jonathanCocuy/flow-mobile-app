@@ -290,6 +290,7 @@ export default {
   // Recurring screen
   'recurring.title': 'Recurrentes',
   'recurring.empty': 'Sin pagos recurrentes aún',
+  'recurring.selectAccount': 'Seleccionar cuenta',
   'recurring.add': 'Nuevo recurrente',
   'recurring.edit': 'Editar recurrente',
   'recurring.deleteTitle': 'Eliminar recurrente',
