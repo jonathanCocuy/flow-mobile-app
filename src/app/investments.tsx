@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme,
-  Modal, KeyboardAvoidingView, Platform, TextInput,
+  Modal, KeyboardAvoidingView, Platform, TextInput, Animated, PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -33,6 +33,121 @@ function PlusIcon({ color }: { color: string }) {
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
       <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={2} strokeLinecap="round" />
     </Svg>
+  );
+}
+
+function EditIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function TrashIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M10 11v6M14 11v6" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+// ── SwipeableRow ──────────────────────────────────────────────────────────────
+
+const ACTION_WIDTH = 72;
+const SNAP_THRESHOLD = ACTION_WIDTH;
+
+interface SwipeableRowProps {
+  children: React.ReactNode;
+  editLabel: string;
+  deleteLabel: string;
+  editColor: string;
+  editTextColor?: string;
+  deleteColor: string;
+  cardColor: string;
+  separatorColor?: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function SwipeableRow({
+  children, editLabel, deleteLabel,
+  editColor, editTextColor = '#fff',
+  deleteColor, cardColor, separatorColor,
+  onEdit, onDelete,
+}: SwipeableRowProps) {
+  const [translateX] = useState(() => new Animated.Value(0));
+  const isOpen = useRef(false);
+
+  const close = useCallback(() => {
+    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 4 })
+      .start(() => { isOpen.current = false; });
+  }, [translateX]);
+
+  const open = useCallback(() => {
+    Animated.spring(translateX, { toValue: -(ACTION_WIDTH * 2), useNativeDriver: true, bounciness: 4 })
+      .start(() => { isOpen.current = true; });
+  }, [translateX]);
+
+  const onMove = useCallback((_: unknown, { dx }: { dx: number }) => {
+    const base = isOpen.current ? -(ACTION_WIDTH * 2) : 0;
+    translateX.setValue(Math.max(-(ACTION_WIDTH * 2), Math.min(0, base + dx)));
+  }, [translateX]);
+
+  const onRelease = useCallback((_: unknown, { dx, vx }: { dx: number; vx: number }) => {
+    const base = isOpen.current ? -(ACTION_WIDTH * 2) : 0;
+    const moved = base + dx;
+    if (!isOpen.current) {
+      if (moved < -SNAP_THRESHOLD || vx < -0.5) { open(); } else { close(); }
+    } else {
+      if (moved > -(ACTION_WIDTH * 2 - SNAP_THRESHOLD) || vx > 0.5) { close(); } else { open(); }
+    }
+  }, [open, close]);
+
+  // eslint-disable-next-line react-hooks/refs -- callbacks only run during gesture events, not render
+  const panHandlers = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+      Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy),
+    onPanResponderMove: onMove,
+    onPanResponderRelease: onRelease,
+  }).panHandlers, [onMove, onRelease]);
+
+  return (
+    <View
+      style={[
+        { overflow: 'hidden', paddingLeft: Spacing.md, backgroundColor: cardColor },
+        separatorColor
+          ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: separatorColor }
+          : undefined,
+      ]}
+    >
+      <View style={[styles.swipeActions, { position: 'absolute', top: 0, bottom: 0, right: 0 }]}>
+        <TouchableOpacity
+          style={[styles.swipeAction, { backgroundColor: editColor }]}
+          onPress={() => { close(); onEdit(); }}
+          activeOpacity={0.85}
+        >
+          <EditIcon color={editTextColor} />
+          <Text variant="caption2" color={editTextColor} style={styles.swipeLabel}>{editLabel}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.swipeAction, { backgroundColor: deleteColor }]}
+          onPress={() => { close(); onDelete(); }}
+          activeOpacity={0.85}
+        >
+          <TrashIcon color="#fff" />
+          <Text variant="caption2" color="#fff" style={styles.swipeLabel}>{deleteLabel}</Text>
+        </TouchableOpacity>
+      </View>
+      <Animated.View
+        {...panHandlers}
+        style={[{ backgroundColor: cardColor }, { transform: [{ translateX }] }]}
+      >
+        {children}
+      </Animated.View>
+    </View>
   );
 }
 
@@ -153,7 +268,6 @@ function InvestmentSheet({
     setSaving(false);
     onSuccess();
   }
-
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -379,7 +493,13 @@ export default function InvestmentsScreen() {
           <BackIcon color={colors.label} />
         </TouchableOpacity>
         <Text variant="headline" style={{ flex: 1 }} align="center">{t('investments.title')}</Text>
-        <View style={{ width: 32 }} />
+        <TouchableOpacity
+          style={[styles.addBtn, { backgroundColor: colors.tint }]}
+          onPress={() => { setEditing(null); setSheetOpen(true); }}
+          hitSlop={8}
+        >
+          <PlusIcon color={colors.tintForeground} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -388,11 +508,23 @@ export default function InvestmentsScreen() {
         ) : records.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}><Text style={{ fontSize: 40, lineHeight: 40 }}>💎</Text></View>
-            <Text variant="callout" align="center" color={colors.labelSecondary}>{t('investments.empty')}</Text>
+            <Text variant="callout" align="center" color={colors.labelSecondary} style={{ marginBottom: Spacing.lg }}>
+              {t('investments.empty')}
+            </Text>
+            <TouchableOpacity
+              style={[styles.emptyAddBtn, { backgroundColor: colors.tint }]}
+              onPress={() => { setEditing(null); setSheetOpen(true); }}
+              activeOpacity={0.85}
+            >
+              <PlusIcon color={colors.tintForeground} />
+              <Text variant="subheadline" color={colors.tintForeground} style={{ fontWeight: '600' }}>
+                {t('investments.add')}
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <>
-            {/* Summary */}
+            {/* Summary totals */}
             <View style={styles.section}>
               <View style={styles.summaryRow}>
                 {totalCOP > 0 && (
@@ -414,18 +546,52 @@ export default function InvestmentsScreen() {
               </View>
             </View>
 
-            {/* List */}
+            {/* Type breakdown chips */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: Spacing.xs, paddingLeft: Spacing.screenHorizontal, paddingRight: Spacing.screenHorizontal, marginTop: 2 }}
+              style={{ marginTop: Spacing.sm }}
+            >
+              {INVESTMENT_TYPES.filter(tp => records.some(r => r.type === tp)).map(tp => {
+                const typeRecs = records.filter(r => r.type === tp);
+                const total = typeRecs.reduce((s, r) => s + r.amount, 0);
+                const currency = typeRecs[0]?.currency ?? 'COP';
+                const color = TYPE_COLOR[tp];
+                return (
+                  <View key={tp} style={[styles.typeChip, { backgroundColor: color + '15', borderColor: color + '50' }]}>
+                    <Text style={{ fontSize: 16 }}>{TYPE_EMOJI[tp]}</Text>
+                    <View style={{ gap: 1 }}>
+                      <Text variant="caption2" color={color} style={{ fontWeight: '700' }}>
+                        {t(`investment.type.${tp}`)}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: color + 'AA', fontWeight: '500' }}>
+                        {typeRecs.length} · {fmtAmount(total, currency)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            {/* Records list */}
             <View style={[styles.section, { marginTop: Spacing.xl }]}>
               <Text variant="title3" style={{ marginBottom: Spacing.sm }}>{t('investments.records')}</Text>
-              <Card radius={Spacing.radius.lg} padding={0}>
+              <Card radius={Spacing.radius.lg} padding={0} style={{ overflow: 'hidden' }}>
                 {records.map((rec, i) => (
-                  <View key={rec.id}>
-                    <TouchableOpacity
-                      style={styles.row}
-                      onPress={() => { setEditing(rec); setSheetOpen(true); }}
-                      onLongPress={() => setDeleteTarget(rec)}
-                      activeOpacity={0.6}
-                    >
+                  <SwipeableRow
+                    key={rec.id}
+                    editLabel={t('accounts.edit')}
+                    deleteLabel={t('common.delete')}
+                    editColor={colors.tint}
+                    editTextColor={colors.tintForeground}
+                    deleteColor={colors.expense}
+                    cardColor={colors.card}
+                    separatorColor={i > 0 ? colors.separator : undefined}
+                    onEdit={() => { setEditing(rec); setSheetOpen(true); }}
+                    onDelete={() => setDeleteTarget(rec)}
+                  >
+                    <View style={[styles.row, { backgroundColor: colors.card }]}>
                       <View style={[styles.iconCircle, { backgroundColor: TYPE_COLOR[rec.type] + '20' }]}>
                         <Text variant="body" align="center">{TYPE_EMOJI[rec.type]}</Text>
                       </View>
@@ -438,28 +604,21 @@ export default function InvestmentsScreen() {
                       <Text variant="callout" style={{ fontWeight: '600' }} color={TYPE_COLOR[rec.type]}>
                         {fmtAmount(rec.amount, rec.currency)}
                       </Text>
-                    </TouchableOpacity>
-                    {i < records.length - 1 && (
-                      <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 72 }} />
-                    )}
-                  </View>
+                    </View>
+                  </SwipeableRow>
                 ))}
               </Card>
+              <Text
+                variant="caption2"
+                color={colors.labelTertiary}
+                align="center"
+                style={{ marginTop: Spacing.sm, paddingHorizontal: Spacing.md }}
+              >
+                {t('investments.swipeHint')}
+              </Text>
             </View>
           </>
         )}
-
-        {/* Add button — always visible at bottom */}
-        <TouchableOpacity
-          style={[styles.addBottomBtn, { backgroundColor: colors.tint }]}
-          onPress={() => { setEditing(null); setSheetOpen(true); }}
-          activeOpacity={0.85}
-        >
-          <PlusIcon color={colors.tintForeground} />
-          <Text variant="callout" color={colors.tintForeground} style={{ fontWeight: '600' }}>
-            {t('investments.add')}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <InvestmentSheet
@@ -497,21 +656,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 12,
   },
   backBtn: { width: 32 },
+  addBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+  },
   scroll: { paddingBottom: 40 },
   section: { paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md },
   summaryRow: { flexDirection: 'row', gap: Spacing.sm },
   emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
   emptyIcon: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  addBottomBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    marginHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md, marginBottom: 8,
-    height: 52, borderRadius: Spacing.radius.lg,
+  emptyAddBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: Spacing.xl, paddingVertical: 12,
+    borderRadius: Spacing.radius.lg,
+  },
+  typeChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 12, paddingVertical: 10,
+    borderRadius: Spacing.radius.lg, borderWidth: 1,
   },
   row: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm,
+    paddingRight: Spacing.xl, paddingVertical: 14, gap: Spacing.sm,
   },
   iconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  swipeActions: { flexDirection: 'row' },
+  swipeAction: { width: ACTION_WIDTH, justifyContent: 'center', alignItems: 'center', gap: 4 },
+  swipeLabel: { fontWeight: '500' },
   // Sheet
   sheet: { flex: 1 },
   sheetHeader: {
@@ -519,7 +690,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenHorizontal, paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  // Sheet form
   scrollContent: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: Spacing.sm, paddingBottom: 24, gap: Spacing.md },
   fieldGroup: { gap: 6 },
   fieldLabel: { letterSpacing: 0.5, marginLeft: 2 },

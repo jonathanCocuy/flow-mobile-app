@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   View,
@@ -24,7 +24,8 @@ import { AddAccountSheet } from '@/components/AddAccountSheet';
 import { AddBudgetSheet } from '@/components/AddBudgetSheet';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { GettingStartedChecklist } from '@/components/GettingStartedChecklist';
-import { BalanceFlipCard } from '@/components/BalanceFlipCard';
+import { BalanceExpandCard } from '@/components/BalanceExpandCard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
 
@@ -135,6 +136,26 @@ function FlowXLogo({ color, size = 20 }: { color: string; size?: number }) {
   );
 }
 
+function EyeIcon({ color }: { color: string }) {
+  return (
+    <Svg width={15} height={15} viewBox="0 0 24 24" fill="none">
+      <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" stroke={color} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
+function EyeOffIcon({ color }: { color: string }) {
+  return (
+    <Svg width={15} height={15} viewBox="0 0 24 24" fill="none">
+      <Path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M1 1l22 22" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 function TrendArrow({ up, color }: { up: boolean; color: string }) {
   return (
     <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
@@ -159,6 +180,19 @@ export default function DashboardScreen() {
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
   const [budgetSheetOpen, setBudgetSheetOpen] = useState(false);
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
+  const [balanceVisible, setBalanceVisible] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@flowx_balance_visible').then(val => {
+      if (val !== null) setBalanceVisible(val === 'true');
+    });
+  }, []);
+
+  const toggleBalanceVisible = () => {
+    const next = !balanceVisible;
+    setBalanceVisible(next);
+    AsyncStorage.setItem('@flowx_balance_visible', String(next));
+  };
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ?? '';
 
@@ -220,16 +254,25 @@ export default function DashboardScreen() {
 
         {/* Balance Card */}
         <View style={styles.section}>
-          <BalanceFlipCard
+          <BalanceExpandCard
             accounts={data.accounts}
+            balanceVisible={balanceVisible}
             cardBg={cardBg}
             cardBorder={cardBorder}
             frontContent={
               <View style={styles.balancePadding}>
-                {/* Label */}
-                <Text variant="footnote" color={cardTextSub} align="center">
-                  {t('dashboard.totalBalance')}
-                </Text>
+                {/* Label + eye toggle */}
+                <View style={styles.balanceLabelRow}>
+                  <Text variant="footnote" color={cardTextSub}>
+                    {t('dashboard.totalBalance')}
+                  </Text>
+                  <TouchableOpacity onPress={toggleBalanceVisible} hitSlop={12} activeOpacity={0.7}>
+                    {balanceVisible
+                      ? <EyeOffIcon color={cardTextSub} />
+                      : <EyeIcon color={cardTextSub} />
+                    }
+                  </TouchableOpacity>
+                </View>
 
                 {/* Balance amount */}
                 {loading ? (
@@ -238,12 +281,12 @@ export default function DashboardScreen() {
                   </View>
                 ) : (
                   <Text variant="displayMedium" color={cardText} align="center" style={styles.balanceAmount}>
-                    {formatCurrency(data.totalBalance)}
+                    {balanceVisible ? formatCurrency(data.totalBalance) : '$•••••'}
                   </Text>
                 )}
 
                 {/* Net savings badge */}
-                {!loading && (
+                {!loading && balanceVisible && (
                   <View style={styles.savingsBadge}>
                     <TrendArrow up={savings >= 0} color={savings >= 0 ? colors.income : colors.expense} />
                     <Text variant="caption1" color={savings >= 0 ? colors.income : colors.expense}>
@@ -253,10 +296,10 @@ export default function DashboardScreen() {
                 )}
 
                 {/* Floating stat chips */}
-                <View style={styles.chipRow}>
+                <View style={[styles.chipRow, !balanceVisible && { marginTop: 16 }]}>
                   <StatChip
                     label={t('dashboard.income')}
-                    value={loading ? '—' : formatCurrency(data.currentMonthIncome, true)}
+                    value={loading ? '—' : balanceVisible ? formatCurrency(data.currentMonthIncome, true) : '••'}
                     accent={colors.income}
                     chipBg={chipBg}
                     chipBorder={chipBorder}
@@ -264,7 +307,7 @@ export default function DashboardScreen() {
                   />
                   <StatChip
                     label={t('dashboard.expenses')}
-                    value={loading ? '—' : formatCurrency(Math.abs(data.currentMonthExpenses), true)}
+                    value={loading ? '—' : balanceVisible ? formatCurrency(Math.abs(data.currentMonthExpenses), true) : '••'}
                     accent={colors.expense}
                     chipBg={chipBg}
                     chipBorder={chipBorder}
@@ -272,7 +315,7 @@ export default function DashboardScreen() {
                   />
                   <StatChip
                     label={t('dashboard.savings')}
-                    value={loading ? '—' : formatCurrency(Math.abs(savings), true)}
+                    value={loading ? '—' : balanceVisible ? formatCurrency(Math.abs(savings), true) : '••'}
                     accent={colors.savings}
                     chipBg={chipBg}
                     chipBorder={chipBorder}
@@ -614,6 +657,12 @@ const styles = StyleSheet.create({
   },
   balanceCard: { overflow: 'hidden' },
   balancePadding: { paddingHorizontal: Spacing.md, paddingTop: Spacing.lg, paddingBottom: Spacing.md },
+  balanceLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
   balanceSkeleton: {
     height: 56,
     justifyContent: 'center',

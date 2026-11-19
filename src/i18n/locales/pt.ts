@@ -86,6 +86,7 @@ export default {
   'accounts.initialBalance': 'Inicial',
   'accounts.deleteTitle': 'Excluir conta',
   'accounts.deleteMessage': 'Excluir "{{name}}"? Não pode ser desfeito.',
+  'accounts.swipeHint': 'Deslize uma conta para a esquerda para editá-la ou excluí-la.',
 
   // Account
   'account.add': 'Nova Conta',
@@ -268,6 +269,7 @@ export default {
   'investments.records': 'Registros',
   'investments.deleteTitle': 'Excluir investimento',
   'investments.deleteMessage': 'Excluir "{{name}}"? Não pode ser desfeito.',
+  'investments.swipeHint': 'Deslize um registro para a esquerda para editá-lo ou excluí-lo.',
   'investment.name': 'Nome do ativo',
   'investment.namePlaceholder': 'ex. Bitcoin, S&P 500',
   'investment.type': 'Tipo',
@@ -316,6 +318,8 @@ export default {
   'recurring.error.amountInvalid': 'Digite um valor válido.',
   'recurring.error.accountRequired': 'Selecione uma conta.',
   'recurring.error.categoryRequired': 'Selecione uma categoria.',
+  'recurring.obligations': 'Obrigações mensais',
+  'recurring.swipeHint': 'Deslize um item para a esquerda para editá-lo ou excluí-lo.',
   'weekdays.sunday': 'Domingo',
   'weekdays.monday': 'Segunda',
   'weekdays.tuesday': 'Terça',
@@ -337,4 +341,75 @@ export default {
   'reports.totalIncome': 'Receita total',
   'reports.totalExpenses': 'Despesa total',
   'reports.totalSavings': 'Poupança líquida',
+
+  // Profile navigation - split
+  'profile.split': 'Despesas compartilhadas',
+
+  // Split screen (groups)
+  'split.title': 'Despesas compartilhadas',
+  'split.empty': 'Nenhum grupo ainda',
+  'split.emptyDesc': 'Crie um grupo para dividir despesas com amigos ou família',
+  'split.addGroup': 'Novo grupo',
+  'split.editGroup': 'Editar grupo',
+  'split.deleteTitle': 'Excluir grupo',
+  'split.deleteMessage': 'Excluir "{{name}}"? Todas as despesas do grupo serão excluídas.',
+  'split.swipeHint': 'Deslize um grupo para a esquerda para editar ou excluir',
+  'split.totalPending': 'Total pendente',
+  'split.activeGroups': 'grupos ativos',
+  'split.youAreOwed': 'Te devem',
+  'split.youOwe': 'Você deve',
+  'split.balanceZero': 'Quitado ✓',
+
+  // Group sheet
+  'split.group.name': 'Nome do grupo',
+  'split.group.namePh': 'ex. Casa, Casal, Viagem...',
+  'split.group.members': 'Membros',
+  'split.group.memberNamePh': 'ex. João, Maria...',
+  'split.group.addMember': 'Adicionar membro',
+  'split.group.dividir': 'Dividir igualmente',
+  'split.group.save': 'Criar grupo',
+  'split.group.update': 'Salvar alterações',
+  'split.group.error.nameRequired': 'Insira o nome do grupo.',
+  'split.group.error.noMembers': 'Adicione pelo menos um membro.',
+  'split.group.error.shareSum': 'As porcentagens devem somar 100.',
+  'split.group.error.memberName': 'Insira um nome para cada membro.',
+  'split.group.error.memberShare': 'Insira uma porcentagem válida (1–100).',
+
+  // Split detail screen
+  'split.detail.balance': 'Resumo',
+  'split.detail.expenses': 'Despesas',
+  'split.detail.empty': 'Nenhuma despesa ainda',
+  'split.detail.addFirst': 'Adicionar primeira despesa',
+  'split.detail.swipeHint': 'Deslize uma despesa para editá-la ou excluí-la',
+
+  // Expense sheet
+  'split.expense.add': 'Adicionar despesa',
+  'split.expense.edit': 'Editar despesa',
+  'split.expense.description': 'Descrição',
+  'split.expense.descPh': 'ex. Mercado, Netflix, Aluguel...',
+  'split.expense.amount': 'Valor total',
+  'split.expense.category': 'Categoria',
+  'split.expense.date': 'Data',
+  'split.expense.paidBy': 'Quem pagou?',
+  'split.expense.notes': 'Notas (opcional)',
+  'split.expense.notesPh': 'Notas adicionais...',
+  'split.expense.save': 'Adicionar despesa',
+  'split.expense.update': 'Salvar alterações',
+  'split.expense.deleteTitle': 'Excluir despesa',
+  'split.expense.deleteMessage': 'Excluir "{{name}}"? Não pode ser desfeito.',
+  'split.expense.error.descRequired': 'Insira uma descrição.',
+  'split.expense.error.amountInvalid': 'Insira um valor válido.',
+  'split.expense.error.paidByRequired': 'Selecione quem pagou.',
+
+  // Expense categories
+  'split.category.home': 'Casa',
+  'split.category.food': 'Comida',
+  'split.category.transport': 'Transporte',
+  'split.category.entertainment': 'Lazer',
+  'split.category.health': 'Saúde',
+  'split.category.services': 'Serviços',
+  'split.category.other': 'Outro',
+
+  // Common
+  'common.edit': 'Editar',
 } as const;

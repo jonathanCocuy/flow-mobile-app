@@ -39,6 +39,12 @@ const ExpoSecureStoreAdapter = {
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
+// supabase-js v2 initialises the PostgrestClient headers at construction time,
+// before the async SecureStore session loads — so auth.uid() would be null for
+// every PostgREST request.  We fix this by injecting the JWT dynamically on
+// every request via global.fetch, keeping it in sync via onAuthStateChange.
+let _accessToken: string | null = null;
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: ExpoSecureStoreAdapter,
@@ -46,5 +52,21 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     detectSessionInUrl: false,
   },
-  tracePropagation: false,
+  global: {
+    fetch: async (url: RequestInfo | URL, options: RequestInit = {}) => {
+      const token = _accessToken ?? SUPABASE_ANON_KEY;
+      return fetch(url, {
+        ...options,
+        headers: {
+          ...(options.headers as Record<string, string> ?? {}),
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    },
+  },
+});
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  _accessToken = session?.access_token ?? null;
 });

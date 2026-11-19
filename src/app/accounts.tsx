@@ -334,6 +334,18 @@ export default function AccountsScreen() {
               ))}
             </Card>
           )}
+
+          {/* Swipe hint */}
+          {!loading && accounts.length > 0 && (
+            <Text
+              variant="caption2"
+              color={colors.labelTertiary}
+              align="center"
+              style={{ marginTop: Spacing.sm, paddingHorizontal: Spacing.md }}
+            >
+              {t('accounts.swipeHint')}
+            </Text>
+          )}
         </View>
       </ScrollView>
 

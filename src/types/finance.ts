@@ -65,6 +65,40 @@ export type RecurringTemplate = {
   account_id: string
 }
 
+export type SharedMember = {
+  id: string
+  group_id: string
+  name: string
+  share_pct: number
+  is_me: boolean
+  color: string
+  member_user_id: string | null
+  invited_email: string | null
+}
+
+export type SharedExpense = {
+  id: string
+  group_id: string
+  description: string
+  amount: number
+  category: string
+  date: string
+  paid_by_member_id: string | null
+  account_id: string | null
+  transaction_id: string | null
+  is_recurring: boolean
+  notes: string | null
+}
+
+export type SharedGroup = {
+  id: string
+  user_id: string
+  name: string
+  created_at: string
+  shared_members?: SharedMember[]
+  shared_expenses?: Pick<SharedExpense, 'amount' | 'paid_by_member_id'>[]
+}
+
 export type DashboardData = {
   accounts: DashboardAccount[]
   totalBalance: number

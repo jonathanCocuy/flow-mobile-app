@@ -23,6 +23,7 @@ import {
 } from '@expo-google-fonts/inter';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { SplashView } from '@/components/SplashView';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -83,7 +84,7 @@ function RootLayoutInner() {
   }, [fontsLoaded, fontError, i18nReady]);
 
   if ((!fontsLoaded && !fontError) || !i18nReady) {
-    return null;
+    return <SplashView />;
   }
 
   return (
@@ -93,6 +94,8 @@ function RootLayoutInner() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="accounts" />
+          <Stack.Screen name="split" />
+          <Stack.Screen name="split-detail" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="+not-found" options={{ headerShown: true, title: 'Not Found' }} />

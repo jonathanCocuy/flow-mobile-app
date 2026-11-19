@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme,
-  Modal, KeyboardAvoidingView, Platform, TextInput, Switch,
+  Modal, KeyboardAvoidingView, Platform, TextInput, Switch, Animated, PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -35,6 +35,24 @@ function PlusIcon({ color }: { color: string }) {
   );
 }
 
+function EditIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function TrashIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M10 11v6M14 11v6" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 function ChevronDownIcon({ color, open }: { color: string; open?: boolean }) {
   return (
     <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
@@ -48,6 +66,103 @@ function CheckIcon({ color }: { color: string }) {
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
       <Path d="M20 6L9 17l-5-5" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
+  );
+}
+
+// ── SwipeableRow ──────────────────────────────────────────────────────────────
+
+const ACTION_WIDTH = 72;
+const SNAP_THRESHOLD = ACTION_WIDTH;
+
+interface SwipeableRowProps {
+  children: React.ReactNode;
+  editLabel: string;
+  deleteLabel: string;
+  editColor: string;
+  editTextColor?: string;
+  deleteColor: string;
+  cardColor: string;
+  separatorColor?: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function SwipeableRow({
+  children, editLabel, deleteLabel,
+  editColor, editTextColor = '#fff',
+  deleteColor, cardColor, separatorColor,
+  onEdit, onDelete,
+}: SwipeableRowProps) {
+  const [translateX] = useState(() => new Animated.Value(0));
+  const isOpen = useRef(false);
+
+  const close = useCallback(() => {
+    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 4 })
+      .start(() => { isOpen.current = false; });
+  }, [translateX]);
+
+  const open = useCallback(() => {
+    Animated.spring(translateX, { toValue: -(ACTION_WIDTH * 2), useNativeDriver: true, bounciness: 4 })
+      .start(() => { isOpen.current = true; });
+  }, [translateX]);
+
+  const onMove = useCallback((_: unknown, { dx }: { dx: number }) => {
+    const base = isOpen.current ? -(ACTION_WIDTH * 2) : 0;
+    translateX.setValue(Math.max(-(ACTION_WIDTH * 2), Math.min(0, base + dx)));
+  }, [translateX]);
+
+  const onRelease = useCallback((_: unknown, { dx, vx }: { dx: number; vx: number }) => {
+    const base = isOpen.current ? -(ACTION_WIDTH * 2) : 0;
+    const moved = base + dx;
+    if (!isOpen.current) {
+      if (moved < -SNAP_THRESHOLD || vx < -0.5) { open(); } else { close(); }
+    } else {
+      if (moved > -(ACTION_WIDTH * 2 - SNAP_THRESHOLD) || vx > 0.5) { close(); } else { open(); }
+    }
+  }, [open, close]);
+
+  // eslint-disable-next-line react-hooks/refs -- callbacks only run during gesture events, not render
+  const panHandlers = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+      Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy),
+    onPanResponderMove: onMove,
+    onPanResponderRelease: onRelease,
+  }).panHandlers, [onMove, onRelease]);
+
+  return (
+    <View
+      style={[
+        { overflow: 'hidden', backgroundColor: cardColor },
+        separatorColor
+          ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: separatorColor }
+          : undefined,
+      ]}
+    >
+      <View style={[styles.swipeActions, { position: 'absolute', top: 0, bottom: 0, right: 0 }]}>
+        <TouchableOpacity
+          style={[styles.swipeAction, { backgroundColor: editColor }]}
+          onPress={() => { close(); onEdit(); }}
+          activeOpacity={0.85}
+        >
+          <EditIcon color={editTextColor} />
+          <Text variant="caption2" color={editTextColor} style={styles.swipeLabel}>{editLabel}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.swipeAction, { backgroundColor: deleteColor }]}
+          onPress={() => { close(); onDelete(); }}
+          activeOpacity={0.85}
+        >
+          <TrashIcon color="#fff" />
+          <Text variant="caption2" color="#fff" style={styles.swipeLabel}>{deleteLabel}</Text>
+        </TouchableOpacity>
+      </View>
+      <Animated.View
+        {...panHandlers}
+        style={[{ backgroundColor: cardColor }, { transform: [{ translateX }] }]}
+      >
+        {children}
+      </Animated.View>
+    </View>
   );
 }
 
@@ -478,22 +593,38 @@ function RecurringSkeleton() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   return (
-    <View style={{ paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md }}>
-      <Card radius={Spacing.radius.lg} padding={0}>
-        {[1, 2, 3].map((i) => (
-          <View key={i}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm }}>
-              <Skeleton width={44} height={44} radius={22} />
-              <View style={{ flex: 1, gap: 6 }}>
-                <Skeleton width="50%" height={14} radius={7} />
-                <Skeleton width="30%" height={12} radius={6} />
-              </View>
-              <Skeleton width={56} height={14} radius={7} />
+    <View style={{ gap: Spacing.md, marginTop: Spacing.md }}>
+      <View style={{ paddingHorizontal: Spacing.screenHorizontal }}>
+        <Card radius={Spacing.radius.lg} padding={Spacing.md}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <View style={{ gap: 6 }}>
+              <Skeleton width={120} height={12} radius={6} />
+              <Skeleton width={80} height={22} radius={6} />
             </View>
-            {i < 3 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 72 }} />}
+            <View style={{ gap: 6, alignItems: 'flex-end' }}>
+              <Skeleton width={70} height={20} radius={10} />
+              <Skeleton width={70} height={20} radius={10} />
+            </View>
           </View>
-        ))}
-      </Card>
+        </Card>
+      </View>
+      <View style={{ paddingHorizontal: Spacing.screenHorizontal }}>
+        <Card radius={Spacing.radius.lg} padding={0}>
+          {[1, 2, 3].map((i) => (
+            <View key={i}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm }}>
+                <Skeleton width={44} height={44} radius={22} />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Skeleton width="50%" height={14} radius={7} />
+                  <Skeleton width="30%" height={12} radius={6} />
+                </View>
+                <Skeleton width={56} height={28} radius={14} />
+              </View>
+              {i < 3 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 72 }} />}
+            </View>
+          ))}
+        </Card>
+      </View>
     </View>
   );
 }
@@ -539,6 +670,13 @@ export default function RecurringScreen() {
     setTemplates(prev => prev.map(t => t.id === tpl.id ? { ...t, is_active: !t.is_active } : t));
   }
 
+  const monthlyExpenses = templates
+    .filter(tpl => tpl.is_active && tpl.interval === 'monthly' && tpl.type === 'expense' && tpl.currency === 'COP')
+    .reduce((s, tpl) => s + tpl.amount, 0);
+
+  const activeCount = templates.filter(tpl => tpl.is_active).length;
+  const inactiveCount = templates.filter(tpl => !tpl.is_active).length;
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
       <View style={styles.header}>
@@ -546,7 +684,13 @@ export default function RecurringScreen() {
           <BackIcon color={colors.label} />
         </TouchableOpacity>
         <Text variant="headline" style={{ flex: 1 }} align="center">{t('recurring.title')}</Text>
-        <View style={{ width: 32 }} />
+        <TouchableOpacity
+          style={[styles.addBtn, { backgroundColor: colors.tint }]}
+          onPress={() => { setEditing(null); setSheetOpen(true); }}
+          hitSlop={8}
+        >
+          <PlusIcon color={colors.tintForeground} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -555,60 +699,115 @@ export default function RecurringScreen() {
         ) : templates.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}><Text style={{ fontSize: 40, lineHeight: 40 }}>📅</Text></View>
-            <Text variant="callout" align="center" color={colors.labelSecondary}>{t('recurring.empty')}</Text>
+            <Text variant="callout" align="center" color={colors.labelSecondary} style={{ marginBottom: Spacing.lg }}>
+              {t('recurring.empty')}
+            </Text>
+            <TouchableOpacity
+              style={[styles.emptyAddBtn, { backgroundColor: colors.tint }]}
+              onPress={() => { setEditing(null); setSheetOpen(true); }}
+              activeOpacity={0.85}
+            >
+              <PlusIcon color={colors.tintForeground} />
+              <Text variant="subheadline" color={colors.tintForeground} style={{ fontWeight: '600' }}>
+                {t('recurring.add')}
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          <View style={{ paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md }}>
-            <Card radius={Spacing.radius.lg} padding={0}>
-              {templates.map((tpl, i) => (
-                <View key={tpl.id}>
-                  <TouchableOpacity
-                    style={styles.row}
-                    onPress={() => { setEditing(tpl); setSheetOpen(true); }}
-                    onLongPress={() => setDeleteTarget(tpl)}
-                    activeOpacity={0.6}
+          <>
+            {/* Summary card */}
+            <View style={{ paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md }}>
+              <Card radius={Spacing.radius.lg} padding={Spacing.md}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="caption1" color={colors.labelSecondary}>{t('recurring.obligations')}</Text>
+                    <Text variant="title3" style={{ marginTop: 4 }} color={colors.expense}>
+                      ${Math.round(monthlyExpenses).toLocaleString('es-CO')} COP
+                    </Text>
+                  </View>
+                  <View style={{ gap: 6, alignItems: 'flex-end' }}>
+                    <View style={[styles.statBadge, { backgroundColor: colors.tint + '18' }]}>
+                      <Text variant="caption2" color={colors.tint} style={{ fontWeight: '600' }}>
+                        {activeCount} {t('recurring.active').toLowerCase()}
+                      </Text>
+                    </View>
+                    {inactiveCount > 0 && (
+                      <View style={[styles.statBadge, { backgroundColor: colors.fillPrimary }]}>
+                        <Text variant="caption2" color={colors.labelSecondary} style={{ fontWeight: '500' }}>
+                          {inactiveCount} {t('recurring.inactive').toLowerCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </Card>
+            </View>
+
+            {/* List */}
+            <View style={{ paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md }}>
+              <Card radius={Spacing.radius.lg} padding={0} style={{ overflow: 'hidden' }}>
+                {templates.map((tpl, i) => (
+                  <SwipeableRow
+                    key={tpl.id}
+                    editLabel={t('accounts.edit')}
+                    deleteLabel={t('common.delete')}
+                    editColor={colors.tint}
+                    editTextColor={colors.tintForeground}
+                    deleteColor={colors.expense}
+                    cardColor={colors.card}
+                    separatorColor={i > 0 ? colors.separator : undefined}
+                    onEdit={() => { setEditing(tpl); setSheetOpen(true); }}
+                    onDelete={() => setDeleteTarget(tpl)}
                   >
-                    <View style={[styles.iconCircle, { backgroundColor: colors.fillPrimary }]}>
-                      <Text variant="body" align="center">{tpl.icon}</Text>
-                    </View>
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text variant="callout" style={{ fontWeight: '500' }} numberOfLines={1}>{tpl.description}</Text>
-                      <Text variant="caption1" color={colors.labelSecondary}>
-                        {t('recurring.nextOn', { date: nextOccurrence(tpl) })}
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                      <Text variant="callout" style={{ fontWeight: '600' }} color={tpl.type === 'income' ? colors.income : colors.expense}>
-                        {tpl.type === 'expense' ? '-' : '+'}{tpl.amount.toLocaleString('es-CO')} {tpl.currency}
-                      </Text>
+                    {/* Row: left content is tappable for edit, switch is separate */}
+                    <View style={[styles.rowOuter, { backgroundColor: colors.card, opacity: tpl.is_active ? 1 : 0.45 }]}>
+                      <TouchableOpacity
+                        style={styles.rowContent}
+                        onPress={() => { setEditing(tpl); setSheetOpen(true); }}
+                        activeOpacity={0.6}
+                      >
+                        <View style={[styles.iconCircle, {
+                          backgroundColor: tpl.type === 'income'
+                            ? colors.income + '20'
+                            : colors.expense + '20',
+                        }]}>
+                          <Text variant="body" align="center">{tpl.icon}</Text>
+                        </View>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <Text variant="callout" style={{ fontWeight: '500' }} numberOfLines={1}>{tpl.description}</Text>
+                          <Text variant="caption1" color={colors.labelSecondary}>
+                            {t('recurring.nextOn', { date: nextOccurrence(tpl) })}
+                          </Text>
+                        </View>
+                        <Text
+                          variant="callout"
+                          style={{ fontWeight: '600', marginRight: 4 }}
+                          color={tpl.type === 'income' ? colors.income : colors.expense}
+                        >
+                          {tpl.type === 'expense' ? '-' : '+'}{tpl.amount.toLocaleString('es-CO')} {tpl.currency}
+                        </Text>
+                      </TouchableOpacity>
                       <Switch
                         value={tpl.is_active}
                         onValueChange={() => toggleActive(tpl)}
                         trackColor={{ true: colors.tint }}
-                        style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
+                        style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }], marginRight: Spacing.sm }}
                       />
                     </View>
-                  </TouchableOpacity>
-                  {i < templates.length - 1 && (
-                    <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 72 }} />
-                  )}
-                </View>
-              ))}
-            </Card>
-          </View>
+                  </SwipeableRow>
+                ))}
+              </Card>
+              <Text
+                variant="caption2"
+                color={colors.labelTertiary}
+                align="center"
+                style={{ marginTop: Spacing.sm, paddingHorizontal: Spacing.md }}
+              >
+                {t('recurring.swipeHint')}
+              </Text>
+            </View>
+          </>
         )}
-
-        {/* Add button — always visible at bottom */}
-        <TouchableOpacity
-          style={[styles.addBottomBtn, { backgroundColor: colors.tint }]}
-          onPress={() => { setEditing(null); setSheetOpen(true); }}
-          activeOpacity={0.85}
-        >
-          <PlusIcon color={colors.tintForeground} />
-          <Text variant="callout" color={colors.tintForeground} style={{ fontWeight: '600' }}>
-            {t('recurring.add')}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <RecurringSheet
@@ -648,19 +847,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 12,
   },
   backBtn: { width: 32 },
+  addBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+  },
   scroll: { paddingBottom: 40 },
   emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
   emptyIcon: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  addBottomBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    marginHorizontal: Spacing.screenHorizontal, marginTop: Spacing.md, marginBottom: 8,
-    height: 52, borderRadius: Spacing.radius.lg,
+  emptyAddBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: Spacing.xl, paddingVertical: 12,
+    borderRadius: Spacing.radius.lg,
   },
-  row: {
+  statBadge: {
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: Spacing.radius.full,
+  },
+  rowOuter: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+  },
+  rowContent: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    gap: Spacing.sm, paddingLeft: Spacing.md,
   },
   iconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  swipeActions: { flexDirection: 'row' },
+  swipeAction: { width: ACTION_WIDTH, justifyContent: 'center', alignItems: 'center', gap: 4 },
+  swipeLabel: { fontWeight: '500' },
   // Sheet
   sheet: { flex: 1 },
   sheetHeader: {

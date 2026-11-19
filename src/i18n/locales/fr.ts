@@ -86,6 +86,7 @@ export default {
   'accounts.initialBalance': 'Initial',
   'accounts.deleteTitle': 'Supprimer le compte',
   'accounts.deleteMessage': 'Supprimer "{{name}}" ? Irréversible.',
+  'accounts.swipeHint': 'Faites glisser un compte vers la gauche pour le modifier ou le supprimer.',
 
   // Account
   'account.add': 'Nouveau Compte',
@@ -268,6 +269,7 @@ export default {
   'investments.records': 'Enregistrements',
   'investments.deleteTitle': 'Supprimer',
   'investments.deleteMessage': 'Supprimer "{{name}}" ?',
+  'investments.swipeHint': 'Glissez un enregistrement vers la gauche pour le modifier ou le supprimer.',
   'investment.name': "Nom de l'actif",
   'investment.namePlaceholder': 'ex. Bitcoin, S&P 500',
   'investment.type': 'Type',
@@ -316,6 +318,8 @@ export default {
   'recurring.error.amountInvalid': 'Entrez un montant valide.',
   'recurring.error.accountRequired': 'Sélectionnez un compte.',
   'recurring.error.categoryRequired': 'Sélectionnez une catégorie.',
+  'recurring.obligations': 'Obligations mensuelles',
+  'recurring.swipeHint': 'Glissez un élément vers la gauche pour le modifier ou le supprimer.',
   'weekdays.sunday': 'Dimanche',
   'weekdays.monday': 'Lundi',
   'weekdays.tuesday': 'Mardi',
@@ -337,4 +341,75 @@ export default {
   'reports.totalIncome': 'Revenus totaux',
   'reports.totalExpenses': 'Dépenses totales',
   'reports.totalSavings': 'Épargne nette',
+
+  // Profile navigation - split
+  'profile.split': 'Dépenses partagées',
+
+  // Split screen (groups)
+  'split.title': 'Dépenses partagées',
+  'split.empty': 'Aucun groupe pour l\'instant',
+  'split.emptyDesc': 'Créez un groupe pour partager des dépenses avec des amis ou la famille',
+  'split.addGroup': 'Nouveau groupe',
+  'split.editGroup': 'Modifier le groupe',
+  'split.deleteTitle': 'Supprimer le groupe',
+  'split.deleteMessage': 'Supprimer "{{name}}" ? Toutes les dépenses seront supprimées.',
+  'split.swipeHint': 'Glissez un groupe vers la gauche pour le modifier ou le supprimer',
+  'split.totalPending': 'Total en attente',
+  'split.activeGroups': 'groupes actifs',
+  'split.youAreOwed': 'On vous doit',
+  'split.youOwe': 'Vous devez',
+  'split.balanceZero': 'Tout réglé ✓',
+
+  // Group sheet
+  'split.group.name': 'Nom du groupe',
+  'split.group.namePh': 'ex. Maison, Couple, Voyage...',
+  'split.group.members': 'Membres',
+  'split.group.memberNamePh': 'ex. Juan, María...',
+  'split.group.addMember': 'Ajouter un membre',
+  'split.group.dividir': 'Partager également',
+  'split.group.save': 'Créer le groupe',
+  'split.group.update': 'Enregistrer',
+  'split.group.error.nameRequired': 'Entrez le nom du groupe.',
+  'split.group.error.noMembers': 'Ajoutez au moins un membre.',
+  'split.group.error.shareSum': 'Les pourcentages doivent totaliser 100.',
+  'split.group.error.memberName': 'Entrez un nom pour chaque membre.',
+  'split.group.error.memberShare': 'Entrez un pourcentage valide (1–100).',
+
+  // Split detail screen
+  'split.detail.balance': 'Résumé',
+  'split.detail.expenses': 'Dépenses',
+  'split.detail.empty': 'Aucune dépense pour l\'instant',
+  'split.detail.addFirst': 'Ajouter une dépense',
+  'split.detail.swipeHint': 'Glissez une dépense pour la modifier ou la supprimer',
+
+  // Expense sheet
+  'split.expense.add': 'Ajouter une dépense',
+  'split.expense.edit': 'Modifier la dépense',
+  'split.expense.description': 'Description',
+  'split.expense.descPh': 'ex. Courses, Netflix, Loyer...',
+  'split.expense.amount': 'Montant total',
+  'split.expense.category': 'Catégorie',
+  'split.expense.date': 'Date',
+  'split.expense.paidBy': 'Qui a payé ?',
+  'split.expense.notes': 'Notes (optionnel)',
+  'split.expense.notesPh': 'Notes supplémentaires...',
+  'split.expense.save': 'Ajouter la dépense',
+  'split.expense.update': 'Enregistrer',
+  'split.expense.deleteTitle': 'Supprimer la dépense',
+  'split.expense.deleteMessage': 'Supprimer "{{name}}" ? Irréversible.',
+  'split.expense.error.descRequired': 'Entrez une description.',
+  'split.expense.error.amountInvalid': 'Entrez un montant valide.',
+  'split.expense.error.paidByRequired': 'Sélectionnez qui a payé.',
+
+  // Expense categories
+  'split.category.home': 'Maison',
+  'split.category.food': 'Alimentation',
+  'split.category.transport': 'Transport',
+  'split.category.entertainment': 'Loisirs',
+  'split.category.health': 'Santé',
+  'split.category.services': 'Services',
+  'split.category.other': 'Autre',
+
+  // Common
+  'common.edit': 'Modifier',
 } as const;

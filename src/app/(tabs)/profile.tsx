@@ -320,6 +320,8 @@ export default function ProfileScreen() {
               <SettingsRow emoji="🔄" label={t('profile.recurring')} onPress={() => router.push('/recurring')} />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
               <SettingsRow emoji="📊" label={t('profile.reports')} onPress={() => router.push('/reports')} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow emoji="🤝" label={t('profile.split')} onPress={() => router.push('/split')} />
             </View>
           </Card>
         </View>

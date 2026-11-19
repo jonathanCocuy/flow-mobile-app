@@ -86,6 +86,7 @@ export default {
   'accounts.initialBalance': 'Initial',
   'accounts.deleteTitle': 'Delete Account',
   'accounts.deleteMessage': 'Delete "{{name}}"? This cannot be undone.',
+  'accounts.swipeHint': 'Swipe left on an account to edit or delete it.',
 
   // Account
   'account.add': 'New Account',
@@ -268,6 +269,7 @@ export default {
   'investments.records': 'Records',
   'investments.deleteTitle': 'Delete Investment',
   'investments.deleteMessage': 'Delete "{{name}}"? This cannot be undone.',
+  'investments.swipeHint': 'Swipe left on a record to edit or delete it.',
   'investment.name': 'Asset Name',
   'investment.namePlaceholder': 'e.g. Bitcoin, S&P 500',
   'investment.type': 'Type',
@@ -316,6 +318,8 @@ export default {
   'recurring.error.amountInvalid': 'Enter a valid amount.',
   'recurring.error.accountRequired': 'Select an account.',
   'recurring.error.categoryRequired': 'Select a category.',
+  'recurring.obligations': 'Monthly obligations',
+  'recurring.swipeHint': 'Swipe left on a recurring item to edit or delete it.',
   'weekdays.sunday': 'Sunday',
   'weekdays.monday': 'Monday',
   'weekdays.tuesday': 'Tuesday',
@@ -337,4 +341,75 @@ export default {
   'reports.totalIncome': 'Total Income',
   'reports.totalExpenses': 'Total Expenses',
   'reports.totalSavings': 'Net Savings',
+
+  // Profile navigation - split
+  'profile.split': 'Shared Expenses',
+
+  // Split screen (groups)
+  'split.title': 'Shared Expenses',
+  'split.empty': 'No groups yet',
+  'split.emptyDesc': 'Create a group to split expenses with friends or family',
+  'split.addGroup': 'New Group',
+  'split.editGroup': 'Edit Group',
+  'split.deleteTitle': 'Delete Group',
+  'split.deleteMessage': 'Delete "{{name}}"? All expenses in this group will be deleted.',
+  'split.swipeHint': 'Swipe left on a group to edit or delete it',
+  'split.totalPending': 'Total pending',
+  'split.activeGroups': 'active groups',
+  'split.youAreOwed': 'You\'re owed',
+  'split.youOwe': 'You owe',
+  'split.balanceZero': 'All settled ✓',
+
+  // Group sheet
+  'split.group.name': 'Group Name',
+  'split.group.namePh': 'e.g. Home, Couple, Trip...',
+  'split.group.members': 'Members',
+  'split.group.memberNamePh': 'e.g. Juan, María...',
+  'split.group.addMember': 'Add member',
+  'split.group.dividir': 'Split equally',
+  'split.group.save': 'Create Group',
+  'split.group.update': 'Save Changes',
+  'split.group.error.nameRequired': 'Enter a group name.',
+  'split.group.error.noMembers': 'Add at least one member.',
+  'split.group.error.shareSum': 'Percentages must add up to 100.',
+  'split.group.error.memberName': 'Enter a name for each member.',
+  'split.group.error.memberShare': 'Enter a valid percentage (1–100).',
+
+  // Split detail screen
+  'split.detail.balance': 'Balances',
+  'split.detail.expenses': 'Expenses',
+  'split.detail.empty': 'No expenses yet',
+  'split.detail.addFirst': 'Add first expense',
+  'split.detail.swipeHint': 'Swipe left on an expense to edit or delete it',
+
+  // Expense sheet
+  'split.expense.add': 'Add Expense',
+  'split.expense.edit': 'Edit Expense',
+  'split.expense.description': 'Description',
+  'split.expense.descPh': 'e.g. Groceries, Netflix, Rent...',
+  'split.expense.amount': 'Total Amount',
+  'split.expense.category': 'Category',
+  'split.expense.date': 'Date',
+  'split.expense.paidBy': 'Who paid?',
+  'split.expense.notes': 'Notes (optional)',
+  'split.expense.notesPh': 'Any additional notes...',
+  'split.expense.save': 'Add Expense',
+  'split.expense.update': 'Save Changes',
+  'split.expense.deleteTitle': 'Delete Expense',
+  'split.expense.deleteMessage': 'Delete "{{name}}"? This cannot be undone.',
+  'split.expense.error.descRequired': 'Enter a description.',
+  'split.expense.error.amountInvalid': 'Enter a valid amount.',
+  'split.expense.error.paidByRequired': 'Select who paid.',
+
+  // Expense categories
+  'split.category.home': 'Home',
+  'split.category.food': 'Food',
+  'split.category.transport': 'Transport',
+  'split.category.entertainment': 'Fun',
+  'split.category.health': 'Health',
+  'split.category.services': 'Services',
+  'split.category.other': 'Other',
+
+  // Common (make sure edit exists)
+  'common.edit': 'Edit',
 } as const;
