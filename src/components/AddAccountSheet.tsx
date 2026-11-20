@@ -19,6 +19,7 @@ import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
+import { formatAmountInput, parseAmountInput } from '@/utils/amount';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -86,7 +87,7 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
 
   const handleSave = async () => {
     if (!name.trim()) { setError(t('account.error.nameRequired')); return; }
-    const amount = parseFloat(balance.replace(',', '.'));
+    const amount = parseAmountInput(balance);
     if (isNaN(amount)) { setError(t('account.error.balanceInvalid')); return; }
 
     setSaving(true);
@@ -176,7 +177,7 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
               <TextInput
                 style={inputStyle}
                 value={balance}
-                onChangeText={setBalance}
+                onChangeText={v => setBalance(formatAmountInput(v))}
                 placeholder="0.00"
                 placeholderTextColor={colors.labelTertiary}
                 keyboardType="decimal-pad"

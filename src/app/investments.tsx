@@ -14,6 +14,8 @@ import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Icon } from '@/components/ui/Icon';
+import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DatePickerField } from '@/components/ui/DatePickerField';
 import type { InvestmentRecord } from '@/types/finance';
@@ -153,8 +155,8 @@ function SwipeableRow({
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TYPE_EMOJI: Record<string, string> = {
-  stock: '📈', etf: '📊', crypto: '🪙', fund: '🏦', other: '💼',
+const TYPE_ICON: Record<string, string> = {
+  stock: 'TrendingUp', etf: 'BarChart3', crypto: 'Coins', fund: 'Landmark', other: 'Briefcase',
 };
 
 const TYPE_COLOR: Record<string, string> = {
@@ -197,7 +199,7 @@ function recordToForm(r: InvestmentRecord): FormState {
   return {
     name: r.name,
     type: r.type,
-    amount: String(r.amount),
+    amount: toAmountInput(r.amount),
     currency: r.currency,
     date: r.date,
     notes: r.notes ?? '',
@@ -241,7 +243,7 @@ function InvestmentSheet({
   function validate(): boolean {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = t('investment.error.nameRequired');
-    const amt = parseFloat(form.amount.replace(',', '.'));
+    const amt = parseAmountInput(form.amount);
     if (!form.amount || isNaN(amt) || amt <= 0) e.amount = t('investment.error.amountInvalid');
     if (!selectedDate) e.date = t('investment.error.dateInvalid');
     setErrors(e);
@@ -255,7 +257,7 @@ function InvestmentSheet({
       user_id: user.id,
       name: form.name.trim(),
       type: form.type,
-      amount: parseFloat(form.amount.replace(',', '.')),
+      amount: parseAmountInput(form.amount),
       currency: form.currency,
       date: `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`,
       notes: form.notes.trim() || null,
@@ -320,7 +322,7 @@ function InvestmentSheet({
                       onPress={() => setForm(f => ({ ...f, type: tp }))}
                       activeOpacity={0.7}
                     >
-                      <Text style={{ fontSize: 14 }}>{TYPE_EMOJI[tp]}</Text>
+                      <Icon name={TYPE_ICON[tp]} size={14} color={active ? tpColor : colors.labelSecondary} />
                       <Text variant="subheadline" color={active ? tpColor : colors.label} style={{ fontWeight: active ? '600' : '400' }}>
                         {t(`investment.type.${tp}`)}
                       </Text>
@@ -343,7 +345,7 @@ function InvestmentSheet({
                   placeholderTextColor={colors.labelTertiary}
                   keyboardType="decimal-pad"
                   value={form.amount}
-                  onChangeText={v => setForm(f => ({ ...f, amount: v }))}
+                  onChangeText={v => setForm(f => ({ ...f, amount: formatAmountInput(v) }))}
                 />
                 <View style={styles.currencyRow}>
                   {CURRENCIES.map(cur => (
@@ -507,7 +509,7 @@ export default function InvestmentsScreen() {
           <InvestmentsSkeleton />
         ) : records.length === 0 ? (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}><Text style={{ fontSize: 40, lineHeight: 40 }}>💎</Text></View>
+            <View style={styles.emptyIcon}><Icon name="Gem" size={38} color={colors.labelTertiary} strokeWidth={1.4} /></View>
             <Text variant="callout" align="center" color={colors.labelSecondary} style={{ marginBottom: Spacing.lg }}>
               {t('investments.empty')}
             </Text>
@@ -560,7 +562,7 @@ export default function InvestmentsScreen() {
                 const color = TYPE_COLOR[tp];
                 return (
                   <View key={tp} style={[styles.typeChip, { backgroundColor: color + '15', borderColor: color + '50' }]}>
-                    <Text style={{ fontSize: 16 }}>{TYPE_EMOJI[tp]}</Text>
+                    <Icon name={TYPE_ICON[tp]} size={15} color={color} />
                     <View style={{ gap: 1 }}>
                       <Text variant="caption2" color={color} style={{ fontWeight: '700' }}>
                         {t(`investment.type.${tp}`)}
@@ -593,7 +595,7 @@ export default function InvestmentsScreen() {
                   >
                     <View style={[styles.row, { backgroundColor: colors.card }]}>
                       <View style={[styles.iconCircle, { backgroundColor: TYPE_COLOR[rec.type] + '20' }]}>
-                        <Text variant="body" align="center">{TYPE_EMOJI[rec.type]}</Text>
+                        <Icon name={TYPE_ICON[rec.type]} size={19} color={TYPE_COLOR[rec.type]} />
                       </View>
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text variant="callout" style={{ fontWeight: '500' }} numberOfLines={1}>{rec.name}</Text>

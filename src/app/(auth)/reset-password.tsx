@@ -15,6 +15,7 @@ import * as Linking from 'expo-linking';
 import Svg, { Path } from 'react-native-svg';
 import { router } from 'expo-router';
 import { Text } from '@/components/ui/Text';
+import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
@@ -81,7 +82,7 @@ export default function ResetPasswordScreen() {
       <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top', 'bottom']}>
         <View style={styles.successContainer}>
           <View style={[styles.iconBox, { backgroundColor: `${colors.income}18` }]}>
-            <Text variant="displayLarge" align="center">🔑</Text>
+            <Icon name="Key" size={48} color={colors.tint} strokeWidth={1.5} />
           </View>
           <Text variant="title1" align="center">Password Updated</Text>
           <Text variant="callout" color={colors.labelSecondary} align="center" style={{ lineHeight: 24 }}>
@@ -104,7 +105,7 @@ export default function ResetPasswordScreen() {
         <View style={styles.successContainer}>
           {timedOut ? (
             <>
-              <Text variant="displayLarge" align="center">⚠️</Text>
+              <Icon name="AlertTriangle" size={48} color={colors.expense} strokeWidth={1.5} />
               <Text variant="title2" align="center">Link Invalid or Expired</Text>
               <Text variant="callout" color={colors.labelSecondary} align="center" style={{ lineHeight: 24 }}>
                 {"The reset link didn't work. It may have expired or already been used. Request a new one."}
@@ -209,7 +210,8 @@ export default function ResetPasswordScreen() {
 
           {error && (
             <View style={[styles.errorBox, { backgroundColor: `${colors.expense}14`, borderColor: `${colors.expense}30` }]}>
-              <Text variant="footnote" color={colors.expense}>⚠ {error}</Text>
+              <Icon name="AlertTriangle" size={14} color={colors.expense} />
+              <Text variant="footnote" color={colors.expense}>{error}</Text>
             </View>
           )}
 
@@ -265,6 +267,9 @@ const styles = StyleSheet.create({
     marginHorizontal: -Spacing.md,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderRadius: Spacing.radius.md,
     borderWidth: 1,
     padding: Spacing.sm,

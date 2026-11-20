@@ -13,6 +13,7 @@ import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Icon } from '@/components/ui/Icon';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -308,7 +309,9 @@ export default function ReportsScreen() {
           <ReportsSkeleton />
         ) : !hasData ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📊</Text>
+            <View style={styles.emptyEmoji}>
+              <Icon name="BarChart3" size={40} color={colors.labelTertiary} strokeWidth={1.4} />
+            </View>
             <Text variant="callout" align="center" color={colors.labelSecondary}>{t('reports.noData')}</Text>
           </View>
         ) : (
@@ -448,7 +451,7 @@ const styles = StyleSheet.create({
   kpiCard: { flex: 1 },
   chartSection: { paddingHorizontal: Spacing.screenHorizontal, marginTop: Spacing.xl },
   emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
-  emptyEmoji: { fontSize: 40, marginBottom: 8 },
+  emptyEmoji: { marginBottom: 8 },
   catRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: Spacing.md, paddingTop: Spacing.sm, paddingBottom: 4, gap: Spacing.sm,

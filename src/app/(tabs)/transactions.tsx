@@ -18,7 +18,7 @@ import i18n from '@/i18n';
 import { useTransactions } from '@/hooks/useTransactions';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { EditTransactionSheet } from '@/components/EditTransactionSheet';
-import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import { Icon, transactionIcon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { DashboardTransaction, DashboardAccount, UserCategory } from '@/types/finance';
 
@@ -114,7 +114,7 @@ function TxRow({
   accounts: DashboardAccount[];
   onPress: () => void;
 }) {
-  const emoji = getCategoryEmoji(tx.category, tx.type);
+  const iconName = transactionIcon(tx.icon, tx.type, tx.category);
   const label = getCategoryLabel(tx.category, categories);
   const accountName = getAccountName(tx.account_id, accounts);
   const secondaryLine = accountName ? `${label} · ${accountName}` : label;
@@ -132,7 +132,7 @@ function TxRow({
         onPress={onPress}
       >
         <View style={[styles.txIcon, { backgroundColor: colors.fillTertiary }]}>
-          <Text variant="body" align="center">{emoji}</Text>
+          <Icon name={iconName} size={19} color={colors.labelSecondary} />
         </View>
         <View style={styles.txMiddle}>
           <Text variant="callout" style={{ fontWeight: '500' }}>{tx.description}</Text>

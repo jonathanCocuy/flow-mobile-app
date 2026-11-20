@@ -179,6 +179,9 @@ export default {
   'transactions.add.date': 'Date',
   'transactions.add.fromAccount': 'Compte source',
   'transactions.add.destinationAccount': 'Compte destinataire',
+  'transactions.add.icon': 'Icône',
+  'transactions.add.shared': 'Est-ce une dépense partagée ?',
+  'transactions.add.sharedGroupPlaceholder': 'Sélectionnez un groupe',
   'transactions.add.addCategory': 'Ajouter',
   'transactions.add.transfer.onlyOneAccount': 'Un seul compte',
   'transactions.add.transfer.onlyOneAccountHint': 'Vous avez besoin d\'au moins deux comptes pour faire un virement. Créez-en un autre d\'abord.',
@@ -187,6 +190,7 @@ export default {
   'transactions.add.error.amount': 'Entrez un montant valide.',
   'transactions.add.error.category': 'Sélectionnez une catégorie.',
   'transactions.add.error.account': 'Sélectionnez un compte.',
+  'transactions.add.error.sharedGroup': 'Sélectionnez un groupe.',
   'transactions.add.error.destinationAccount': 'Sélectionnez un compte destinataire.',
   'transactions.add.error.sameAccount': 'Les comptes doivent être différents.',
 
@@ -358,7 +362,7 @@ export default {
   'split.activeGroups': 'groupes actifs',
   'split.youAreOwed': 'On vous doit',
   'split.youOwe': 'Vous devez',
-  'split.balanceZero': 'Tout réglé ✓',
+  'split.balanceZero': 'Tout réglé',
 
   // Group sheet
   'split.group.name': 'Nom du groupe',
@@ -374,6 +378,25 @@ export default {
   'split.group.error.shareSum': 'Les pourcentages doivent totaliser 100.',
   'split.group.error.memberName': 'Entrez un nom pour chaque membre.',
   'split.group.error.memberShare': 'Entrez un pourcentage valide (1–100).',
+  'split.group.error.email': 'Entrez une adresse e-mail valide.',
+
+  // Invitations
+  'split.invite.emailPh': 'E-mail (facultatif, pour l\'inviter)',
+  'split.invite.pending': 'EN ATTENTE',
+  'split.invite.accepted': 'ACCEPTÉ',
+  'split.invite.rejected': 'REFUSÉ',
+  'split.invite.notifTitle': 'Invitation à un groupe',
+  'split.invite.notifBody': 'Vous avez été invité au groupe « {{group}} ».',
+
+  // Notifications screen
+  'profile.notifications': 'Notifications',
+  'notifications.title': 'Notifications',
+  'notifications.empty': 'Aucune notification',
+  'notifications.emptyDesc': 'Les invitations aux groupes et autres alertes apparaîtront ici.',
+  'notifications.accept': 'Accepter',
+  'notifications.reject': 'Refuser',
+  'notifications.acceptedChip': 'ACCEPTÉE',
+  'notifications.rejectedChip': 'REFUSÉE',
 
   // Split detail screen
   'split.detail.balance': 'Résumé',

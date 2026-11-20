@@ -41,6 +41,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Links invitations addressed to this account's email that were created
+  // before the account existed.  Kept out of onAuthStateChange: calling
+  // supabase from inside that callback can deadlock.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    supabase.rpc('claim_pending_invitations');
+  }, [userId]);
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };

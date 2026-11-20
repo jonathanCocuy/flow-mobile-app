@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
@@ -156,24 +156,62 @@ interface DatePickerFieldProps {
 
 export function DatePickerField({ value, onChange, colors }: DatePickerFieldProps) {
   const [open, setOpen] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const anim = useMemo(() => new Animated.Value(0), []);
+
+  const animateOpen = useCallback(() => {
+    setShowContent(true);
+    setOpen(true);
+    Animated.timing(anim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+  }, [anim]);
+
+  const animateClose = useCallback(() => {
+    Animated.timing(anim, { toValue: 0, duration: 220, useNativeDriver: true }).start(() => {
+      setShowContent(false);
+      setOpen(false);
+    });
+  }, [anim]);
+
+  const toggle = useCallback(() => {
+    if (open) animateClose();
+    else animateOpen();
+  }, [open, animateOpen, animateClose]);
+
+  const handleSelect = useCallback((d: Date) => {
+    onChange(d);
+    animateClose();
+  }, [onChange, animateClose]);
+
+  const chevronRotation = {
+    transform: [{
+      rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }),
+    }],
+  };
+
+  const calendarAnim = {
+    opacity: anim,
+    transform: [{
+      translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }),
+    }],
+  };
 
   return (
     <View>
       <TouchableOpacity
-        onPress={() => setOpen(v => !v)}
+        onPress={toggle}
         style={[fieldStyles.row, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}
         activeOpacity={0.7}
       >
         <CalendarIcon color={colors.labelSecondary} />
         <Text variant="callout" style={{ flex: 1 }}>{formatDate(value)}</Text>
-        <ChevronDownSmall color={colors.labelTertiary} />
+        <Animated.View style={chevronRotation}>
+          <ChevronDownSmall color={colors.labelTertiary} />
+        </Animated.View>
       </TouchableOpacity>
-      {open && (
-        <CalendarPicker
-          date={value}
-          onSelect={d => { onChange(d); setOpen(false); }}
-          colors={colors}
-        />
+      {showContent && (
+        <Animated.View style={calendarAnim}>
+          <CalendarPicker date={value} onSelect={handleSelect} colors={colors} />
+        </Animated.View>
       )}
     </View>
   );

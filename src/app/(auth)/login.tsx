@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
+import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
@@ -159,7 +160,8 @@ export default function LoginScreen() {
           {/* Error */}
           {error && (
             <View style={[styles.errorBox, { backgroundColor: `${colors.expense}14`, borderColor: `${colors.expense}30` }]}>
-              <Text variant="footnote" color={colors.expense}>⚠ {error}</Text>
+              <Icon name="AlertTriangle" size={14} color={colors.expense} />
+              <Text variant="footnote" color={colors.expense}>{error}</Text>
             </View>
           )}
 
@@ -283,6 +285,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderRadius: Spacing.radius.md,
     borderWidth: 1,
     padding: Spacing.sm,

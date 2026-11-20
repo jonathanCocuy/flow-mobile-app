@@ -16,6 +16,8 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { CategoryModal, type CategoryData } from '@/components/CategoryModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { NotificationsSheet, fetchUnreadCount } from '@/components/NotificationsSheet';
+import { Icon } from '@/components/ui/Icon';
 import { SUPPORTED_LANGUAGES, changeLanguage, type LanguageCode } from '@/i18n';
 import i18n from '@/i18n';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -31,19 +33,21 @@ function ChevronRight({ color }: { color: string }) {
 }
 
 interface SettingsRowProps {
-  emoji: string;
+  icon: string;
   label: string;
   value?: string;
   destructive?: boolean;
   onPress?: () => void;
 }
 
-function SettingsRow({ emoji, label, value, destructive, onPress }: SettingsRowProps) {
+function SettingsRow({ icon, label, value, destructive, onPress }: SettingsRowProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   return (
     <TouchableOpacity style={styles.settingsRow} activeOpacity={0.6} onPress={onPress}>
-      <Text variant="body" style={{ width: 28 }}>{emoji}</Text>
+      <View style={{ width: 28 }}>
+        <Icon name={icon} size={19} color={destructive ? colors.expense : colors.labelSecondary} />
+      </View>
       <Text variant="callout" style={{ flex: 1 }} color={destructive ? colors.expense : colors.label}>
         {label}
       </Text>
@@ -171,6 +175,8 @@ export default function ProfileScreen() {
   const [editCategory, setEditCategory] = useState<CategoryData | null>(null);
   const [signOutDialogVisible, setSignOutDialogVisible] = useState(false);
   const [languageSheetVisible, setLanguageSheetVisible] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const currentLang = (i18n.language ?? 'en') as LanguageCode;
   const currentLangLabel = SUPPORTED_LANGUAGES.find(l => l.code === currentLang)?.label ?? 'English';
@@ -180,11 +186,12 @@ export default function ProfileScreen() {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setLoading(false); return; }
 
-    const [catsRes, budgetsRes, goalsRes, txRes] = await Promise.all([
+    const [catsRes, budgetsRes, goalsRes, txRes, unreadRes] = await Promise.all([
       supabase.from('categories').select('id, label, color, icon').eq('user_id', authUser.id).order('created_at'),
       supabase.from('budgets').select('id', { count: 'exact', head: true }).eq('user_id', authUser.id),
       supabase.from('savings_goals').select('id', { count: 'exact', head: true }).eq('user_id', authUser.id),
       supabase.from('transactions').select('id', { count: 'exact', head: true }).eq('user_id', authUser.id),
+      supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('read', false),
     ]);
 
     setCategories(catsRes.data ?? []);
@@ -193,6 +200,7 @@ export default function ProfileScreen() {
       goals: goalsRes.count ?? 0,
       transactions: txRes.count ?? 0,
     });
+    setUnread(unreadRes.count ?? 0);
     setLoading(false);
   }, []);
 
@@ -313,15 +321,22 @@ export default function ProfileScreen() {
           </Text>
           <Card radius={Spacing.radius.lg} padding={0}>
             <View style={{ paddingHorizontal: Spacing.md }}>
-              <SettingsRow emoji="🏦" label={t('profile.accounts')} onPress={() => router.push('/accounts')} />
+              <SettingsRow icon="Landmark" label={t('profile.accounts')} onPress={() => router.push('/accounts')} />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
-              <SettingsRow emoji="📈" label={t('profile.investments')} onPress={() => router.push('/investments')} />
+              <SettingsRow icon="TrendingUp" label={t('profile.investments')} onPress={() => router.push('/investments')} />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
-              <SettingsRow emoji="🔄" label={t('profile.recurring')} onPress={() => router.push('/recurring')} />
+              <SettingsRow icon="RefreshCw" label={t('profile.recurring')} onPress={() => router.push('/recurring')} />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
-              <SettingsRow emoji="📊" label={t('profile.reports')} onPress={() => router.push('/reports')} />
+              <SettingsRow icon="BarChart3" label={t('profile.reports')} onPress={() => router.push('/reports')} />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
-              <SettingsRow emoji="🤝" label={t('profile.split')} onPress={() => router.push('/split')} />
+              <SettingsRow icon="Users" label={t('profile.split')} onPress={() => router.push('/split')} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow
+                icon="Bell"
+                label={t('profile.notifications')}
+                value={unread > 0 ? String(unread) : undefined}
+                onPress={() => setNotifOpen(true)}
+              />
             </View>
           </Card>
         </View>
@@ -334,7 +349,7 @@ export default function ProfileScreen() {
           <Card radius={Spacing.radius.lg} padding={0}>
             <View style={{ paddingHorizontal: Spacing.md }}>
               <SettingsRow
-                emoji="🌐"
+                icon="Globe"
                 label={t('profile.language')}
                 value={currentLangLabel}
                 onPress={() => setLanguageSheetVisible(true)}
@@ -348,7 +363,7 @@ export default function ProfileScreen() {
           <Card radius={Spacing.radius.lg} padding={0}>
             <View style={{ paddingHorizontal: Spacing.md }}>
               <SettingsRow
-                emoji="🚪"
+                icon="LogOut"
                 label={t('profile.signOut')}
                 destructive
                 onPress={() => setSignOutDialogVisible(true)}
@@ -367,6 +382,12 @@ export default function ProfileScreen() {
         category={editCategory}
         onClose={() => setCategoryModalVisible(false)}
         onSuccess={() => { setCategoryModalVisible(false); fetchData(); }}
+      />
+
+      <NotificationsSheet
+        visible={notifOpen}
+        onClose={() => { setNotifOpen(false); fetchUnreadCount().then(setUnread); }}
+        onChanged={() => { fetchUnreadCount().then(setUnread); }}
       />
 
       <LanguageSheet

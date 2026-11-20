@@ -16,6 +16,7 @@ import Svg, { Path } from 'react-native-svg';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
+import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
@@ -83,7 +84,7 @@ function ConfirmEmailScreen({ email }: { email: string }) {
     <SafeAreaView style={[{ flex: 1, backgroundColor: colors.backgroundGrouped }]} edges={['top', 'bottom']}>
       <View style={[successStyles.container, { backgroundColor: colors.backgroundGrouped }]}>
         <View style={[successStyles.iconBox, { backgroundColor: `${colors.income}18` }]}>
-          <Text variant="displayLarge" align="center">✉️</Text>
+          <Icon name="MailCheck" size={48} color={colors.tint} strokeWidth={1.5} />
         </View>
         <Text variant="title1" align="center">{t('register.success.title')}</Text>
         <Text variant="callout" color={colors.labelSecondary} align="center" style={successStyles.sub}>
@@ -307,7 +308,8 @@ export default function RegisterScreen() {
           {/* Error */}
           {error && (
             <View style={[styles.errorBox, { backgroundColor: `${colors.expense}14`, borderColor: `${colors.expense}30` }]}>
-              <Text variant="footnote" color={colors.expense}>⚠ {error}</Text>
+              <Icon name="AlertTriangle" size={14} color={colors.expense} />
+              <Text variant="footnote" color={colors.expense}>{error}</Text>
             </View>
           )}
 
@@ -434,6 +436,9 @@ const styles = StyleSheet.create({
     marginHorizontal: -Spacing.md,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderRadius: Spacing.radius.md,
     borderWidth: 1,
     padding: Spacing.sm,

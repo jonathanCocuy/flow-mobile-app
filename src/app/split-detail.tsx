@@ -23,6 +23,8 @@ import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Icon } from '@/components/ui/Icon';
+import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -58,16 +60,16 @@ interface ExpenseForm {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { key: 'home', emoji: '🏠' },
-  { key: 'food', emoji: '🛒' },
-  { key: 'transport', emoji: '🚗' },
-  { key: 'entertainment', emoji: '🎬' },
-  { key: 'health', emoji: '💊' },
-  { key: 'services', emoji: '📱' },
-  { key: 'other', emoji: '💸' },
+  { key: 'home', icon: 'Home' },
+  { key: 'food', icon: 'ShoppingCart' },
+  { key: 'transport', icon: 'Car' },
+  { key: 'entertainment', icon: 'Clapperboard' },
+  { key: 'health', icon: 'Pill' },
+  { key: 'services', icon: 'Smartphone' },
+  { key: 'other', icon: 'Receipt' },
 ] as const;
 
-const CATEGORY_EMOJI: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.key, c.emoji]));
+const CATEGORY_ICON: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.key, c.icon]));
 
 const ACTION_WIDTH = 72;
 
@@ -243,7 +245,7 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
     if (editing) {
       setForm({
         description: editing.description,
-        amount: String(editing.amount),
+        amount: toAmountInput(editing.amount),
         category: editing.category,
         date: editing.date,
         paid_by_member_id: editing.paid_by_member_id ?? '',
@@ -265,7 +267,7 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
   const save = async () => {
     setError('');
     if (!form.description.trim()) { setError(t('split.expense.error.descRequired')); return; }
-    const amount = parseFloat(form.amount.replace(/\./g, '').replace(',', '.'));
+    const amount = parseAmountInput(form.amount);
     if (isNaN(amount) || amount <= 0) { setError(t('split.expense.error.amountInvalid')); return; }
     if (!form.paid_by_member_id) { setError(t('split.expense.error.paidByRequired')); return; }
 
@@ -329,7 +331,7 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
             <TextInput
               style={inputStyle}
               value={form.amount}
-              onChangeText={v => patch('amount', v)}
+              onChangeText={v => patch('amount', formatAmountInput(v))}
               placeholder="0"
               placeholderTextColor={colors.labelTertiary}
               keyboardType="numeric"
@@ -348,7 +350,11 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
                       backgroundColor: form.category === cat.key ? colors.tint + '18' : colors.fillPrimary,
                       borderColor: form.category === cat.key ? colors.tint : colors.separator,
                     }]}>
-                    <Text style={{ fontSize: 16 }}>{cat.emoji}</Text>
+                    <Icon
+                      name={cat.icon}
+                      size={15}
+                      color={form.category === cat.key ? colors.tint : colors.labelSecondary}
+                    />
                     <Text style={{ fontSize: 12, color: form.category === cat.key ? colors.tint : colors.labelSecondary, fontWeight: form.category === cat.key ? '600' : '400' }}>
                       {t(`split.category.${cat.key}` as Parameters<typeof t>[0])}
                     </Text>
@@ -553,7 +559,9 @@ export default function SplitDetailScreen() {
 
         {expenses.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={{ fontSize: 44, marginBottom: Spacing.sm }}>🧾</Text>
+            <View style={{ marginBottom: Spacing.sm }}>
+              <Icon name="ReceiptText" size={42} color={colors.labelTertiary} strokeWidth={1.4} />
+            </View>
             <Text variant="callout" style={{ fontWeight: '600', marginBottom: 6 }}>{t('split.detail.empty')}</Text>
             <TouchableOpacity
               style={[styles.emptyAddBtn, { backgroundColor: colors.tint }]}
@@ -569,7 +577,7 @@ export default function SplitDetailScreen() {
           <Card radius={Spacing.radius.lg} padding={0}>
             {expenses.map((exp, idx) => {
               const payer = exp.paid_by_member_id ? memberById[exp.paid_by_member_id] : null;
-              const catEmoji = CATEGORY_EMOJI[exp.category] ?? '💸';
+              const catIcon = CATEGORY_ICON[exp.category] ?? 'Receipt';
 
               return (
                 <View key={exp.id}>
@@ -586,7 +594,7 @@ export default function SplitDetailScreen() {
                       onPress={() => { setEditing(exp); setSheetOpen(true); }}
                       activeOpacity={0.7}>
                       <View style={[styles.catIcon, { backgroundColor: colors.fillTertiary }]}>
-                        <Text style={{ fontSize: 20 }}>{catEmoji}</Text>
+                        <Icon name={catIcon} size={19} color={colors.labelSecondary} />
                       </View>
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text variant="callout" style={{ fontWeight: '600' }} numberOfLines={1}>{exp.description}</Text>

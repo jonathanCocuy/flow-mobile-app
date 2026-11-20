@@ -20,7 +20,8 @@ import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
-import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import { Icon, transactionIcon } from '@/components/ui/Icon';
+import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { UserCategory } from '@/types/finance';
 
@@ -68,7 +69,7 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
     if (visible && initialBudget) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(initialBudget.category);
-      setLimit(String(initialBudget.monthly_limit));
+      setLimit(toAmountInput(initialBudget.monthly_limit));
       setError(null);
     } else if (visible && !initialBudget) {
       setCategory('');
@@ -108,7 +109,7 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
 
   const handleSave = async () => {
     if (!category) { setError(t('budget.error.categoryRequired')); return; }
-    const amount = parseFloat(limit.replace(',', '.'));
+    const amount = parseAmountInput(limit);
     if (isNaN(amount) || amount <= 0) { setError(t('budget.error.limitInvalid')); return; }
 
     setSaving(true);
@@ -197,7 +198,11 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
                       onPress={() => !isEditing && setCategory(cat.name)}
                       activeOpacity={isEditing ? 1 : 0.7}
                     >
-                      <Text style={{ fontSize: 16 }}>{getCategoryEmoji(cat.name, 'expense')}</Text>
+                      <Icon
+                        name={transactionIcon(cat.icon, 'expense', cat.name)}
+                        size={16}
+                        color={selected ? cat.color : colors.labelSecondary}
+                      />
                       <Text
                         variant="caption1"
                         color={selected ? cat.color : colors.label}
@@ -219,7 +224,7 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
               <TextInput
                 style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
                 value={limit}
-                onChangeText={setLimit}
+                onChangeText={v => setLimit(formatAmountInput(v))}
                 placeholder="0.00"
                 placeholderTextColor={colors.labelTertiary}
                 keyboardType="decimal-pad"

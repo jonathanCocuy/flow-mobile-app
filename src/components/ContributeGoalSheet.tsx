@@ -9,6 +9,7 @@ import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
+import { formatAmountInput, parseAmountInput } from '@/utils/amount';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -92,7 +93,7 @@ export function ContributeGoalSheet({ visible, goal, accounts, onClose, onSucces
 
   const handleSave = async () => {
     if (!goal) return;
-    const val = parseFloat(amount.replace(',', '.'));
+    const val = parseAmountInput(amount);
     if (isNaN(val) || val <= 0) { setError(t('goal.error.amountInvalid')); return; }
     if (recordTx && !accountId) { setError(t('transactions.add.error.account')); return; }
 
@@ -194,7 +195,7 @@ export function ContributeGoalSheet({ visible, goal, accounts, onClose, onSucces
               <TextInput
                 style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={v => setAmount(formatAmountInput(v))}
                 placeholder="0.00"
                 placeholderTextColor={colors.labelTertiary}
                 keyboardType="decimal-pad"

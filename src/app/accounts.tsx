@@ -23,6 +23,7 @@ import { AddAccountSheet } from '@/components/AddAccountSheet';
 import { EditAccountSheet } from '@/components/EditAccountSheet';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Icon } from '@/components/ui/Icon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -287,7 +288,7 @@ export default function AccountsScreen() {
             </Card>
           ) : accounts.length === 0 ? (
             <View style={styles.emptyState}>
-              <View style={styles.emptyIcon}><Text style={{ fontSize: 40, lineHeight: 40 }}>🏦</Text></View>
+              <View style={styles.emptyIcon}><Icon name="Landmark" size={38} color={colors.labelTertiary} strokeWidth={1.4} /></View>
               <Text variant="callout" color={colors.labelSecondary}>
                 {t('accounts.empty')}
               </Text>

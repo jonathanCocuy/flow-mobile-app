@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
+import { Icon, isKnownIcon } from '@/components/ui/Icon';
+import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 import { DatePickerField } from '@/components/ui/DatePickerField';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
@@ -24,9 +26,11 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const GOAL_EMOJIS = [
-  '🎯','🏠','🚗','✈️','💻','📱','🎓','💰','🛡️','🌴',
-  '💍','🏋️','🎸','🐾','🍽️','⛵','🎁','🌿','🏖️','🏔️',
+const GOAL_ICONS = [
+  'Target', 'Home', 'Car', 'Plane', 'Laptop', 'Smartphone', 'GraduationCap',
+  'PiggyBank', 'ShieldCheck', 'Palmtree',
+  'Gem', 'Dumbbell', 'Music', 'Dog', 'Utensils', 'Sailboat', 'Gift', 'Leaf',
+  'Umbrella', 'Mountain',
 ];
 
 interface InitialGoal {
@@ -55,7 +59,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
   const [targetAmount, setTargetAmount] = useState('');
   const [deadlineEnabled, setDeadlineEnabled] = useState(false);
   const [selectedDeadline, setSelectedDeadline] = useState(new Date());
-  const [icon, setIcon] = useState('🎯');
+  const [icon, setIcon] = useState('Target');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -73,7 +77,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
     if (visible && initialGoal) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(initialGoal.name);
-      setTargetAmount(String(initialGoal.target_amount));
+      setTargetAmount(toAmountInput(initialGoal.target_amount));
       if (initialGoal.deadline) {
         setDeadlineEnabled(true);
         const parts = initialGoal.deadline.split('-').map(Number);
@@ -82,14 +86,14 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
         setDeadlineEnabled(false);
         setSelectedDeadline(new Date());
       }
-      setIcon(initialGoal.icon ?? '🎯');
+      setIcon(isKnownIcon(initialGoal.icon) ? initialGoal.icon! : 'Target');
       setError(null);
     } else if (visible && !initialGoal) {
       setName('');
       setTargetAmount('');
       setDeadlineEnabled(false);
       setSelectedDeadline(new Date());
-      setIcon('🎯');
+      setIcon('Target');
       setError(null);
     }
   }, [visible, initialGoal]);
@@ -99,7 +103,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
     setTargetAmount('');
     setDeadlineEnabled(false);
     setSelectedDeadline(new Date());
-    setIcon('🎯');
+    setIcon('Target');
     setError(null);
   };
 
@@ -128,7 +132,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
 
   const handleSave = async () => {
     if (!name.trim()) { setError(t('goal.error.nameRequired')); return; }
-    const amount = parseFloat(targetAmount.replace(',', '.'));
+    const amount = parseAmountInput(targetAmount);
     if (isNaN(amount) || amount <= 0) { setError(t('goal.error.amountInvalid')); return; }
 
     const deadlineISO: string | null = deadlineEnabled
@@ -211,7 +215,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.emojiScroll}>
                 <View style={styles.emojiRow}>
-                  {GOAL_EMOJIS.map(e => (
+                  {GOAL_ICONS.map(e => (
                     <TouchableOpacity
                       key={e}
                       style={[
@@ -222,7 +226,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
                       onPress={() => setIcon(e)}
                       activeOpacity={0.7}
                     >
-                      <Text style={{ fontSize: 20 }}>{e}</Text>
+                      <Icon name={e} size={20} color={icon === e ? colors.savings : colors.labelSecondary} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -249,7 +253,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
               <TextInput
                 style={inputStyle}
                 value={targetAmount}
-                onChangeText={setTargetAmount}
+                onChangeText={v => setTargetAmount(formatAmountInput(v))}
                 placeholder="0.00"
                 placeholderTextColor={colors.labelTertiary}
                 keyboardType="decimal-pad"

@@ -14,6 +14,7 @@ import {
   TextInput,
   Animated,
   PanResponder,
+  Switch,
 } from 'react-native';
 import Svg, { Path, Polyline } from 'react-native-svg';
 import { DatePickerField } from '@/components/ui/DatePickerField';
@@ -23,6 +24,8 @@ import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
+import { Icon, PICKER_ICONS, transactionIcon } from '@/components/ui/Icon';
+import { formatAmountInput, parseAmountInput } from '@/utils/amount';
 import type { DashboardAccount, UserCategory } from '@/types/finance';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -30,14 +33,11 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 type TxType = 'expense' | 'income' | 'transfer';
 type AppColors = typeof Colors[keyof typeof Colors];
 
-// ── Emoji data ────────────────────────────────────────────────────────────────
-
-const EMOJIS = [
-  '🍔','🍕','☕','🍺','🛒','🏠','🏢','🚗','✈️','🚌','⛽',
-  '🏥','💊','🎵','🎮','📺','🎬','👕','👟','💻','📱','📚',
-  '🎓','⚽','🎁','🐕','🌊','🍽️','💰','💸','🔧','⚡','💡',
-  '🎪','🌿','🧴','🧺','🎨','🎤','🏋️','🛁','🏖️','🎂','🧁',
-];
+interface SplitGroup {
+  id: string;
+  name: string;
+  shared_members: { id: string; is_me: boolean }[];
+}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -57,46 +57,53 @@ function ChevronDownIcon({ color }: { color: string }) {
   );
 }
 
-// ── Emoji picker ──────────────────────────────────────────────────────────────
+// ── Icon picker ───────────────────────────────────────────────────────────────
 
-function EmojiPicker({
+export function IconPicker({
   visible,
   current,
   onSelect,
   onClose,
   colors,
+  title,
 }: {
   visible: boolean;
   current: string;
-  onSelect: (e: string) => void;
+  onSelect: (name: string) => void;
   onClose: () => void;
   colors: AppColors;
+  title: string;
 }) {
   if (!visible) return null;
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent>
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={emojiStyles.backdrop}>
+        <View style={pickerStyles.backdrop}>
           <TouchableWithoutFeedback>
-            <View style={[emojiStyles.box, { backgroundColor: colors.backgroundGroupedSecondary }]}>
+            <View style={[pickerStyles.box, { backgroundColor: colors.backgroundGroupedSecondary }]}>
               <Text variant="footnote" color={colors.labelSecondary} style={{ marginBottom: Spacing.xs }}>
-                EMOJI
+                {title.toUpperCase()}
               </Text>
-              <View style={emojiStyles.grid}>
-                {EMOJIS.map(e => (
-                  <TouchableOpacity
-                    key={e}
-                    onPress={() => { onSelect(e); onClose(); }}
-                    style={[
-                      emojiStyles.cell,
-                      e === current && { backgroundColor: `${colors.tint}20`, borderRadius: 8 },
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Text variant="title3" align="center">{e}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+                <View style={pickerStyles.grid}>
+                  {PICKER_ICONS.map(name => {
+                    const active = name === current;
+                    return (
+                      <TouchableOpacity
+                        key={name}
+                        onPress={() => { onSelect(name); onClose(); }}
+                        style={[
+                          pickerStyles.cell,
+                          active && { backgroundColor: `${colors.tint}20`, borderRadius: 10 },
+                        ]}
+                        activeOpacity={0.7}
+                      >
+                        <Icon name={name} size={22} color={active ? colors.tint : colors.label} />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -105,11 +112,11 @@ function EmojiPicker({
   );
 }
 
-const emojiStyles = StyleSheet.create({
+const pickerStyles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   box: { width: '100%', borderRadius: 20, padding: Spacing.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
+  cell: { width: '16.66%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -118,14 +125,6 @@ function formatBalance(value: number): string {
   return Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatThousands(value: string): string {
-  if (!value) return '';
-  const stripped = value.replace(/,/g, '');
-  const clean = stripped.replace(/[^0-9.]/g, '');
-  const parts = clean.split('.');
-  const intFormatted = parts[0] ? parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
-  return parts.length > 1 ? `${intFormatted}.${parts[1]}` : intFormatted;
-}
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -151,7 +150,7 @@ export function AddTransactionSheet({
   const colors = Colors[colorScheme];
 
   const [txType, setTxType] = useState<TxType>('expense');
-  const [emoji, setEmoji] = useState('');
+  const [iconName, setIconName] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -162,12 +161,15 @@ export function AddTransactionSheet({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isShared, setIsShared] = useState(false);
+  const [sharedGroupId, setSharedGroupId] = useState<string | null>(null);
+  const [groups, setGroups] = useState<SplitGroup[]>([]);
 
   useEffect(() => {
     if (visible) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTxType('expense');
-      setEmoji('');
+      setIconName('');
       setDescription('');
       setAmount('');
       setSelectedDate(new Date());
@@ -178,8 +180,24 @@ export function AddTransactionSheet({
       setErrors({});
       setServerError(null);
       setSaving(false);
+      setIsShared(false);
+      setSharedGroupId(null);
     }
   }, [visible, accounts]);
+
+  // RLS already scopes this to groups the user owns or belongs to.
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    supabase
+      .from('shared_groups')
+      .select('id, name, shared_members(id, is_me)')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (!cancelled) setGroups((data ?? []) as SplitGroup[]);
+      });
+    return () => { cancelled = true; };
+  }, [visible]);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
 
@@ -215,13 +233,16 @@ export function AddTransactionSheet({
   async function handleSubmit() {
     const newErrors: Record<string, string> = {};
     if (!description.trim()) newErrors.description = t('transactions.add.error.description');
-    const amountNum = parseFloat(amount.replace(/,/g, ''));
+    const amountNum = parseAmountInput(amount);
     if (isNaN(amountNum) || amountNum <= 0) newErrors.amount = t('transactions.add.error.amount');
     if (!selectedAccountId) newErrors.account = t('transactions.add.error.account');
     if (txType !== 'transfer' && !selectedCategory) newErrors.category = t('transactions.add.error.category');
     if (txType === 'transfer') {
       if (!destinationAccountId) newErrors.destination = t('transactions.add.error.destinationAccount');
       else if (destinationAccountId === selectedAccountId) newErrors.destination = t('transactions.add.error.sameAccount');
+    }
+    if (txType === 'expense' && isShared && !sharedGroupId) {
+      newErrors.sharedGroup = t('transactions.add.error.sharedGroup');
     }
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
@@ -238,7 +259,7 @@ export function AddTransactionSheet({
       const d = String(selectedDate.getDate()).padStart(2, '0');
       const dateISO = `${y}-${mo}-${d}`;
       const descTrimmed = description.trim();
-      const iconVal = emoji || (txType === 'transfer' ? 'ArrowRightLeft' : selectedCategory?.icon ?? 'Wallet');
+      const iconVal = iconName || (txType === 'transfer' ? 'ArrowRightLeft' : selectedCategory?.icon ?? 'Wallet');
 
       let error;
       if (txType === 'transfer') {
@@ -253,7 +274,8 @@ export function AddTransactionSheet({
         });
         error = e;
       } else {
-        const { error: e } = await supabase.from('transactions').insert({
+        const shareWithGroup = txType === 'expense' && isShared && !!sharedGroupId;
+        const payload = {
           user_id:    user.id,
           account_id: selectedAccountId,
           description: descTrimmed,
@@ -264,8 +286,35 @@ export function AddTransactionSheet({
           date:        dateISO,
           currency:    'USD',
           exchange_rate: 1,
-        });
-        error = e;
+          group_id:    shareWithGroup ? sharedGroupId : null,
+        };
+
+        if (shareWithGroup) {
+          const { data, error: txErr } = await supabase
+            .from('transactions').insert(payload).select('id').single();
+          if (txErr) {
+            error = txErr;
+          } else {
+            // Mirror into the group so it counts towards the split balance.
+            // The payer is whichever member the group marks as "me".
+            const meId = groups.find(g => g.id === sharedGroupId)
+              ?.shared_members.find(m => m.is_me)?.id ?? null;
+            const { error: splitErr } = await supabase.from('shared_expenses').insert({
+              group_id:          sharedGroupId,
+              description:       descTrimmed,
+              amount:            amountNum,
+              category:          'other',
+              date:              dateISO,
+              paid_by_member_id: meId,
+              account_id:        selectedAccountId,
+              transaction_id:    data.id,
+            });
+            error = splitErr;
+          }
+        } else {
+          const { error: e } = await supabase.from('transactions').insert(payload);
+          error = e;
+        }
       }
 
       if (error) { setServerError(error.message); setSaving(false); return; }
@@ -336,7 +385,11 @@ export function AddTransactionSheet({
                             borderColor: active ? opt.color : 'transparent',
                           },
                         ]}
-                        onPress={() => { setTxType(opt.key); setErrors({}); }}
+                        onPress={() => {
+                          setTxType(opt.key);
+                          setErrors({});
+                          if (opt.key !== 'expense') { setIsShared(false); setSharedGroupId(null); }
+                        }}
                         activeOpacity={0.7}
                       >
                         <Text
@@ -362,7 +415,11 @@ export function AddTransactionSheet({
                       style={[styles.emojiBtn, { borderRightColor: colors.separator }]}
                       activeOpacity={0.7}
                     >
-                      <Text variant="title3" align="center">{emoji || '😊'}</Text>
+                      <Icon
+                        name={iconName || transactionIcon(selectedCategory?.icon, txType, selectedCategory?.name)}
+                        size={21}
+                        color={iconName ? colors.tint : colors.labelSecondary}
+                      />
                     </TouchableOpacity>
                     <TextInput
                       style={[styles.descInput, { color: colors.label }]}
@@ -392,7 +449,7 @@ export function AddTransactionSheet({
                       placeholder="0.00"
                       placeholderTextColor={colors.labelTertiary}
                       value={amount}
-                      onChangeText={v => { setAmount(formatThousands(v)); setErrors(e => ({ ...e, amount: '' })); }}
+                      onChangeText={v => { setAmount(formatAmountInput(v)); setErrors(e => ({ ...e, amount: '' })); }}
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                     />
@@ -486,6 +543,39 @@ export function AddTransactionSheet({
                   ) : null}
                 </View>
 
+                {/* Shared expense (expense only, and only once a group exists) */}
+                {txType === 'expense' && groups.length > 0 && (
+                  <View style={styles.fieldGroup}>
+                    <View style={[styles.sharedRow, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
+                      <Text variant="callout" style={{ flex: 1 }}>{t('transactions.add.shared')}</Text>
+                      <Switch
+                        value={isShared}
+                        onValueChange={v => {
+                          setIsShared(v);
+                          // One group is an unambiguous choice — preselect it.
+                          setSharedGroupId(v && groups.length === 1 ? groups[0].id : null);
+                          setErrors(e => ({ ...e, sharedGroup: '' }));
+                        }}
+                        trackColor={{ true: colors.tint }}
+                      />
+                    </View>
+                    {isShared && (
+                      <>
+                        <GroupSelect
+                          groups={groups}
+                          selectedId={sharedGroupId}
+                          onSelect={id => { setSharedGroupId(id); setErrors(e => ({ ...e, sharedGroup: '' })); }}
+                          colors={colors}
+                          placeholder={t('transactions.add.sharedGroupPlaceholder')}
+                        />
+                        {errors.sharedGroup ? (
+                          <Text variant="caption1" color={colors.expense} style={styles.fieldError}>{errors.sharedGroup}</Text>
+                        ) : null}
+                      </>
+                    )}
+                  </View>
+                )}
+
                 {/* Destination account (transfer only) */}
                 {txType === 'transfer' && (
                   <View style={styles.fieldGroup}>
@@ -494,7 +584,7 @@ export function AddTransactionSheet({
                     </Text>
                     {destinationAccounts.length === 0 ? (
                       <View style={[styles.emptyTransfer, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
-                        <Text variant="title3" align="center">🏦</Text>
+                        <Icon name="Landmark" size={30} color={colors.labelTertiary} strokeWidth={1.5} />
                         <Text variant="callout" align="center" style={{ fontWeight: '600', marginTop: 6 }}>
                           {t('transactions.add.transfer.onlyOneAccount')}
                         </Text>
@@ -550,12 +640,13 @@ export function AddTransactionSheet({
         </View>
       </Modal>
 
-      <EmojiPicker
+      <IconPicker
         visible={showEmojiPicker}
-        current={emoji}
-        onSelect={setEmoji}
+        current={iconName}
+        onSelect={setIconName}
         onClose={() => setShowEmojiPicker(false)}
         colors={colors}
+        title={t('transactions.add.icon')}
       />
     </>
   );
@@ -615,6 +706,74 @@ function AccountSelect({
                 {selectedId === acc.id && <CheckIcon color={colors.tint} />}
               </TouchableOpacity>
               {index < accounts.length - 1 && (
+                <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 48 }]} />
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── GroupSelect sub-component ─────────────────────────────────────────────────
+
+function GroupSelect({
+  groups,
+  selectedId,
+  onSelect,
+  colors,
+  placeholder,
+}: {
+  groups: SplitGroup[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  colors: AppColors;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = groups.find(g => g.id === selectedId);
+
+  return (
+    <View>
+      <TouchableOpacity
+        style={[styles.selectTrigger, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}
+        onPress={() => setOpen(v => !v)}
+        activeOpacity={0.7}
+      >
+        {selected ? (
+          <>
+            <View style={[styles.groupAvatar, { backgroundColor: `${colors.tint}18` }]}>
+              <Text variant="caption1" color={colors.tint} style={{ fontWeight: '700' }}>
+                {selected.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <Text variant="callout" style={{ flex: 1, fontWeight: '500' }}>{selected.name}</Text>
+          </>
+        ) : (
+          <Text variant="callout" color={colors.labelTertiary} style={{ flex: 1 }}>{placeholder}</Text>
+        )}
+        <ChevronDownIcon color={open ? colors.tint : colors.labelTertiary} />
+      </TouchableOpacity>
+
+      {open && (
+        <View style={[styles.selectDropdown, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
+          {groups.map((g, index) => (
+            <View key={g.id}>
+              <TouchableOpacity
+                onPress={() => { onSelect(g.id); setOpen(false); }}
+                style={styles.accountRow}
+                activeOpacity={0.6}
+              >
+                <View style={[styles.groupAvatar, { backgroundColor: `${colors.tint}18` }]}>
+                  <Text variant="caption1" color={colors.tint} style={{ fontWeight: '700' }}>
+                    {g.name.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <Text variant="callout" style={{ flex: 1, fontWeight: '500' }}>{g.name}</Text>
+                {selectedId === g.id && <CheckIcon color={colors.tint} />}
+              </TouchableOpacity>
+              {index < groups.length - 1 && (
                 <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 48 }]} />
               )}
             </View>
@@ -720,6 +879,21 @@ const styles = StyleSheet.create({
   accountDot: { width: 10, height: 10, borderRadius: 5 },
   accountMiddle: { flex: 1, gap: 1 },
   divider: { height: StyleSheet.hairlineWidth },
+
+  sharedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    minHeight: 52,
+  },
+  groupAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   saveBtn: {
     height: 52,

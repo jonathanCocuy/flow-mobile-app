@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { ContributeGoalSheet } from '@/components/ContributeGoalSheet';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Icon, isKnownIcon } from '@/components/ui/Icon';
 import type { DashboardAccount } from '@/types/finance';
 
 type SavingsGoal = {
@@ -142,7 +143,9 @@ export default function GoalsScreen() {
           <GoalsSkeleton />
         ) : goals.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🎯</Text>
+            <View style={styles.emptyEmoji}>
+              <Icon name="Target" size={40} color={colors.labelTertiary} strokeWidth={1.4} />
+            </View>
             <Text variant="callout" align="center" color={colors.labelSecondary}>
               {t('goals.empty')}
             </Text>
@@ -203,7 +206,11 @@ export default function GoalsScreen() {
                       activeOpacity={0.6}
                     >
                       <View style={[styles.goalEmoji, { backgroundColor: `${fillColor}18` }]}>
-                        <Text variant="title3" align="center">{goal.icon ?? '🎯'}</Text>
+                        <Icon
+                          name={isKnownIcon(goal.icon) ? goal.icon! : 'Target'}
+                          size={20}
+                          color={fillColor}
+                        />
                       </View>
                       <View style={styles.goalInfo}>
                         <Text variant="headline">{goal.name}</Text>
@@ -296,7 +303,7 @@ const styles = StyleSheet.create({
   addBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   centered: { padding: 40, alignItems: 'center' },
   emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
-  emptyEmoji: { fontSize: 40, marginBottom: 8 },
+  emptyEmoji: { marginBottom: 8 },
   emptyBtn: { marginTop: 16, paddingHorizontal: Spacing.lg, paddingVertical: 12, borderRadius: Spacing.radius.full },
   section: { paddingHorizontal: Spacing.screenHorizontal },
   summaryRow: { flexDirection: 'row', gap: Spacing.sm },

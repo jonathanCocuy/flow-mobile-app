@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
+import { Icon } from '@/components/ui/Icon';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { LanguagePicker } from '@/components/ui/LanguagePicker';
@@ -29,12 +30,12 @@ function FlowXLogo({ size = 40, color = '#fff' }: { size?: number; color?: strin
   );
 }
 
-function FeatureRow({ emoji, label }: { emoji: string; label: string }) {
+function FeatureRow({ icon, label }: { icon: string; label: string }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   return (
     <View style={styles.featureRow}>
-      <Text variant="body">{emoji}</Text>
+      <Icon name={icon} size={19} color={colors.tint} />
       <Text variant="callout" color={colors.labelSecondary}>{label}</Text>
     </View>
   );
@@ -100,11 +101,11 @@ export default function WelcomeScreen() {
 
           {/* Features */}
           <View style={[styles.featuresBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.separator }]}>
-            <FeatureRow emoji="💰" label={t('welcome.feat1')} />
+            <FeatureRow icon="PiggyBank" label={t('welcome.feat1')} />
             <View style={[styles.featureDivider, { backgroundColor: colors.separator }]} />
-            <FeatureRow emoji="📊" label={t('welcome.feat2')} />
+            <FeatureRow icon="BarChart3" label={t('welcome.feat2')} />
             <View style={[styles.featureDivider, { backgroundColor: colors.separator }]} />
-            <FeatureRow emoji="🎯" label={t('welcome.feat3')} />
+            <FeatureRow icon="Target" label={t('welcome.feat3')} />
           </View>
 
           {/* CTAs */}

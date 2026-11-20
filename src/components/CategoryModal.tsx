@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal, View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback,
   KeyboardAvoidingView, Platform, useColorScheme, Dimensions, TextInput,
-  ScrollView,
+  ScrollView, Animated, PanResponder,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
@@ -10,6 +10,7 @@ import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
+import { Icon, isKnownIcon, PICKER_ICONS } from '@/components/ui/Icon';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -17,13 +18,6 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CATEGORY_COLORS = [
   '#f97316', '#3b82f6', '#8b5cf6', '#ef4444', '#fbbf24',
   '#22c55e', '#db2777', '#06b6d4', '#14b8a6', '#6366f1',
-];
-
-const CATEGORY_EMOJIS = [
-  '🏠','🍕','🚗','💊','🛒','✈️','🎬','👕','📚','💪',
-  '🐾','🎮','💳','💰','🏦','🎁','🍺','☕','🚌','💡',
-  '🏥','📱','🎵','🌳','👶','🎓','🔧','🍔','🛍️','💄',
-  '🏖️','🍷','🎸','📺','🎯','⚡','🌮','🧴','🏋️','🎪',
 ];
 
 export interface CategoryData {
@@ -68,6 +62,15 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
 
+  const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.setValue(SCREEN_HEIGHT);
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, bounciness: 2, speed: 18 }).start();
+    }
+  }, [visible, translateY]);
+
   useEffect(() => {
     if (!visible) return;
     if (category) {
@@ -83,10 +86,28 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
     setError(null);
   }, [visible, category]);
 
-  const handleClose = () => {
-    setError(null);
-    onClose();
-  };
+  function dismissSheet() {
+    Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+      setError(null);
+      onClose();
+    });
+  }
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, { dy }) => dy > 0,
+    onPanResponderMove: (_, { dy }) => { if (dy > 0) translateY.setValue(dy); },
+    onPanResponderRelease: (_, { dy, vy }) => {
+      if (dy > 100 || vy > 0.8) {
+        Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
+          setError(null);
+          onClose();
+        });
+      } else {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  });
 
   const handleSave = async () => {
     const trimmedLabel = label.trim();
@@ -135,32 +156,35 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.overlay} />
-      </TouchableWithoutFeedback>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.kavWrapper}
-        pointerEvents="box-none"
-      >
-        <View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped }]}>
-          <View style={[styles.handle, { backgroundColor: colors.fillPrimary }]} />
-          <View style={styles.header}>
-            <Text variant="headline">
-              {category ? t('categories.edit') : t('categories.add')}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              {category && (
-                <TouchableOpacity onPress={handleDelete} hitSlop={12}>
-                  <TrashIcon color={colors.expense} />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={handleClose} hitSlop={12}>
-                <XIcon color={colors.labelSecondary} />
-              </TouchableOpacity>
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={dismissSheet}>
+      <View style={styles.root}>
+        <TouchableWithoutFeedback onPress={dismissSheet}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          pointerEvents="box-none"
+        >
+          <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] }]}>
+            <View style={styles.handleZone} {...panResponder.panHandlers}>
+              <View style={[styles.handle, { backgroundColor: colors.fillPrimary }]} />
             </View>
-          </View>
+            <View style={styles.header}>
+              <Text variant="headline">
+                {category ? t('categories.edit') : t('categories.add')}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                {category && (
+                  <TouchableOpacity onPress={handleDelete} hitSlop={12}>
+                    <TrashIcon color={colors.expense} />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={dismissSheet} hitSlop={12}>
+                  <XIcon color={colors.labelSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -215,8 +239,8 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
             {/* Preview */}
             <View style={{ marginBottom: 12 }}>
               <View style={[styles.emojiPreview, { backgroundColor: color + '33' }]}>
-                {icon && /[^\x20-\x7E]/.test(icon) ? (
-                  <Text style={{ fontSize: 22, lineHeight: 28, textAlign: 'center' }}>{icon}</Text>
+                {isKnownIcon(icon) ? (
+                  <Icon name={icon} size={24} color={color} />
                 ) : (
                   <Text style={{ fontSize: 16, fontWeight: '700', color, textAlign: 'center' }}>
                     {label.charAt(0).toUpperCase() || '?'}
@@ -227,14 +251,14 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
 
             {/* Grid */}
             <View style={styles.emojiGrid}>
-              {CATEGORY_EMOJIS.map(e => (
+              {PICKER_ICONS.map(name => (
                 <TouchableOpacity
-                  key={e}
-                  style={[styles.emojiBtn, icon === e && { backgroundColor: color + '33', borderColor: color, borderWidth: 2 }]}
-                  onPress={() => setIcon(e)}
+                  key={name}
+                  style={[styles.emojiBtn, icon === name && { backgroundColor: color + '33', borderColor: color, borderWidth: 2 }]}
+                  onPress={() => setIcon(name)}
                   activeOpacity={0.6}
                 >
-                  <Text style={{ fontSize: 20, textAlign: 'center' }}>{e}</Text>
+                  <Icon name={name} size={20} color={icon === name ? color : colors.label} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -256,8 +280,9 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
               </Text>
             </TouchableOpacity>
           </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
 
       <ConfirmDialog
         visible={deleteDialogVisible}
@@ -281,15 +306,16 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  kavWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0 },
+  root: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.85,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
-  handle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 8, marginBottom: 4 },
+  handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
+  handle: { width: 36, height: 4, borderRadius: 2 },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: Spacing.md, paddingVertical: 12,

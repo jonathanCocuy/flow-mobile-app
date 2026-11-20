@@ -12,7 +12,7 @@ import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { AddBudgetSheet } from '@/components/AddBudgetSheet';
-import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import { Icon, transactionIcon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { UserCategory } from '@/types/finance';
 
@@ -153,7 +153,11 @@ export default function BudgetsScreen() {
 
   const getCategoryInfo = (catName: string) => {
     const cat = categories.find(c => c.name === catName);
-    return { label: cat?.label ?? catName, color: cat?.color ?? '#8b5cf6' };
+    return {
+      label: cat?.label ?? catName,
+      color: cat?.color ?? '#8b5cf6',
+      icon: transactionIcon(cat?.icon, 'expense', catName),
+    };
   };
 
   const handleEdit = (budget: BudgetRow) => {
@@ -188,7 +192,9 @@ export default function BudgetsScreen() {
           <BudgetsSkeleton colors={colors} />
         ) : budgets.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📊</Text>
+            <View style={styles.emptyEmoji}>
+              <Icon name="BarChart3" size={40} color={colors.labelTertiary} strokeWidth={1.4} />
+            </View>
             <Text variant="callout" align="center" color={colors.labelSecondary}>
               {t('budgets.empty')}
             </Text>
@@ -233,7 +239,7 @@ export default function BudgetsScreen() {
               <Text variant="title3" style={{ marginBottom: Spacing.sm }}>{t('budgets.allBudgets')}</Text>
               <Card radius={Spacing.radius.lg} padding={0}>
                 {budgets.map((budget, index) => {
-                  const { label, color } = getCategoryInfo(budget.category);
+                  const { label, color, icon } = getCategoryInfo(budget.category);
                   const pct = budget.percentage;
                   const fillColor = barColor(pct, colors);
                   return (
@@ -244,9 +250,7 @@ export default function BudgetsScreen() {
                         activeOpacity={0.6}
                       >
                         <View style={[styles.emoji, { backgroundColor: `${color}18` }]}>
-                          <Text variant="body" align="center">
-                            {getCategoryEmoji(budget.category, 'expense')}
-                          </Text>
+                          <Icon name={icon} size={19} color={color} />
                         </View>
                         <View style={styles.budgetContent}>
                           <View style={styles.budgetTop}>
@@ -314,7 +318,7 @@ const styles = StyleSheet.create({
   addBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   centered: { padding: 40, alignItems: 'center' },
   emptyState: { paddingHorizontal: Spacing.screenHorizontal, paddingTop: 60, alignItems: 'center' },
-  emptyEmoji: { fontSize: 40, marginBottom: 8 },
+  emptyEmoji: { marginBottom: 8 },
   emptyBtn: { marginTop: 16, paddingHorizontal: Spacing.lg, paddingVertical: 12, borderRadius: Spacing.radius.full },
   section: { paddingHorizontal: Spacing.screenHorizontal },
   summaryRow: {

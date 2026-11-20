@@ -7,7 +7,7 @@ import {
   useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
@@ -16,7 +16,7 @@ import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/hooks/useDashboard';
-import { getCategoryEmoji } from '@/utils/categoryEmoji';
+import { Icon, transactionIcon } from '@/components/ui/Icon';
 import i18n from '@/i18n';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { EditTransactionSheet } from '@/components/EditTransactionSheet';
@@ -25,6 +25,7 @@ import { AddBudgetSheet } from '@/components/AddBudgetSheet';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { GettingStartedChecklist } from '@/components/GettingStartedChecklist';
 import { BalanceExpandCard } from '@/components/BalanceExpandCard';
+import { NotificationsSheet, fetchUnreadCount } from '@/components/NotificationsSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
@@ -180,6 +181,14 @@ export default function DashboardScreen() {
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
   const [budgetSheetOpen, setBudgetSheetOpen] = useState(false);
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+
+  const refreshUnread = React.useCallback(() => {
+    fetchUnreadCount().then(setUnread);
+  }, []);
+
+  useFocusEffect(React.useCallback(() => { refreshUnread(); }, [refreshUnread]));
   const [balanceVisible, setBalanceVisible] = useState(true);
 
   useEffect(() => {
@@ -243,13 +252,29 @@ export default function DashboardScreen() {
               <Text variant="title2">FlowX</Text>
             </View>
           </View>
-          <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: colors.tint }]}
-            activeOpacity={0.8}
-            onPress={() => setSheetOpen(true)}
-          >
-            <PlusIcon color={colors.tintForeground} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+            <TouchableOpacity
+              style={[styles.bellButton, { backgroundColor: colors.fillPrimary }]}
+              activeOpacity={0.8}
+              onPress={() => setNotifOpen(true)}
+            >
+              <Icon name="Bell" size={19} color={colors.label} />
+              {unread > 0 && (
+                <View style={[styles.badge, { backgroundColor: colors.expense, borderColor: colors.backgroundGrouped }]}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>
+                    {unread > 9 ? '9+' : unread}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: colors.tint }]}
+              activeOpacity={0.8}
+              onPress={() => setSheetOpen(true)}
+            >
+              <PlusIcon color={colors.tintForeground} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Balance Card */}
@@ -448,6 +473,11 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
+      <NotificationsSheet
+        visible={notifOpen}
+        onClose={() => { setNotifOpen(false); refreshUnread(); }}
+        onChanged={refreshUnread}
+      />
       <AddTransactionSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
@@ -583,7 +613,7 @@ function TransactionRow({
   isLast: boolean;
   onPress: () => void;
 }) {
-  const emoji = getCategoryEmoji(tx.category, tx.type);
+  const iconName = transactionIcon(tx.icon, tx.type, tx.category);
   const label = getCategoryLabel(tx.category, categories);
   const displayAmount = tx.amount * (tx.exchange_rate ?? 1);
   const isIncome = tx.type === 'income';
@@ -596,7 +626,7 @@ function TransactionRow({
         onPress={onPress}
       >
         <View style={[styles.txIcon, { backgroundColor: isIncome ? `${colors.income}18` : colors.fillTertiary }]}>
-          <Text variant="footnote" align="center">{emoji}</Text>
+          <Icon name={iconName} size={18} color={isIncome ? colors.income : colors.labelSecondary} />
         </View>
         <View style={styles.txMiddle}>
           <Text variant="callout" style={{ fontWeight: '500' }}>{tx.description}</Text>
@@ -632,6 +662,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenHorizontal,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
+  },
+  bellButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
   },
   addButton: {
     width: 36,

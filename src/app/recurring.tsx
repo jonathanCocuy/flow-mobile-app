@@ -14,6 +14,9 @@ import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Icon, isKnownIcon } from '@/components/ui/Icon';
+import { IconPicker } from '@/components/AddTransactionSheet';
+import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { RecurringTemplate } from '@/types/finance';
 
@@ -194,7 +197,7 @@ interface FormState {
 
 function emptyForm(): FormState {
   return {
-    icon: '💳', description: '', amount: '',
+    icon: 'CreditCard', description: '', amount: '',
     currency: 'COP', category_id: '', type: 'expense',
     account_id: '', interval: 'monthly',
     day_of_month: '1', day_of_week: '1', is_active: true,
@@ -203,7 +206,7 @@ function emptyForm(): FormState {
 
 function templateToForm(t: RecurringTemplate): FormState {
   return {
-    icon: t.icon, description: t.description, amount: String(t.amount),
+    icon: t.icon, description: t.description, amount: toAmountInput(t.amount),
     currency: t.currency, category_id: t.category, type: t.type,
     account_id: t.account_id, interval: t.interval,
     day_of_month: t.day_of_month !== null ? String(t.day_of_month) : '1',
@@ -248,6 +251,7 @@ function RecurringSheet({
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [saving, setSaving] = useState(false);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
   React.useEffect(() => {
@@ -258,7 +262,7 @@ function RecurringSheet({
   function validate(): boolean {
     const e: typeof errors = {};
     if (!form.description.trim()) e.description = t('recurring.error.descRequired');
-    const amt = parseFloat(form.amount.replace(',', '.'));
+    const amt = parseAmountInput(form.amount);
     if (!form.amount || isNaN(amt) || amt <= 0) e.amount = t('recurring.error.amountInvalid');
     if (!form.account_id) e.account_id = t('recurring.error.accountRequired');
     if (!form.category_id) e.category_id = t('recurring.error.categoryRequired');
@@ -271,9 +275,9 @@ function RecurringSheet({
     setSaving(true);
     const payload: Record<string, unknown> = {
       user_id: user.id,
-      icon: form.icon.trim() || '💳',
+      icon: form.icon.trim() || 'CreditCard',
       description: form.description.trim(),
-      amount: parseFloat(form.amount.replace(',', '.')),
+      amount: parseAmountInput(form.amount),
       currency: form.currency,
       category: form.category_id,
       type: form.type,
@@ -292,7 +296,6 @@ function RecurringSheet({
     onSuccess();
   }
 
-  const f = (key: keyof FormState) => (val: string | boolean) => setForm(prev => ({ ...prev, [key]: val }));
 
   const typeColor = form.type === 'income' ? colors.income : colors.expense;
 
@@ -347,14 +350,17 @@ function RecurringSheet({
                 {t('recurring.description').toUpperCase()}
               </Text>
               <View style={[styles.descRow, { backgroundColor: colors.fillTertiary, borderRadius: Spacing.radius.md }]}>
-                <TextInput
-                  style={[styles.iconInput, { borderRightColor: colors.separator }]}
-                  value={form.icon}
-                  onChangeText={f('icon')}
-                  maxLength={4}
-                  placeholder="💳"
-                  placeholderTextColor={colors.labelTertiary}
-                />
+                <TouchableOpacity
+                  style={[styles.iconInput, { borderRightColor: colors.separator, alignItems: 'center', justifyContent: 'center' }]}
+                  onPress={() => setIconPickerOpen(true)}
+                  activeOpacity={0.7}
+                >
+                  <Icon
+                    name={isKnownIcon(form.icon) ? form.icon : 'CreditCard'}
+                    size={20}
+                    color={colors.labelSecondary}
+                  />
+                </TouchableOpacity>
                 <TextInput
                   style={[styles.descInput, { color: colors.label }]}
                   placeholder={t('recurring.descriptionPh')}
@@ -382,7 +388,7 @@ function RecurringSheet({
                   placeholderTextColor={colors.labelTertiary}
                   keyboardType="decimal-pad"
                   value={form.amount}
-                  onChangeText={v => setForm(p => ({ ...p, amount: v }))}
+                  onChangeText={v => setForm(p => ({ ...p, amount: formatAmountInput(v) }))}
                 />
                 <View style={{ flexDirection: 'row', marginRight: Spacing.sm, gap: 4 }}>
                   {['COP', 'USD'].map(cur => (
@@ -453,7 +459,6 @@ function RecurringSheet({
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
                 {categories.map(cat => {
-                  const isEmoji = cat.icon && /[^\x20-\x7E]/.test(cat.icon);
                   const selected = form.category_id === cat.id;
                   return (
                     <TouchableOpacity
@@ -465,8 +470,8 @@ function RecurringSheet({
                       }]}
                       activeOpacity={0.7}
                     >
-                      {isEmoji ? (
-                        <Text style={{ fontSize: 14, lineHeight: 18 }}>{cat.icon}</Text>
+                      {isKnownIcon(cat.icon) ? (
+                        <Icon name={cat.icon} size={14} color={selected ? cat.color : colors.labelSecondary} />
                       ) : (
                         <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
                       )}
@@ -583,6 +588,15 @@ function RecurringSheet({
           </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
+
+      <IconPicker
+        visible={iconPickerOpen}
+        current={form.icon}
+        onSelect={name => setForm(p => ({ ...p, icon: name }))}
+        onClose={() => setIconPickerOpen(false)}
+        colors={colors}
+        title={t('transactions.add.icon')}
+      />
     </Modal>
   );
 }
@@ -698,7 +712,7 @@ export default function RecurringScreen() {
           <RecurringSkeleton />
         ) : templates.length === 0 ? (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}><Text style={{ fontSize: 40, lineHeight: 40 }}>📅</Text></View>
+            <View style={styles.emptyIcon}><Icon name="CalendarClock" size={38} color={colors.labelTertiary} strokeWidth={1.4} /></View>
             <Text variant="callout" align="center" color={colors.labelSecondary} style={{ marginBottom: Spacing.lg }}>
               {t('recurring.empty')}
             </Text>
@@ -771,7 +785,11 @@ export default function RecurringScreen() {
                             ? colors.income + '20'
                             : colors.expense + '20',
                         }]}>
-                          <Text variant="body" align="center">{tpl.icon}</Text>
+                          <Icon
+                            name={isKnownIcon(tpl.icon) ? tpl.icon : 'CreditCard'}
+                            size={19}
+                            color={tpl.type === 'income' ? colors.income : colors.expense}
+                          />
                         </View>
                         <View style={{ flex: 1, gap: 2 }}>
                           <Text variant="callout" style={{ fontWeight: '500' }} numberOfLines={1}>{tpl.description}</Text>

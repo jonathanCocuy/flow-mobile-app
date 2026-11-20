@@ -179,6 +179,9 @@ export default {
   'transactions.add.date': 'Date',
   'transactions.add.fromAccount': 'From account',
   'transactions.add.destinationAccount': 'To account',
+  'transactions.add.icon': 'Icon',
+  'transactions.add.shared': 'Is this a shared expense?',
+  'transactions.add.sharedGroupPlaceholder': 'Select a group',
   'transactions.add.addCategory': 'Add',
   'transactions.add.transfer.onlyOneAccount': 'Only one account',
   'transactions.add.transfer.onlyOneAccountHint': 'You need at least two accounts to make a transfer. Create another one first.',
@@ -187,6 +190,7 @@ export default {
   'transactions.add.error.amount': 'Enter a valid amount.',
   'transactions.add.error.category': 'Select a category.',
   'transactions.add.error.account': 'Select an account.',
+  'transactions.add.error.sharedGroup': 'Select a group.',
   'transactions.add.error.destinationAccount': 'Select a destination account.',
   'transactions.add.error.sameAccount': 'Accounts must be different.',
 
@@ -358,7 +362,7 @@ export default {
   'split.activeGroups': 'active groups',
   'split.youAreOwed': 'You\'re owed',
   'split.youOwe': 'You owe',
-  'split.balanceZero': 'All settled ✓',
+  'split.balanceZero': 'All settled',
 
   // Group sheet
   'split.group.name': 'Group Name',
@@ -374,6 +378,25 @@ export default {
   'split.group.error.shareSum': 'Percentages must add up to 100.',
   'split.group.error.memberName': 'Enter a name for each member.',
   'split.group.error.memberShare': 'Enter a valid percentage (1–100).',
+  'split.group.error.email': 'Enter a valid email address.',
+
+  // Invitations
+  'split.invite.emailPh': 'Email (optional, to invite them)',
+  'split.invite.pending': 'PENDING',
+  'split.invite.accepted': 'ACCEPTED',
+  'split.invite.rejected': 'DECLINED',
+  'split.invite.notifTitle': 'Group invitation',
+  'split.invite.notifBody': 'You were invited to the group "{{group}}".',
+
+  // Notifications screen
+  'profile.notifications': 'Notifications',
+  'notifications.title': 'Notifications',
+  'notifications.empty': 'No notifications',
+  'notifications.emptyDesc': 'Group invitations and other alerts will show up here.',
+  'notifications.accept': 'Accept',
+  'notifications.reject': 'Decline',
+  'notifications.acceptedChip': 'ACCEPTED',
+  'notifications.rejectedChip': 'DECLINED',
 
   // Split detail screen
   'split.detail.balance': 'Balances',

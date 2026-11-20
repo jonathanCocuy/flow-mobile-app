@@ -24,6 +24,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Icon } from '@/components/ui/Icon';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,9 @@ interface SharedMember {
   share_pct: number;
   is_me: boolean;
   color: string;
+  member_user_id: string | null;
+  invited_email: string | null;
+  status: 'pending' | 'accepted' | 'rejected';
 }
 
 interface SharedGroup {
@@ -51,6 +55,9 @@ interface MemberForm {
   share: string;
   is_me: boolean;
   color: string;
+  email: string;
+  status?: 'pending' | 'accepted' | 'rejected';
+  linked: boolean;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -108,8 +115,15 @@ function ChevronRight({ color }: { color: string }) {
 
 // ── Balance helpers ────────────────────────────────────────────────────────────
 
-function getMyBalance(group: SharedGroup): number {
-  const me = group.shared_members.find(m => m.is_me);
+// In a group someone else owns, "me" is the member linked to my account —
+// is_me belongs to whoever created the group.
+function findMe(group: SharedGroup, userId: string) {
+  return group.shared_members.find(m => m.member_user_id === userId)
+    ?? (group.user_id === userId ? group.shared_members.find(m => m.is_me) : undefined);
+}
+
+function getMyBalance(group: SharedGroup, userId: string): number {
+  const me = findMe(group, userId);
   if (!me) return 0;
   let paid = 0;
   let owed = 0;
@@ -235,11 +249,14 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
         share: String(m.share_pct),
         is_me: m.is_me,
         color: m.color,
+        email: m.invited_email ?? '',
+        status: m.status,
+        linked: !!m.member_user_id || !!m.invited_email,
       })));
       setRemovedIds([]);
     } else {
       setName('');
-      setMembers([{ name: 'Yo', share: '100', is_me: true, color: MEMBER_COLORS[0] }]);
+      setMembers([{ name: 'Yo', share: '100', is_me: true, color: MEMBER_COLORS[0], email: '', linked: false }]);
       setRemovedIds([]);
     }
     setError('');
@@ -253,7 +270,7 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
     const usedColors = members.map(m => m.color);
     const nextColor = MEMBER_COLORS.find(c => !usedColors.includes(c)) ?? MEMBER_COLORS[members.length % MEMBER_COLORS.length];
     setMembers(prev => {
-      const newList = [...prev, { name: '', share: '', is_me: false, color: nextColor }];
+      const newList = [...prev, { name: '', share: '', is_me: false, color: nextColor, email: '', linked: false }];
       const count = newList.length;
       const each = Math.floor(100 / count);
       const rem = 100 - each * count;
@@ -296,6 +313,10 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
       if (!m.name.trim()) { setError(t('split.group.error.memberName')); return; }
       const pct = parseFloat(m.share);
       if (isNaN(pct) || pct <= 0 || pct > 100) { setError(t('split.group.error.memberShare')); return; }
+      const mail = m.email.trim();
+      if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+        setError(t('split.group.error.email')); return;
+      }
     }
     const total = members.reduce((s, m) => s + parseFloat(m.share), 0);
     if (Math.abs(total - 100) > 1) { setError(t('split.group.error.shareSum')); return; }
@@ -317,20 +338,51 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
         if (res.error) throw res.error;
       }
 
+      // An email turns a member into an invitation.  If the address already
+      // belongs to a user we link and notify them now; otherwise it waits in
+      // invited_email until they sign up and claim it.
+      const applyInvite = async (payload: Record<string, unknown>, email: string) => {
+        const { data: uid, error } = await supabase.rpc('get_user_id_by_email', { p_email: email });
+        if (error) throw error;
+        const invitedUserId = (uid as string | null) ?? null;
+        payload.status = 'pending';
+        if (invitedUserId) payload.member_user_id = invitedUserId;
+        else payload.invited_email = email;
+        return invitedUserId;
+      };
+
+      const notify = async (userId: string, memberId: string) => {
+        const { error } = await supabase.rpc('create_notification', {
+          p_user_id: userId,
+          p_type: 'group_invite',
+          p_title: t('split.invite.notifTitle'),
+          p_body: t('split.invite.notifBody', { group: trimName }),
+          p_data: { group_id: groupId, group_name: trimName, member_id: memberId },
+        });
+        if (error) throw error;
+      };
+
       for (const m of members) {
-        const payload = {
+        const payload: Record<string, unknown> = {
           group_id: groupId!,
           name: m.name.trim(),
           share_pct: parseFloat(m.share),
           is_me: m.is_me,
           color: m.color,
         };
+
+        const email = m.is_me ? '' : m.email.trim().toLowerCase();
+        const invitedUserId = email && !m.linked ? await applyInvite(payload, email) : null;
+
         if (m.id) {
-          const res = await supabase.from('shared_members').update(payload).eq('id', m.id);
-          if (res.error) throw res.error;
+          const { error } = await supabase.from('shared_members').update(payload).eq('id', m.id);
+          if (error) throw error;
+          if (invitedUserId) await notify(invitedUserId, m.id);
         } else {
-          const res = await supabase.from('shared_members').insert(payload);
-          if (res.error) throw res.error;
+          const { data, error } = await supabase
+            .from('shared_members').insert(payload).select('id').single();
+          if (error) throw error;
+          if (invitedUserId) await notify(invitedUserId, data.id);
         }
       }
 
@@ -382,7 +434,8 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
             </View>
 
             {members.map((m, idx) => (
-              <View key={idx} style={[styles.memberRow, { borderColor: colors.separator }]}>
+              <View key={idx} style={[styles.memberBlock, { borderColor: colors.separator }]}>
+              <View style={styles.memberRow}>
                 <TouchableOpacity onPress={() => cycleColor(idx)} hitSlop={8}>
                   <View style={[styles.colorDot, { backgroundColor: m.color }]} />
                 </TouchableOpacity>
@@ -415,6 +468,46 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
                     <Text style={{ fontSize: 18, color: colors.expense, lineHeight: 20 }}>×</Text>
                   </TouchableOpacity>
                 )}
+              </View>
+
+              {!m.is_me && (
+                m.linked ? (
+                  <View style={styles.inviteStatusRow}>
+                    <View style={[styles.statusChip, {
+                      backgroundColor: m.status === 'accepted' ? colors.income + '18'
+                        : m.status === 'rejected' ? colors.expense + '18'
+                        : colors.tint + '18',
+                    }]}>
+                      <Text style={{
+                        fontSize: 11, fontWeight: '700',
+                        color: m.status === 'accepted' ? colors.income
+                          : m.status === 'rejected' ? colors.expense
+                          : colors.tint,
+                      }}>
+                        {m.status === 'accepted' ? t('split.invite.accepted')
+                          : m.status === 'rejected' ? t('split.invite.rejected')
+                          : t('split.invite.pending')}
+                      </Text>
+                    </View>
+                    {!!m.email && (
+                      <Text variant="caption2" color={colors.labelTertiary} numberOfLines={1} style={{ flex: 1 }}>
+                        {m.email}
+                      </Text>
+                    )}
+                  </View>
+                ) : (
+                  <TextInput
+                    style={[styles.emailInput, { color: colors.label, borderColor: colors.separator }]}
+                    value={m.email}
+                    onChangeText={v => updateMember(idx, { email: v })}
+                    placeholder={t('split.invite.emailPh')}
+                    placeholderTextColor={colors.labelTertiary}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )
+              )}
               </View>
             ))}
 
@@ -459,10 +552,11 @@ export default function SplitScreen() {
 
   const load = useCallback(async () => {
     if (!user) return;
+    // No user_id filter: RLS returns both the groups I own and the ones I was
+    // invited to and accepted.
     const { data } = await supabase
       .from('shared_groups')
       .select('*, shared_members(*), shared_expenses(amount, paid_by_member_id)')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     setGroups((data ?? []) as SharedGroup[]);
     setLoading(false);
@@ -472,10 +566,10 @@ export default function SplitScreen() {
 
   const totalPending = useMemo(() => {
     return groups.reduce((s, g) => {
-      const bal = getMyBalance(g);
+      const bal = getMyBalance(g, user?.id ?? '');
       return s + (bal > 0 ? bal : 0);
     }, 0);
-  }, [groups]);
+  }, [groups, user]);
 
   const handleDelete = async () => {
     if (!deleting) return;
@@ -534,7 +628,9 @@ export default function SplitScreen() {
 
         {groups.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={{ fontSize: 56, marginBottom: Spacing.sm }}>🤝</Text>
+            <View style={{ marginBottom: Spacing.sm }}>
+              <Icon name="Users" size={52} color={colors.labelTertiary} strokeWidth={1.4} />
+            </View>
             <Text variant="headline" style={{ fontWeight: '700', marginBottom: 6 }}>{t('split.empty')}</Text>
             <Text variant="subheadline" color={colors.labelSecondary} align="center" style={{ lineHeight: 22, marginBottom: Spacing.lg }}>
               {t('split.emptyDesc')}
@@ -552,11 +648,11 @@ export default function SplitScreen() {
         ) : (
           <Card radius={Spacing.radius.lg} padding={0}>
             {groups.map((group, idx) => {
-              const balance = getMyBalance(group);
+              const balance = getMyBalance(group, user?.id ?? '');
               const memberNames = group.shared_members.map(m => m.name).join(', ');
               const totalExp = group.shared_expenses.reduce((s, e) => s + Number(e.amount), 0);
               const avatarLetter = group.name.charAt(0).toUpperCase();
-              const hasMe = group.shared_members.some(m => m.is_me);
+              const hasMe = !!findMe(group, user?.id ?? '');
 
               return (
                 <View key={group.id}>
@@ -725,13 +821,37 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: Spacing.sm,
   },
+  memberBlock: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 6,
+    marginBottom: 4,
+  },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 2,
+  },
+  emailInput: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    fontSize: 13,
+    marginLeft: 28,
+    marginTop: 2,
+  },
+  inviteStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 28,
+    marginTop: 2,
+  },
+  statusChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   colorDot: {
     width: 20, height: 20, borderRadius: 10,

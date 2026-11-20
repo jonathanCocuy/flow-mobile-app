@@ -23,19 +23,15 @@ import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { Icon, isKnownIcon, transactionIcon } from '@/components/ui/Icon';
+import { IconPicker } from '@/components/AddTransactionSheet';
+import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 import type { DashboardTransaction, DashboardAccount, UserCategory } from '@/types/finance';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type TxType = 'expense' | 'income' | 'transfer';
 type AppColors = typeof Colors[keyof typeof Colors];
-
-const EMOJIS = [
-  '🍔','🍕','☕','🍺','🛒','🏠','🏢','🚗','✈️','🚌','⛽',
-  '🏥','💊','🎵','🎮','📺','🎬','👕','👟','💻','📱','📚',
-  '🎓','⚽','🎁','🐕','🌊','🍽️','💰','💸','🔧','⚡','💡',
-  '🎪','🌿','🧴','🧺','🎨','🎤','🏋️','🛁','🏖️','🎂','🧁',
-];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -65,74 +61,10 @@ function TrashIcon({ color }: { color: string }) {
   );
 }
 
-// ── Emoji picker ──────────────────────────────────────────────────────────────
-
-function EmojiPicker({
-  visible,
-  current,
-  onSelect,
-  onClose,
-  colors,
-}: {
-  visible: boolean;
-  current: string;
-  onSelect: (e: string) => void;
-  onClose: () => void;
-  colors: AppColors;
-}) {
-  if (!visible) return null;
-  return (
-    <Modal visible transparent animationType="fade" statusBarTranslucent>
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={emojiStyles.backdrop}>
-          <TouchableWithoutFeedback>
-            <View style={[emojiStyles.box, { backgroundColor: colors.backgroundGroupedSecondary }]}>
-              <Text variant="footnote" color={colors.labelSecondary} style={{ marginBottom: Spacing.xs }}>
-                EMOJI
-              </Text>
-              <View style={emojiStyles.grid}>
-                {EMOJIS.map(e => (
-                  <TouchableOpacity
-                    key={e}
-                    onPress={() => { onSelect(e); onClose(); }}
-                    style={[
-                      emojiStyles.cell,
-                      e === current && { backgroundColor: `${colors.tint}20`, borderRadius: 8 },
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Text variant="title3" align="center">{e}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
-}
-
-const emojiStyles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  box: { width: '100%', borderRadius: 20, padding: Spacing.md },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
-});
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatBalance(value: number): string {
   return Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatThousands(value: string): string {
-  if (!value) return '';
-  const stripped = value.replace(/,/g, '');
-  const clean = stripped.replace(/[^0-9.]/g, '');
-  const parts = clean.split('.');
-  const intFormatted = parts[0] ? parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
-  return parts.length > 1 ? `${intFormatted}.${parts[1]}` : intFormatted;
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -161,7 +93,7 @@ export function EditTransactionSheet({
   const colors = Colors[colorScheme];
 
   const [txType, setTxType] = useState<TxType>('expense');
-  const [emoji, setEmoji] = useState('');
+  const [iconName, setIconName] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -179,9 +111,9 @@ export function EditTransactionSheet({
     if (!transaction) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTxType(transaction.type);
-    setEmoji(EMOJIS.includes(transaction.icon ?? '') ? transaction.icon! : '');
+    setIconName(isKnownIcon(transaction.icon) ? transaction.icon! : '');
     setDescription(transaction.description ?? '');
-    setAmount(formatThousands(String(transaction.amount)));
+    setAmount(toAmountInput(transaction.amount));
     const parts = transaction.date.split('-').map(Number);
     setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
     setShowEmojiPicker(false);
@@ -230,7 +162,7 @@ export function EditTransactionSheet({
     if (!transaction) return;
     const newErrors: Record<string, string> = {};
     if (!description.trim()) newErrors.description = t('transactions.add.error.description');
-    const amountNum = parseFloat(amount.replace(/,/g, ''));
+    const amountNum = parseAmountInput(amount);
     if (isNaN(amountNum) || amountNum <= 0) newErrors.amount = t('transactions.add.error.amount');
     if (!selectedAccountId) newErrors.account = t('transactions.add.error.account');
     if (txType !== 'transfer' && !selectedCategory) newErrors.category = t('transactions.add.error.category');
@@ -248,7 +180,8 @@ export function EditTransactionSheet({
     const mo = String(selectedDate.getMonth() + 1).padStart(2, '0');
     const d = String(selectedDate.getDate()).padStart(2, '0');
     const dateISO = `${y}-${mo}-${d}`;
-    const iconVal = emoji || transaction.icon || (txType === 'transfer' ? 'ArrowRightLeft' : selectedCategory?.icon ?? 'Wallet');
+    const iconVal = iconName || (isKnownIcon(transaction.icon) ? transaction.icon! : '')
+      || (txType === 'transfer' ? 'ArrowRightLeft' : selectedCategory?.icon ?? 'Wallet');
 
     try {
       const { error } = await supabase.from('transactions').update({
@@ -372,7 +305,11 @@ export function EditTransactionSheet({
                       style={[styles.emojiBtn, { borderRightColor: colors.separator }]}
                       activeOpacity={0.7}
                     >
-                      <Text variant="title3" align="center">{emoji || '😊'}</Text>
+                      <Icon
+                        name={iconName || transactionIcon(transaction?.icon, txType, selectedCategory?.name)}
+                        size={21}
+                        color={iconName ? colors.tint : colors.labelSecondary}
+                      />
                     </TouchableOpacity>
                     <TextInput
                       style={[styles.descInput, { color: colors.label }]}
@@ -402,7 +339,7 @@ export function EditTransactionSheet({
                       placeholder="0.00"
                       placeholderTextColor={colors.labelTertiary}
                       value={amount}
-                      onChangeText={v => { setAmount(formatThousands(v)); setErrors(e => ({ ...e, amount: '' })); }}
+                      onChangeText={v => { setAmount(formatAmountInput(v)); setErrors(e => ({ ...e, amount: '' })); }}
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                     />
@@ -525,10 +462,11 @@ export function EditTransactionSheet({
         </View>
       </Modal>
 
-      <EmojiPicker
+      <IconPicker
         visible={showEmojiPicker}
-        current={emoji}
-        onSelect={setEmoji}
+        current={iconName}
+        onSelect={setIconName}
+        title={t('transactions.add.icon')}
         onClose={() => setShowEmojiPicker(false)}
         colors={colors}
       />
