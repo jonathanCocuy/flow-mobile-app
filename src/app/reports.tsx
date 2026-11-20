@@ -10,10 +10,11 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Icon } from '@/components/ui/Icon';
+import { Icon, isKnownIcon } from '@/components/ui/Icon';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -207,9 +208,9 @@ export default function ReportsScreen() {
   const [topCategories, setTopCategories] = useState<CategoryStat[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const startDate = `${year}-01-01`;
       const endDate = `${year}-12-31`;
@@ -293,7 +294,7 @@ export default function ReportsScreen() {
         <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <RefreshScrollView onRefresh={() => fetchData(true)} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Year selector */}
         <View style={styles.yearRow}>
           <TouchableOpacity onPress={() => { setYear(y => y - 1); setSelectedMonth(null); }} hitSlop={12} activeOpacity={0.7}>
@@ -397,7 +398,10 @@ export default function ReportsScreen() {
                     <View key={i}>
                       <View style={styles.catRow}>
                         <View style={[styles.catDot, { backgroundColor: cat.color }]}>
-                          {cat.icon && /[^\x20-\x7E]/.test(cat.icon) ? (
+                          {isKnownIcon(cat.icon) ? (
+                            <Icon name={cat.icon} size={18} color="#fff" />
+                          ) : cat.icon && /[^\x20-\x7E]/.test(cat.icon) ? (
+                            // Categories saved before the Lucide switch still hold an emoji.
                             <Text style={{ fontSize: 18, lineHeight: 22, textAlign: 'center' }}>{cat.icon}</Text>
                           ) : (
                             <Text style={{ fontSize: 14, fontWeight: '700', textAlign: 'center', color: '#fff' }}>
@@ -425,7 +429,7 @@ export default function ReportsScreen() {
             )}
           </>
         )}
-      </ScrollView>
+      </RefreshScrollView>
     </SafeAreaView>
   );
 }

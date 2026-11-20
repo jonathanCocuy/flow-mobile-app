@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme,
+  View, StyleSheet, TouchableOpacity, useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { AddBudgetSheet } from '@/components/AddBudgetSheet';
 import { Icon, transactionIcon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import type { UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
@@ -93,8 +94,8 @@ export default function BudgetsScreen() {
   const [loading, setLoading] = useState(true);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [editBudget, setEditBudget] = useState<{ id: string; category: string; monthly_limit: number } | null>(null);
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -176,7 +177,7 @@ export default function BudgetsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      <RefreshScrollView onRefresh={() => fetchData(true)} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.header}>
           <Text variant="largeTitle">{t('tabs.budgets')}</Text>
           <TouchableOpacity
@@ -291,7 +292,7 @@ export default function BudgetsScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </RefreshScrollView>
 
       <AddBudgetSheet
         visible={addSheetVisible}

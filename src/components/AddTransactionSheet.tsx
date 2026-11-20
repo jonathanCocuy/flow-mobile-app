@@ -24,9 +24,11 @@ import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
-import { Icon, PICKER_ICONS, transactionIcon } from '@/components/ui/Icon';
+import { Icon, transactionIcon, isKnownIcon } from '@/components/ui/Icon';
+import { IconPicker } from '@/components/ui/IconPicker';
 import { formatAmountInput, parseAmountInput } from '@/utils/amount';
 import type { DashboardAccount, UserCategory } from '@/types/finance';
+import { CategoryModal } from '@/components/CategoryModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,6 +38,7 @@ type AppColors = typeof Colors[keyof typeof Colors];
 interface SplitGroup {
   id: string;
   name: string;
+  icon: string | null;
   shared_members: { id: string; is_me: boolean }[];
 }
 
@@ -59,66 +62,6 @@ function ChevronDownIcon({ color }: { color: string }) {
 
 // ── Icon picker ───────────────────────────────────────────────────────────────
 
-export function IconPicker({
-  visible,
-  current,
-  onSelect,
-  onClose,
-  colors,
-  title,
-}: {
-  visible: boolean;
-  current: string;
-  onSelect: (name: string) => void;
-  onClose: () => void;
-  colors: AppColors;
-  title: string;
-}) {
-  if (!visible) return null;
-  return (
-    <Modal visible transparent animationType="fade" statusBarTranslucent>
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={pickerStyles.backdrop}>
-          <TouchableWithoutFeedback>
-            <View style={[pickerStyles.box, { backgroundColor: colors.backgroundGroupedSecondary }]}>
-              <Text variant="footnote" color={colors.labelSecondary} style={{ marginBottom: Spacing.xs }}>
-                {title.toUpperCase()}
-              </Text>
-              <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
-                <View style={pickerStyles.grid}>
-                  {PICKER_ICONS.map(name => {
-                    const active = name === current;
-                    return (
-                      <TouchableOpacity
-                        key={name}
-                        onPress={() => { onSelect(name); onClose(); }}
-                        style={[
-                          pickerStyles.cell,
-                          active && { backgroundColor: `${colors.tint}20`, borderRadius: 10 },
-                        ]}
-                        activeOpacity={0.7}
-                      >
-                        <Icon name={name} size={22} color={active ? colors.tint : colors.label} />
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
-}
-
-const pickerStyles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  box: { width: '100%', borderRadius: 20, padding: Spacing.md },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: '16.66%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
-});
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatBalance(value: number): string {
@@ -132,6 +75,7 @@ interface AddTransactionSheetProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onCategoryCreated?: () => void;
   accounts: DashboardAccount[];
   categories: UserCategory[];
 }
@@ -142,6 +86,7 @@ export function AddTransactionSheet({
   visible,
   onClose,
   onSuccess,
+  onCategoryCreated,
   accounts,
   categories,
 }: AddTransactionSheetProps) {
@@ -152,6 +97,7 @@ export function AddTransactionSheet({
   const [txType, setTxType] = useState<TxType>('expense');
   const [iconName, setIconName] = useState('');
   const [description, setDescription] = useState('');
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -191,7 +137,7 @@ export function AddTransactionSheet({
     let cancelled = false;
     supabase
       .from('shared_groups')
-      .select('id, name, shared_members(id, is_me)')
+      .select('id, name, icon, shared_members(id, is_me)')
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         if (!cancelled) setGroups((data ?? []) as SplitGroup[]);
@@ -497,7 +443,11 @@ export function AddTransactionSheet({
                             ]}
                             activeOpacity={0.7}
                           >
-                            <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                            {isKnownIcon(cat.icon) ? (
+                              <Icon name={cat.icon} size={14} color={cat.color} />
+                            ) : (
+                              <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                            )}
                             <Text
                               variant="subheadline"
                               color={active ? cat.color : colors.label}
@@ -512,7 +462,7 @@ export function AddTransactionSheet({
                       <TouchableOpacity
                         style={[styles.categoryPill, { backgroundColor: '#fbbf2420', borderColor: '#fbbf24' }]}
                         activeOpacity={0.7}
-                        onPress={() => {/* TODO: add category */}}
+                        onPress={() => setCategoryModalVisible(true)}
                       >
                         <Text variant="subheadline" color="#fbbf24" style={{ fontWeight: '600' }}>
                           + {t('transactions.add.addCategory')}
@@ -648,6 +598,11 @@ export function AddTransactionSheet({
         colors={colors}
         title={t('transactions.add.icon')}
       />
+      <CategoryModal
+        visible={categoryModalVisible}
+        onClose={() => setCategoryModalVisible(false)}
+        onSuccess={() => { setCategoryModalVisible(false); onCategoryCreated?.(); }}
+      />
     </>
   );
 }
@@ -744,9 +699,13 @@ function GroupSelect({
         {selected ? (
           <>
             <View style={[styles.groupAvatar, { backgroundColor: `${colors.tint}18` }]}>
-              <Text variant="caption1" color={colors.tint} style={{ fontWeight: '700' }}>
-                {selected.name.charAt(0).toUpperCase()}
-              </Text>
+              {isKnownIcon(selected.icon) ? (
+                <Icon name={selected.icon} size={15} color={colors.tint} />
+              ) : (
+                <Text variant="caption1" color={colors.tint} style={{ fontWeight: '700' }}>
+                  {selected.name.charAt(0).toUpperCase()}
+                </Text>
+              )}
             </View>
             <Text variant="callout" style={{ flex: 1, fontWeight: '500' }}>{selected.name}</Text>
           </>
@@ -766,9 +725,13 @@ function GroupSelect({
                 activeOpacity={0.6}
               >
                 <View style={[styles.groupAvatar, { backgroundColor: `${colors.tint}18` }]}>
-                  <Text variant="caption1" color={colors.tint} style={{ fontWeight: '700' }}>
-                    {g.name.charAt(0).toUpperCase()}
-                  </Text>
+                  {isKnownIcon(g.icon) ? (
+                    <Icon name={g.icon} size={15} color={colors.tint} />
+                  ) : (
+                    <Text variant="caption1" color={colors.tint} style={{ fontWeight: '700' }}>
+                      {g.name.charAt(0).toUpperCase()}
+                    </Text>
+                  )}
                 </View>
                 <Text variant="callout" style={{ flex: 1, fontWeight: '500' }}>{g.name}</Text>
                 {selectedId === g.id && <CheckIcon color={colors.tint} />}

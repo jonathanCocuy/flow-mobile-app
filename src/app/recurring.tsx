@@ -11,11 +11,12 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
-import { IconPicker } from '@/components/AddTransactionSheet';
+import { IconPicker } from '@/components/ui/IconPicker';
 import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { RecurringTemplate } from '@/types/finance';
@@ -471,7 +472,7 @@ function RecurringSheet({
                       activeOpacity={0.7}
                     >
                       {isKnownIcon(cat.icon) ? (
-                        <Icon name={cat.icon} size={14} color={selected ? cat.color : colors.labelSecondary} />
+                        <Icon name={cat.icon} size={14} color={cat.color} />
                       ) : (
                         <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
                       )}
@@ -592,7 +593,7 @@ function RecurringSheet({
       <IconPicker
         visible={iconPickerOpen}
         current={form.icon}
-        onSelect={name => setForm(p => ({ ...p, icon: name }))}
+        onSelect={(name: string) => setForm(p => ({ ...p, icon: name }))}
         onClose={() => setIconPickerOpen(false)}
         colors={colors}
         title={t('transactions.add.icon')}
@@ -659,9 +660,9 @@ export default function RecurringScreen() {
   const [editing, setEditing] = useState<RecurringTemplate | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RecurringTemplate | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       await supabase.rpc('process_recurring_transactions', { p_user_id: user.id });
       const [tplRes, accRes, catRes] = await Promise.all([
@@ -707,7 +708,7 @@ export default function RecurringScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <RefreshScrollView onRefresh={() => fetchData(true)} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {loading ? (
           <RecurringSkeleton />
         ) : templates.length === 0 ? (
@@ -826,7 +827,7 @@ export default function RecurringScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </RefreshScrollView>
 
       <RecurringSheet
         visible={sheetOpen}

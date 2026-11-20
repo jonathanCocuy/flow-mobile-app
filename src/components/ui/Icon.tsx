@@ -1,16 +1,38 @@
 import React from 'react';
 import {
+  // Comida & Bebida
   Utensils, Pizza, Coffee, Beer, Cake, Soup,
+  ChefHat, Apple, Wine, Cookie, Sandwich, IceCream, Beef, Carrot,
+  // Compras & Moda
   ShoppingCart, ShoppingBag, Gift, Shirt, Footprints, Scissors,
+  Tag, Backpack, Store, Watch, ShoppingBasket, Glasses,
+  // Hogar & Servicios
   Home, Building2, Hotel, Lightbulb, Zap, Droplets, Wrench, Hammer, WashingMachine,
+  Sofa, Thermometer, Flame, Plug, Paintbrush, Microwave,
+  // Transporte
   Car, Bus, Train, Plane, Bike, Ship, Fuel, MapPin,
+  Truck, Navigation, Route, Anchor, Gauge,
+  // Salud & Fitness
   Stethoscope, Pill, Dumbbell, Bath, HeartPulse,
+  Activity, Syringe, Brain, Eye, FlaskConical,
+  // Entretenimiento & Hobbies
   Music, Gamepad2, Tv, Clapperboard, Film, Camera, Headphones, Mic, Palette, Trophy,
+  Guitar, Radio, Dice5, Ticket, PartyPopper, Sparkles,
+  // Tecnología
   Laptop, Smartphone, Wifi, Phone, Monitor,
+  Keyboard, Mouse, HardDrive, Cpu, Server, Printer,
+  // Educación & Trabajo
   BookOpen, GraduationCap, Briefcase, Landmark,
+  Pencil, FileText, FolderOpen, Clipboard, Award, School, Medal,
+  // Naturaleza & Viajes
   Dog, Cat, Leaf, Waves, Umbrella, Tent, Baby,
+  Sun, Moon, Cloud, Snowflake, Flower2, TreePine, Compass, Sprout,
+  // Finanzas
   Wallet, Banknote, CreditCard, PiggyBank, Receipt, TrendingUp, TrendingDown,
+  CircleDollarSign, DollarSign, Percent, Calculator, Vault,
+  // General / Sistema
   Heart, Star, Package, Plus, ArrowRightLeft,
+  Clock, Calendar, Flag, Bookmark, Crown, Smile, Timer,
   Bell, Users, Handshake, BarChart3, LineChart, RefreshCw, Target, Settings,
   Globe, LogOut, Key, Mail, MailCheck, AlertTriangle, CalendarClock, Coins,
   ReceiptText, ShieldCheck, Mountain, Sailboat, Gem, Palmtree,
@@ -23,17 +45,39 @@ import {
  * Imports are explicit rather than `import *` to keep the bundle small.
  */
 const REGISTRY = {
+  // Comida & Bebida
   Utensils, Pizza, Coffee, Beer, Cake, Soup,
+  ChefHat, Apple, Wine, Cookie, Sandwich, IceCream, Beef, Carrot,
+  // Compras & Moda
   ShoppingCart, ShoppingBag, Gift, Shirt, Footprints, Scissors,
+  Tag, Backpack, Store, Watch, ShoppingBasket, Glasses,
+  // Hogar & Servicios
   Home, Building2, Hotel, Lightbulb, Zap, Droplets, Wrench, Hammer, WashingMachine,
+  Sofa, Thermometer, Flame, Plug, Paintbrush, Microwave,
+  // Transporte
   Car, Bus, Train, Plane, Bike, Ship, Fuel, MapPin,
+  Truck, Navigation, Route, Anchor, Gauge,
+  // Salud & Fitness
   Stethoscope, Pill, Dumbbell, Bath, HeartPulse,
+  Activity, Syringe, Brain, Eye, FlaskConical,
+  // Entretenimiento & Hobbies
   Music, Gamepad2, Tv, Clapperboard, Film, Camera, Headphones, Mic, Palette, Trophy,
+  Guitar, Radio, Dice5, Ticket, PartyPopper, Sparkles,
+  // Tecnología
   Laptop, Smartphone, Wifi, Phone, Monitor,
+  Keyboard, Mouse, HardDrive, Cpu, Server, Printer,
+  // Educación & Trabajo
   BookOpen, GraduationCap, Briefcase, Landmark,
+  Pencil, FileText, FolderOpen, Clipboard, Award, School, Medal,
+  // Naturaleza & Viajes
   Dog, Cat, Leaf, Waves, Umbrella, Tent, Baby,
+  Sun, Moon, Cloud, Snowflake, Flower2, TreePine, Compass, Sprout,
+  // Finanzas
   Wallet, Banknote, CreditCard, PiggyBank, Receipt, TrendingUp, TrendingDown,
+  CircleDollarSign, DollarSign, Percent, Calculator, Vault,
+  // General / Sistema
   Heart, Star, Package, Plus, ArrowRightLeft,
+  Clock, Calendar, Flag, Bookmark, Crown, Smile, Timer,
   Bell, Users, Handshake, BarChart3, LineChart, RefreshCw, Target, Settings,
   Globe, LogOut, Key, Mail, MailCheck, AlertTriangle, CalendarClock, Coins,
   ReceiptText, ShieldCheck, Mountain, Sailboat, Gem, Palmtree,
@@ -43,19 +87,40 @@ export type IconName = keyof typeof REGISTRY;
 
 /** Names offered in the icon picker, grouped so the grid reads sensibly. */
 export const PICKER_ICONS: IconName[] = [
+  // Comida & Bebida
   'Utensils', 'Pizza', 'Coffee', 'Beer', 'Cake', 'Soup',
+  'ChefHat', 'Apple', 'Wine', 'Cookie', 'Sandwich', 'IceCream', 'Beef', 'Carrot',
+  // Compras & Moda
   'ShoppingCart', 'ShoppingBag', 'Gift', 'Shirt', 'Footprints', 'Scissors',
+  'Tag', 'Backpack', 'Store', 'Watch', 'ShoppingBasket', 'Glasses',
+  // Hogar & Servicios
   'Home', 'Building2', 'Hotel', 'Lightbulb', 'Zap', 'Droplets',
-  'Wrench', 'Hammer', 'WashingMachine',
+  'Wrench', 'Hammer', 'WashingMachine', 'Sofa', 'Thermometer', 'Flame', 'Plug', 'Paintbrush', 'Microwave',
+  // Transporte
   'Car', 'Bus', 'Train', 'Plane', 'Bike', 'Ship', 'Fuel', 'MapPin',
+  'Truck', 'Navigation', 'Route', 'Anchor', 'Gauge',
+  // Salud & Fitness
   'Stethoscope', 'Pill', 'Dumbbell', 'Bath', 'HeartPulse',
+  'Activity', 'Syringe', 'Brain', 'Eye', 'FlaskConical',
+  // Entretenimiento & Hobbies
   'Music', 'Gamepad2', 'Tv', 'Clapperboard', 'Film', 'Camera',
   'Headphones', 'Mic', 'Palette', 'Trophy',
+  'Guitar', 'Radio', 'Dice5', 'Ticket', 'PartyPopper', 'Sparkles',
+  // Tecnología
   'Laptop', 'Smartphone', 'Wifi', 'Phone', 'Monitor',
+  'Keyboard', 'Mouse', 'HardDrive', 'Cpu', 'Server', 'Printer',
+  // Educación & Trabajo
   'BookOpen', 'GraduationCap', 'Briefcase', 'Landmark',
+  'Pencil', 'FileText', 'FolderOpen', 'Clipboard', 'Award', 'School', 'Medal',
+  // Naturaleza & Viajes
   'Dog', 'Cat', 'Leaf', 'Waves', 'Umbrella', 'Tent', 'Baby',
+  'Sun', 'Moon', 'Cloud', 'Snowflake', 'Flower2', 'TreePine', 'Compass', 'Sprout',
+  // Finanzas
   'Wallet', 'Banknote', 'CreditCard', 'PiggyBank', 'Receipt',
+  'CircleDollarSign', 'DollarSign', 'Percent', 'Calculator', 'Vault',
+  // General
   'Heart', 'Star', 'Package',
+  'Clock', 'Calendar', 'Flag', 'Bookmark', 'Crown', 'Smile', 'Timer',
 ];
 
 /** Fallback used when a stored name is unknown — including legacy emoji values. */

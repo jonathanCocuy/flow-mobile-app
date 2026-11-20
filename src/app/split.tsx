@@ -20,6 +20,7 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -44,6 +45,8 @@ interface SharedGroup {
   id: string;
   user_id: string;
   name: string;
+  color: string | null;
+  icon: string | null;
   created_at: string;
   shared_members: SharedMember[];
   shared_expenses: { amount: number; paid_by_member_id: string | null }[];
@@ -68,7 +71,21 @@ const MEMBER_COLORS = [
   '#84cc16', '#14b8a6',
 ];
 
+const GROUP_COLORS = [
+  '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444',
+  '#f97316', '#f59e0b', '#22c55e', '#14b8a6',
+  '#06b6d4', '#6366f1',
+];
+
+const GROUP_ICONS: import('@/components/ui/Icon').IconName[] = [
+  'Users', 'Home', 'Plane', 'Car', 'Utensils', 'Coffee',
+  'ShoppingCart', 'Music', 'Gamepad2', 'Dumbbell',
+  'GraduationCap', 'Briefcase', 'Heart', 'Star', 'Gift',
+  'Dog', 'Cat', 'Tent', 'Sailboat', 'Mountain',
+];
+
 const ACTION_WIDTH = 72;
+const SNAP_THRESHOLD = ACTION_WIDTH;
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -145,57 +162,76 @@ interface SwipeableRowProps {
   editLabel: string;
   deleteLabel: string;
   editColor: string;
+  editTextColor?: string;
   deleteColor: string;
+  cardColor: string;
+  separatorColor?: string;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-function SwipeableRow({ children, editLabel, deleteLabel, editColor, deleteColor, onEdit, onDelete }: SwipeableRowProps) {
+function SwipeableRow({
+  children, editLabel, deleteLabel,
+  editColor, editTextColor = '#fff', deleteColor, cardColor, separatorColor,
+  onEdit, onDelete,
+}: SwipeableRowProps) {
   const [translateX] = useState(() => new Animated.Value(0));
   const isOpen = useRef(false);
 
   const close = useCallback(() => {
-    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
-    isOpen.current = false;
+    Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 4 })
+      .start(() => { isOpen.current = false; });
   }, [translateX]);
 
   const open = useCallback(() => {
-    Animated.spring(translateX, { toValue: -(ACTION_WIDTH * 2), useNativeDriver: true, bounciness: 4 }).start();
-    isOpen.current = true;
+    Animated.spring(translateX, { toValue: -(ACTION_WIDTH * 2), useNativeDriver: true, bounciness: 4 })
+      .start(() => { isOpen.current = true; });
   }, [translateX]);
+
+  const onMove = useCallback((_: unknown, { dx }: { dx: number }) => {
+    const base = isOpen.current ? -(ACTION_WIDTH * 2) : 0;
+    translateX.setValue(Math.max(-(ACTION_WIDTH * 2), Math.min(0, base + dx)));
+  }, [translateX]);
+
+  const onRelease = useCallback((_: unknown, { dx, vx }: { dx: number; vx: number }) => {
+    const base = isOpen.current ? -(ACTION_WIDTH * 2) : 0;
+    const moved = base + dx;
+    if (!isOpen.current) {
+      if (moved < -SNAP_THRESHOLD || vx < -0.5) { open(); } else { close(); }
+    } else {
+      if (moved > -(ACTION_WIDTH * 2 - SNAP_THRESHOLD) || vx > 0.5) { close(); } else { open(); }
+    }
+  }, [open, close]);
 
   // eslint-disable-next-line react-hooks/refs
   const panHandlers = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
-    onPanResponderMove: (_, g) => {
-      const val = isOpen.current ? -(ACTION_WIDTH * 2) + g.dx : g.dx;
-      if (val <= 0 && val >= -(ACTION_WIDTH * 2 + 20)) translateX.setValue(val);
-    },
-    onPanResponderRelease: (_, g) => {
-      if (!isOpen.current && g.dx < -ACTION_WIDTH) { open(); }
-      else if (isOpen.current && g.dx > ACTION_WIDTH) { close(); }
-      else if (isOpen.current) { open(); }
-      else { close(); }
-    },
-  }).panHandlers, [translateX, open, close]);
+    onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy),
+    onPanResponderMove: onMove,
+    onPanResponderRelease: onRelease,
+  }).panHandlers, [onMove, onRelease]);
 
   return (
-    <View style={{ overflow: 'hidden' }}>
+    <View style={[
+      { overflow: 'hidden', backgroundColor: cardColor },
+      separatorColor ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: separatorColor } : undefined,
+    ]}>
       <View style={{ position: 'absolute', top: 0, bottom: 0, right: 0, flexDirection: 'row' }}>
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: editColor, width: ACTION_WIDTH }]}
-          onPress={() => { close(); setTimeout(onEdit, 150); }}>
-          <EditIcon color="#fff" />
-          <Text style={{ color: '#fff', fontSize: 11, marginTop: 3, fontWeight: '600' }}>{editLabel}</Text>
+          onPress={() => { close(); onEdit(); }}
+          activeOpacity={0.85}>
+          <EditIcon color={editTextColor} />
+          <Text style={{ color: editTextColor, fontSize: 11, marginTop: 3, fontWeight: '600' }}>{editLabel}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: deleteColor, width: ACTION_WIDTH }]}
-          onPress={() => { close(); setTimeout(onDelete, 150); }}>
+          onPress={() => { close(); onDelete(); }}
+          activeOpacity={0.85}>
           <TrashIcon color="#fff" />
           <Text style={{ color: '#fff', fontSize: 11, marginTop: 3, fontWeight: '600' }}>{deleteLabel}</Text>
         </TouchableOpacity>
       </View>
-      <Animated.View style={{ transform: [{ translateX }] }} {...panHandlers}>
+      <Animated.View style={[{ backgroundColor: cardColor }, { transform: [{ translateX }] }]} {...panHandlers}>
         {children}
       </Animated.View>
     </View>
@@ -228,13 +264,41 @@ interface GroupSheetProps {
   onClose: () => void;
   onSaved: () => void;
   userId: string;
+  userEmail: string;
 }
 
-function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetProps) {
+function GroupSheet({ visible, editing, onClose, onSaved, userId, userEmail }: GroupSheetProps) {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const translateY = useMemo(() => new Animated.Value(600), []);
+
+  React.useEffect(() => {
+    if (visible) {
+      translateY.setValue(600);
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+    }
+  }, [visible, translateY]);
+
+  function dismiss() {
+    Animated.timing(translateY, { toValue: 600, duration: 280, useNativeDriver: true }).start(onClose);
+  }
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, g) => g.dy > 5,
+    onPanResponderMove: (_, g) => { if (g.dy > 0) translateY.setValue(g.dy); },
+    onPanResponderRelease: (_, g) => {
+      if (g.dy > 150 || g.vy > 0.5) {
+        Animated.timing(translateY, { toValue: 600, duration: 280, useNativeDriver: true }).start(onClose);
+      } else {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  });
   const [name, setName] = useState('');
+  const [groupColor, setGroupColor] = useState(GROUP_COLORS[0]);
+  const [groupIcon, setGroupIcon] = useState<import('@/components/ui/Icon').IconName>('Users');
   const [members, setMembers] = useState<MemberForm[]>([]);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -243,6 +307,8 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
   const reset = useCallback(() => {
     if (editing) {
       setName(editing.name);
+      setGroupColor(editing.color ?? GROUP_COLORS[0]);
+      setGroupIcon((editing.icon as import('@/components/ui/Icon').IconName | null) ?? 'Users');
       setMembers(editing.shared_members.map(m => ({
         id: m.id,
         name: m.name,
@@ -256,6 +322,8 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
       setRemovedIds([]);
     } else {
       setName('');
+      setGroupColor(GROUP_COLORS[0]);
+      setGroupIcon('Users');
       setMembers([{ name: 'Yo', share: '100', is_me: true, color: MEMBER_COLORS[0], email: '', linked: false }]);
       setRemovedIds([]);
     }
@@ -309,6 +377,7 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
     const trimName = name.trim();
     if (!trimName) { setError(t('split.group.error.nameRequired')); return; }
     if (!members.length) { setError(t('split.group.error.noMembers')); return; }
+    if (!members.some(m => !m.is_me)) { setError(t('split.group.error.noOtherMembers')); return; }
     for (const m of members) {
       if (!m.name.trim()) { setError(t('split.group.error.memberName')); return; }
       const pct = parseFloat(m.share);
@@ -316,6 +385,9 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
       const mail = m.email.trim();
       if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
         setError(t('split.group.error.email')); return;
+      }
+      if (!m.is_me && mail && mail.toLowerCase() === userEmail.toLowerCase()) {
+        setError(t('split.group.error.selfInvite')); return;
       }
     }
     const total = members.reduce((s, m) => s + parseFloat(m.share), 0);
@@ -325,10 +397,10 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
     try {
       let groupId = editing?.id;
       if (editing) {
-        const res = await supabase.from('shared_groups').update({ name: trimName }).eq('id', editing.id);
+        const res = await supabase.from('shared_groups').update({ name: trimName, color: groupColor, icon: groupIcon }).eq('id', editing.id);
         if (res.error) throw res.error;
       } else {
-        const { data, error: err } = await supabase.from('shared_groups').insert({ user_id: userId, name: trimName }).select('id').single();
+        const { data, error: err } = await supabase.from('shared_groups').insert({ user_id: userId, name: trimName, color: groupColor, icon: groupIcon }).select('id').single();
         if (err) throw err;
         groupId = data.id;
       }
@@ -402,11 +474,11 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
   }];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
+    <Modal visible={visible} animationType="none" transparent presentationStyle="overFullScreen">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-        <View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped }]}>
-          <View style={[styles.sheetHandle, { backgroundColor: colors.fillPrimary }]} />
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={dismiss} />
+        <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] }]}>
+          <View style={[styles.sheetHandle, { backgroundColor: colors.fillPrimary }]} {...panResponder.panHandlers} />
           <Text variant="title3" style={{ marginBottom: Spacing.md, fontWeight: '700' }}>
             {editing ? t('split.editGroup') : t('split.addGroup')}
           </Text>
@@ -423,6 +495,44 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
               placeholderTextColor={colors.labelTertiary}
               maxLength={40}
             />
+
+            {/* Color picker */}
+            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: Spacing.md }]}>
+              {t('split.group.color').toUpperCase()}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: Spacing.sm }}>
+              {GROUP_COLORS.map(c => (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => setGroupColor(c)}
+                  style={[
+                    styles.colorSwatch,
+                    { backgroundColor: c },
+                    groupColor === c && { borderWidth: 3, borderColor: '#fff', shadowColor: c, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 4, elevation: 4 },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Icon picker */}
+            <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: Spacing.xs }]}>
+              {t('split.group.icon').toUpperCase()}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: Spacing.sm }}>
+              {GROUP_ICONS.map(iconName => (
+                <TouchableOpacity
+                  key={iconName}
+                  onPress={() => setGroupIcon(iconName)}
+                  style={[
+                    styles.iconBtn,
+                    groupIcon === iconName && { backgroundColor: groupColor + '33', borderColor: groupColor, borderWidth: 2 },
+                    groupIcon !== iconName && { backgroundColor: colors.fillPrimary },
+                  ]}
+                >
+                  <Icon name={iconName} size={20} color={groupIcon === iconName ? groupColor : colors.labelSecondary} />
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.xs }}>
               <Text variant="caption1" color={colors.labelSecondary} style={{ flex: 1, textTransform: 'uppercase', fontSize: 11, fontWeight: '600', letterSpacing: 0.5 }}>
@@ -530,7 +640,7 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId }: GroupSheetPr
               {saving ? '...' : editing ? t('split.group.update') : t('split.group.save')}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -610,7 +720,7 @@ export default function SplitScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <RefreshScrollView onRefresh={load} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {groups.length > 0 && totalPending > 0 && (
           <Card radius={Spacing.radius.lg} style={[styles.summaryCard, { backgroundColor: colors.tint + '12' }]}>
             <Text variant="caption1" color={colors.tint} style={{ fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>
@@ -646,30 +756,37 @@ export default function SplitScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <Card radius={Spacing.radius.lg} padding={0}>
-            {groups.map((group, idx) => {
+          <View style={{ gap: Spacing.sm }}>
+            {groups.map((group) => {
               const balance = getMyBalance(group, user?.id ?? '');
               const memberNames = group.shared_members.map(m => m.name).join(', ');
               const totalExp = group.shared_expenses.reduce((s, e) => s + Number(e.amount), 0);
-              const avatarLetter = group.name.charAt(0).toUpperCase();
+              const accentColor = group.color ?? colors.tint;
               const hasMe = !!findMe(group, user?.id ?? '');
 
               return (
-                <View key={group.id}>
-                  {idx > 0 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 72 }} />}
+                <Card key={group.id} radius={Spacing.radius.xl} padding={0} style={{ overflow: 'hidden' }}>
                   <SwipeableRow
                     editLabel={t('common.edit') ?? 'Edit'}
                     deleteLabel={t('common.delete')}
-                    editColor={colors.tint}
+                    editColor={accentColor}
+                    editTextColor="#fff"
                     deleteColor={colors.expense}
+                    cardColor={colors.card}
                     onEdit={() => { setEditing(group); setSheetOpen(true); }}
                     onDelete={() => setDeleting(group)}>
                     <TouchableOpacity
                       style={[styles.groupRow, { backgroundColor: colors.card }]}
                       onPress={() => router.push({ pathname: '/split-detail', params: { id: group.id, name: group.name } })}
                       activeOpacity={0.7}>
-                      <View style={[styles.groupAvatar, { backgroundColor: colors.tint + '18' }]}>
-                        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.tint }}>{avatarLetter}</Text>
+                      <View style={[styles.groupAvatar, { backgroundColor: accentColor + '22' }]}>
+                        {group.icon ? (
+                          <Icon name={group.icon} size={22} color={accentColor} strokeWidth={1.8} />
+                        ) : (
+                          <Text style={{ fontSize: 20, fontWeight: '800', color: accentColor }}>
+                            {group.name.charAt(0).toUpperCase()}
+                          </Text>
+                        )}
                       </View>
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text variant="callout" style={{ fontWeight: '600' }} numberOfLines={1}>{group.name}</Text>
@@ -688,8 +805,8 @@ export default function SplitScreen() {
                               </Text>
                             </View>
                           ) : totalExp > 0 ? (
-                            <View style={[styles.badge, { backgroundColor: colors.tint + '15' }]}>
-                              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.tint }}>{t('split.balanceZero')}</Text>
+                            <View style={[styles.badge, { backgroundColor: accentColor + '20' }]}>
+                              <Text style={{ fontSize: 11, fontWeight: '700', color: accentColor }}>{t('split.balanceZero')}</Text>
                             </View>
                           ) : null
                         ) : totalExp > 0 ? (
@@ -699,10 +816,10 @@ export default function SplitScreen() {
                       <ChevronRight color={colors.labelTertiary} />
                     </TouchableOpacity>
                   </SwipeableRow>
-                </View>
+                </Card>
               );
             })}
-          </Card>
+          </View>
         )}
 
         {groups.length > 0 && (
@@ -712,7 +829,7 @@ export default function SplitScreen() {
         )}
 
         <View style={{ height: 80 }} />
-      </ScrollView>
+      </RefreshScrollView>
 
       <GroupSheet
         visible={sheetOpen}
@@ -720,6 +837,7 @@ export default function SplitScreen() {
         onClose={() => setSheetOpen(false)}
         onSaved={load}
         userId={user?.id ?? ''}
+        userEmail={user?.email ?? ''}
       />
 
       <ConfirmDialog
@@ -778,6 +896,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
     height: '100%',
+  },
+  colorSwatch: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',

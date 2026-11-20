@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
-  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -20,6 +19,7 @@ import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { EditTransactionSheet } from '@/components/EditTransactionSheet';
 import { Icon, transactionIcon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import type { DashboardTransaction, DashboardAccount, UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
@@ -185,15 +185,10 @@ export default function TransactionsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
-      <ScrollView
+      <RefreshScrollView
+        onRefresh={() => refetch(true)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={false}
-            onRefresh={refetch}
-          />
-        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -270,7 +265,7 @@ export default function TransactionsScreen() {
             </View>
           );
         })}
-      </ScrollView>
+      </RefreshScrollView>
 
       {/* FAB */}
       <TouchableOpacity

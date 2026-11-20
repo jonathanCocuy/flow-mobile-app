@@ -24,7 +24,7 @@ import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Icon, isKnownIcon, transactionIcon } from '@/components/ui/Icon';
-import { IconPicker } from '@/components/AddTransactionSheet';
+import { IconPicker } from '@/components/ui/IconPicker';
 import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 import type { DashboardTransaction, DashboardAccount, UserCategory } from '@/types/finance';
 
@@ -387,7 +387,11 @@ export function EditTransactionSheet({
                             ]}
                             activeOpacity={0.7}
                           >
-                            <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                            {isKnownIcon(cat.icon) ? (
+                              <Icon name={cat.icon} size={14} color={cat.color} />
+                            ) : (
+                              <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                            )}
                             <Text
                               variant="subheadline"
                               color={active ? cat.color : colors.label}

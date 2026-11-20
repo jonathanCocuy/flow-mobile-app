@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  ScrollView, View, StyleSheet, TouchableOpacity, useColorScheme,
+  View, StyleSheet, TouchableOpacity, useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { AddGoalSheet } from '@/components/AddGoalSheet';
 import { ContributeGoalSheet } from '@/components/ContributeGoalSheet';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
 import type { DashboardAccount } from '@/types/finance';
 
@@ -95,8 +96,8 @@ export default function GoalsScreen() {
   const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null);
   const [contributeGoal, setContributeGoal] = useState<SavingsGoal | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -127,7 +128,7 @@ export default function GoalsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      <RefreshScrollView onRefresh={() => fetchData(true)} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.header}>
           <Text variant="largeTitle">{t('tabs.goals')}</Text>
           <TouchableOpacity
@@ -263,7 +264,7 @@ export default function GoalsScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </RefreshScrollView>
 
       <AddGoalSheet
         visible={addSheetVisible}

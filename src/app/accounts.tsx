@@ -1,11 +1,9 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
-  RefreshControl,
   Animated,
   PanResponder,
 } from 'react-native';
@@ -18,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import { useAuth } from '@/context/AuthContext';
 import { AddAccountSheet } from '@/components/AddAccountSheet';
 import { EditAccountSheet } from '@/components/EditAccountSheet';
@@ -201,9 +200,9 @@ export default function AccountsScreen() {
   const [editTarget, setEditTarget] = useState<Account | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<Account | null>(null);
 
-  const fetchAccounts = useCallback(async () => {
+  const fetchAccounts = useCallback(async (silent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const { data } = await supabase
         .from('accounts')
@@ -248,12 +247,10 @@ export default function AccountsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      <RefreshScrollView
+        onRefresh={() => fetchAccounts(true)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
-        refreshControl={
-          <RefreshControl refreshing={false} onRefresh={fetchAccounts} />
-        }
       >
         {/* Summary card */}
         {!loading && accounts.length > 0 && (
@@ -348,7 +345,7 @@ export default function AccountsScreen() {
             </Text>
           )}
         </View>
-      </ScrollView>
+      </RefreshScrollView>
 
       <AddAccountSheet
         visible={addOpen}

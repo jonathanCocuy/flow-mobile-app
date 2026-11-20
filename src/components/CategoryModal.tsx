@@ -10,7 +10,8 @@ import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
 import { supabase } from '@/lib/supabase';
-import { Icon, isKnownIcon, PICKER_ICONS } from '@/components/ui/Icon';
+import { Icon, isKnownIcon } from '@/components/ui/Icon';
+import { IconPicker } from '@/components/ui/IconPicker';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -61,6 +62,7 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [iconPickerVisible, setIconPickerVisible] = useState(false);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
 
@@ -112,7 +114,7 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
   const handleSave = async () => {
     const trimmedLabel = label.trim();
     if (!trimmedLabel) { setError(t('categories.error.nameRequired')); return; }
-    const trimmedIcon = icon.trim();
+    const trimmedIcon = icon.trim() || 'Wallet';
 
     setSaving(true);
     setError(null);
@@ -231,37 +233,22 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
               ))}
             </View>
 
-            {/* Emoji picker */}
+            {/* Icon picker */}
             <Text variant="caption1" color={colors.labelSecondary} style={[styles.fieldLabel, { marginTop: 20 }]}>
               {t('categories.icon')}
             </Text>
-
-            {/* Preview */}
-            <View style={{ marginBottom: 12 }}>
+            <TouchableOpacity
+              style={styles.iconRow}
+              onPress={() => setIconPickerVisible(true)}
+              activeOpacity={0.7}
+            >
               <View style={[styles.emojiPreview, { backgroundColor: color + '33' }]}>
-                {isKnownIcon(icon) ? (
-                  <Icon name={icon} size={24} color={color} />
-                ) : (
-                  <Text style={{ fontSize: 16, fontWeight: '700', color, textAlign: 'center' }}>
-                    {label.charAt(0).toUpperCase() || '?'}
-                  </Text>
-                )}
+                <Icon name={isKnownIcon(icon) ? icon : 'Wallet'} size={24} color={isKnownIcon(icon) ? color : colors.labelTertiary} />
               </View>
-            </View>
-
-            {/* Grid */}
-            <View style={styles.emojiGrid}>
-              {PICKER_ICONS.map(name => (
-                <TouchableOpacity
-                  key={name}
-                  style={[styles.emojiBtn, icon === name && { backgroundColor: color + '33', borderColor: color, borderWidth: 2 }]}
-                  onPress={() => setIcon(name)}
-                  activeOpacity={0.6}
-                >
-                  <Icon name={name} size={20} color={icon === name ? color : colors.label} />
-                </TouchableOpacity>
-              ))}
-            </View>
+              <Text variant="subheadline" color={colors.tint} style={{ fontWeight: '600' }}>
+                {icon ? t('categories.changeIcon') : t('categories.chooseIcon')}
+              </Text>
+            </TouchableOpacity>
 
             {error && (
               <Text variant="caption1" color={colors.expense} style={{ marginTop: 12 }}>
@@ -284,6 +271,14 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
         </KeyboardAvoidingView>
       </View>
 
+      <IconPicker
+        visible={iconPickerVisible}
+        current={icon}
+        onSelect={setIcon}
+        onClose={() => setIconPickerVisible(false)}
+        colors={colors}
+        title={t('categories.icon')}
+      />
       <ConfirmDialog
         visible={deleteDialogVisible}
         title={t('categories.deleteTitle')}
@@ -329,8 +324,7 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   colorBtn: { width: 32, height: 32, borderRadius: 16 },
   emojiPreview: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  emojiBtn: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  iconRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   saveBtn: {
     marginTop: 24, height: 52,
     borderRadius: Spacing.radius.lg, alignItems: 'center', justifyContent: 'center',

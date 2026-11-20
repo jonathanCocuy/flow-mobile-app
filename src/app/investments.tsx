@@ -11,6 +11,7 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -467,9 +468,9 @@ export default function InvestmentsScreen() {
   const [editing, setEditing] = useState<InvestmentRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InvestmentRecord | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const { data } = await supabase
         .from('investment_records')
@@ -504,7 +505,7 @@ export default function InvestmentsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <RefreshScrollView onRefresh={() => fetchData(true)} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {loading ? (
           <InvestmentsSkeleton />
         ) : records.length === 0 ? (
@@ -621,7 +622,7 @@ export default function InvestmentsScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </RefreshScrollView>
 
       <InvestmentSheet
         visible={sheetOpen}

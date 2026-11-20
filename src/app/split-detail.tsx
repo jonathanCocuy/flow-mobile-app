@@ -20,11 +20,13 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
 import { Spacing } from '@/constants/Spacing';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import { supabase } from '@/lib/supabase';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon } from '@/components/ui/Icon';
 import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -238,6 +240,10 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
     paid_by_member_id: '',
     notes: '',
   });
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const p = todayISO().split('-').map(Number);
+    return new Date(p[0], p[1] - 1, p[2]);
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -251,9 +257,13 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
         paid_by_member_id: editing.paid_by_member_id ?? '',
         notes: editing.notes ?? '',
       });
+      const p = editing.date.split('-').map(Number);
+      setSelectedDate(new Date(p[0], p[1] - 1, p[2]));
     } else {
       const meId = members.find(m => m.is_me)?.id ?? members[0]?.id ?? '';
       setForm({ description: '', amount: '', category: 'home', date: todayISO(), paid_by_member_id: meId, notes: '' });
+      const p = todayISO().split('-').map(Number);
+      setSelectedDate(new Date(p[0], p[1] - 1, p[2]));
     }
     setError('');
     setSaving(false);
@@ -297,9 +307,8 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
   };
 
   const inputStyle = [styles.input, {
-    backgroundColor: colors.fillPrimary,
+    backgroundColor: colors.fillTertiary,
     color: colors.label,
-    borderColor: colors.separator,
   }];
 
   return (
@@ -313,100 +322,112 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
           </Text>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('split.expense.description').toUpperCase()}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              value={form.description}
-              onChangeText={v => patch('description', v)}
-              placeholder={t('split.expense.descPh')}
-              placeholderTextColor={colors.labelTertiary}
-              maxLength={80}
-            />
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('split.expense.description').toUpperCase()}
+              </Text>
+              <TextInput
+                style={inputStyle}
+                value={form.description}
+                onChangeText={v => patch('description', v)}
+                placeholder={t('split.expense.descPh')}
+                placeholderTextColor={colors.labelTertiary}
+                maxLength={80}
+              />
+            </View>
 
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('split.expense.amount').toUpperCase()}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              value={form.amount}
-              onChangeText={v => patch('amount', formatAmountInput(v))}
-              placeholder="0"
-              placeholderTextColor={colors.labelTertiary}
-              keyboardType="numeric"
-            />
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('split.expense.amount').toUpperCase()}
+              </Text>
+              <TextInput
+                style={inputStyle}
+                value={form.amount}
+                onChangeText={v => patch('amount', formatAmountInput(v))}
+                placeholder="0"
+                placeholderTextColor={colors.labelTertiary}
+                keyboardType="numeric"
+              />
+            </View>
 
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('split.expense.category').toUpperCase()}
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.sm }}>
-              <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 4 }}>
-                {CATEGORIES.map(cat => (
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('split.expense.category').toUpperCase()}
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: Spacing.sm }}>
+                <View style={{ flexDirection: 'row', gap: Spacing.xs, paddingBottom: 4 }}>
+                  {CATEGORIES.map(cat => (
+                    <TouchableOpacity
+                      key={cat.key}
+                      onPress={() => patch('category', cat.key)}
+                      style={[styles.catChip, {
+                        backgroundColor: form.category === cat.key ? colors.tint + '18' : colors.fillPrimary,
+                        borderColor: form.category === cat.key ? colors.tint : 'transparent',
+                      }]}>
+                      <Icon
+                        name={cat.icon}
+                        size={14}
+                        color={colors.tint}
+                      />
+                      <Text variant="subheadline" style={{ color: form.category === cat.key ? colors.tint : colors.label, fontWeight: form.category === cat.key ? '600' : '400' }}>
+                        {t(`split.category.${cat.key}` as Parameters<typeof t>[0])}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('split.expense.date').toUpperCase()}
+              </Text>
+              <DatePickerField
+                value={selectedDate}
+                onChange={d => {
+                  setSelectedDate(d);
+                  patch('date', `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                }}
+                colors={colors}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('split.expense.paidBy').toUpperCase()}
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.sm }}>
+                {members.map(m => (
                   <TouchableOpacity
-                    key={cat.key}
-                    onPress={() => patch('category', cat.key)}
-                    style={[styles.catChip, {
-                      backgroundColor: form.category === cat.key ? colors.tint + '18' : colors.fillPrimary,
-                      borderColor: form.category === cat.key ? colors.tint : colors.separator,
+                    key={m.id}
+                    onPress={() => patch('paid_by_member_id', m.id)}
+                    style={[styles.memberChip, {
+                      backgroundColor: form.paid_by_member_id === m.id ? m.color + '20' : colors.fillPrimary,
+                      borderColor: form.paid_by_member_id === m.id ? m.color : 'transparent',
                     }]}>
-                    <Icon
-                      name={cat.icon}
-                      size={15}
-                      color={form.category === cat.key ? colors.tint : colors.labelSecondary}
-                    />
-                    <Text style={{ fontSize: 12, color: form.category === cat.key ? colors.tint : colors.labelSecondary, fontWeight: form.category === cat.key ? '600' : '400' }}>
-                      {t(`split.category.${cat.key}` as Parameters<typeof t>[0])}
+                    <View style={[styles.memberDot, { backgroundColor: m.color }]} />
+                    <Text variant="subheadline" style={{ color: form.paid_by_member_id === m.id ? m.color : colors.label, fontWeight: form.paid_by_member_id === m.id ? '600' : '400' }}>
+                      {m.name}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-            </ScrollView>
-
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('split.expense.date').toUpperCase()}
-            </Text>
-            <TextInput
-              style={inputStyle}
-              value={form.date}
-              onChangeText={v => patch('date', v)}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.labelTertiary}
-              keyboardType="numbers-and-punctuation"
-            />
-
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('split.expense.paidBy').toUpperCase()}
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: Spacing.sm }}>
-              {members.map(m => (
-                <TouchableOpacity
-                  key={m.id}
-                  onPress={() => patch('paid_by_member_id', m.id)}
-                  style={[styles.memberChip, {
-                    backgroundColor: form.paid_by_member_id === m.id ? m.color + '20' : colors.fillPrimary,
-                    borderColor: form.paid_by_member_id === m.id ? m.color : colors.separator,
-                  }]}>
-                  <View style={[styles.memberDot, { backgroundColor: m.color }]} />
-                  <Text style={{ fontSize: 13, color: form.paid_by_member_id === m.id ? m.color : colors.label, fontWeight: form.paid_by_member_id === m.id ? '600' : '400' }}>
-                    {m.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
             </View>
 
-            <Text variant="caption1" color={colors.labelSecondary} style={styles.fieldLabel}>
-              {t('split.expense.notes').toUpperCase()}
-            </Text>
-            <TextInput
-              style={[inputStyle, { height: 72, textAlignVertical: 'top' }]}
-              value={form.notes}
-              onChangeText={v => patch('notes', v)}
-              placeholder={t('split.expense.notesPh')}
-              placeholderTextColor={colors.labelTertiary}
-              multiline
-              maxLength={200}
-            />
+            <View style={styles.fieldGroup}>
+              <Text variant="footnote" color={colors.labelSecondary} style={styles.fieldLabel}>
+                {t('split.expense.notes').toUpperCase()}
+              </Text>
+              <TextInput
+                style={[inputStyle, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                value={form.notes}
+                onChangeText={v => patch('notes', v)}
+                placeholder={t('split.expense.notesPh')}
+                placeholderTextColor={colors.labelTertiary}
+                multiline
+                maxLength={200}
+              />
+            </View>
 
             {!!error && (
               <Text variant="caption1" color={colors.expense} style={{ marginTop: Spacing.xs }}>{error}</Text>
@@ -518,7 +539,7 @@ export default function SplitDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <RefreshScrollView onRefresh={load} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {members.length > 0 && (
           <Card radius={Spacing.radius.lg} style={{ marginBottom: Spacing.md }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
@@ -626,7 +647,7 @@ export default function SplitDetailScreen() {
         )}
 
         <View style={{ height: 80 }} />
-      </ScrollView>
+      </RefreshScrollView>
 
       <ExpenseSheet
         visible={sheetOpen}
@@ -739,36 +760,31 @@ const styles = StyleSheet.create({
     width: 36, height: 4, borderRadius: 2,
     alignSelf: 'center', marginBottom: Spacing.sm,
   },
-  fieldLabel: {
-    textTransform: 'uppercase', fontSize: 11,
-    fontWeight: '600', letterSpacing: 0.5,
-    marginBottom: Spacing.xs,
-  },
+  fieldGroup: { gap: 6, marginBottom: Spacing.sm },
+  fieldLabel: { letterSpacing: 0.5, marginLeft: 2 },
   input: {
-    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Spacing.radius.md,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 10,
+    paddingVertical: 13,
     fontSize: 15,
-    marginBottom: Spacing.sm,
   },
   catChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
-    borderWidth: 1,
+    gap: 6,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 8,
+    borderRadius: Spacing.radius.full,
+    borderWidth: 1.5,
   },
   memberChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
-    borderWidth: 1,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 8,
+    borderRadius: Spacing.radius.full,
+    borderWidth: 1.5,
   },
   memberDot: {
     width: 8, height: 8, borderRadius: 4,

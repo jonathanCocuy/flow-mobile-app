@@ -154,8 +154,42 @@ export function NotificationsSheet({ visible, onClose, onChanged }: Notification
       p_member_id: memberId,
       p_accept: accept,
     });
-    if (rpcError) setError(rpcError.message);
-    else { await load(); onChangedRef.current?.(); }
+    if (rpcError) {
+      setError(rpcError.message);
+    } else {
+      if (!accept && notif.data?.group_id) {
+        const [{ data: group }, { data: member }] = await Promise.all([
+          supabase.from('shared_groups').select('user_id').eq('id', notif.data.group_id).single(),
+          supabase.from('shared_members').select('name').eq('id', memberId).single(),
+        ]);
+        if (group?.user_id) {
+          await supabase.rpc('create_notification', {
+            p_user_id: group.user_id,
+            p_type: 'invite_rejected',
+            p_title: t('split.invite.rejectedNotifTitle'),
+            p_body: t('split.invite.rejectedNotifBody', {
+              member: member?.name ?? '',
+              group: notif.data.group_name ?? '',
+            }),
+            p_data: { group_id: notif.data.group_id, group_name: notif.data.group_name, member_id: memberId },
+          });
+
+          // If no non-me members remain active (pending/accepted), the group
+          // is now empty — delete it so the owner doesn't end up alone in it.
+          const { count } = await supabase
+            .from('shared_members')
+            .select('id', { count: 'exact', head: true })
+            .eq('group_id', notif.data.group_id)
+            .eq('is_me', false)
+            .neq('status', 'rejected');
+          if ((count ?? 0) === 0) {
+            await supabase.from('shared_groups').delete().eq('id', notif.data.group_id);
+          }
+        }
+      }
+      await load();
+      onChangedRef.current?.();
+    }
     setBusyId(null);
   };
 

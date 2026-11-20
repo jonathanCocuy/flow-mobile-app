@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ScrollView,
   View,
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
+  Text as RNText,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -19,6 +20,7 @@ import { useDashboard } from '@/hooks/useDashboard';
 import { Icon, transactionIcon } from '@/components/ui/Icon';
 import i18n from '@/i18n';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EditTransactionSheet } from '@/components/EditTransactionSheet';
 import { AddAccountSheet } from '@/components/AddAccountSheet';
 import { AddBudgetSheet } from '@/components/AddBudgetSheet';
@@ -28,6 +30,7 @@ import { BalanceExpandCard } from '@/components/BalanceExpandCard';
 import { NotificationsSheet, fetchUnreadCount } from '@/components/NotificationsSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
 import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
@@ -177,6 +180,7 @@ export default function DashboardScreen() {
   const colors = Colors[colorScheme];
   const { data, loading, refetch } = useDashboard();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [noAccountDialogVisible, setNoAccountDialogVisible] = useState(false);
   const [editTx, setEditTx] = useState<DashboardTransaction | null>(null);
   const [accountSheetOpen, setAccountSheetOpen] = useState(false);
   const [budgetSheetOpen, setBudgetSheetOpen] = useState(false);
@@ -221,8 +225,16 @@ export default function DashboardScreen() {
 
   const savings = data.currentMonthIncome - data.currentMonthExpenses;
 
+  const handleOpenAddTransaction = () => {
+    if (data.accounts.length === 0) {
+      setNoAccountDialogVisible(true);
+      return;
+    }
+    setSheetOpen(true);
+  };
+
   const quickActions = [
-    { key: 'add',       label: t('dashboard.action.add'),       icon: (c: string) => <AddCircleIcon color={c} />, onPress: () => setSheetOpen(true) },
+    { key: 'add',       label: t('dashboard.action.add'),       icon: (c: string) => <AddCircleIcon color={c} />, onPress: handleOpenAddTransaction },
     { key: 'accounts',  label: t('dashboard.action.accounts'),  icon: (c: string) => <WalletIcon color={c} />,   onPress: () => router.push('/accounts') },
     { key: 'addBudget', label: t('dashboard.action.addBudget'), icon: (c: string) => <ChartIcon color={c} />,    onPress: () => setBudgetSheetOpen(true) },
     { key: 'addGoal',   label: t('dashboard.action.addGoal'),   icon: (c: string) => <TargetIcon color={c} />,   onPress: () => setGoalSheetOpen(true) },
@@ -230,7 +242,8 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
-      <ScrollView
+      <RefreshScrollView
+        onRefresh={() => refetch(true)}
         style={{ flex: 1 }}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -261,16 +274,16 @@ export default function DashboardScreen() {
               <Icon name="Bell" size={19} color={colors.label} />
               {unread > 0 && (
                 <View style={[styles.badge, { backgroundColor: colors.expense, borderColor: colors.backgroundGrouped }]}>
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>
+                  <RNText style={styles.badgeText}>
                     {unread > 9 ? '9+' : unread}
-                  </Text>
+                  </RNText>
                 </View>
               )}
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.addButton, { backgroundColor: colors.tint }]}
               activeOpacity={0.8}
-              onPress={() => setSheetOpen(true)}
+              onPress={handleOpenAddTransaction}
             >
               <PlusIcon color={colors.tintForeground} />
             </TouchableOpacity>
@@ -382,7 +395,7 @@ export default function DashboardScreen() {
               hasBudgets={data.hasBudgets}
               hasGoals={data.hasGoals}
               onAddAccount={() => setAccountSheetOpen(true)}
-              onAddTransaction={() => setSheetOpen(true)}
+              onAddTransaction={handleOpenAddTransaction}
               onAddBudget={() => setBudgetSheetOpen(true)}
               onAddGoal={() => setGoalSheetOpen(true)}
             />
@@ -471,7 +484,7 @@ export default function DashboardScreen() {
             )}
           </Card>
         </View>
-      </ScrollView>
+      </RefreshScrollView>
 
       <NotificationsSheet
         visible={notifOpen}
@@ -482,6 +495,7 @@ export default function DashboardScreen() {
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onSuccess={() => { setSheetOpen(false); refetch(); }}
+        onCategoryCreated={refetch}
         accounts={data.accounts}
         categories={data.categories}
       />
@@ -508,6 +522,15 @@ export default function DashboardScreen() {
         visible={goalSheetOpen}
         onClose={() => setGoalSheetOpen(false)}
         onSuccess={() => { setGoalSheetOpen(false); refetch(); }}
+      />
+      <ConfirmDialog
+        visible={noAccountDialogVisible}
+        title={t('dashboard.noAccountTitle')}
+        message={t('dashboard.noAccountMessage')}
+        confirmLabel={t('dashboard.noAccountAction')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => { setNoAccountDialogVisible(false); setAccountSheetOpen(true); }}
+        onCancel={() => setNoAccountDialogVisible(false)}
       />
     </SafeAreaView>
   );
@@ -672,16 +695,25 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: -4,
+    right: -4,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    borderWidth: 2,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 12,
+    letterSpacing: 0,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  } as const,
   addButton: {
     width: 36,
     height: 36,
@@ -715,6 +747,7 @@ const styles = StyleSheet.create({
   balanceSkeleton: {
     height: 56,
     justifyContent: 'center',
+    alignItems: 'center',
     marginVertical: Spacing.xs,
   },
   balanceAmount: {
