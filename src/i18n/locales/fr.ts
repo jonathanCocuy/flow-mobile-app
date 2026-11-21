@@ -540,6 +540,18 @@ export default {
   'permissions.allow': 'Autoriser',
   'permissions.openSettings': 'Ouvrir les réglages',
 
+  // Export
+  'export.title': 'Exporter les transactions',
+  'export.desc': 'Téléchargez toutes vos transactions sous forme de fichier CSV, à ouvrir dans Excel ou tout autre tableur.',
+  'export.button': 'Exporter CSV',
+  'export.success': 'Fichier exporté avec succès',
+  'export.empty': 'Aucune transaction à exporter',
+  'export.error': "Échec de l'exportation des transactions",
+
+  // Profile — extra rows
+  'profile.export': 'Exporter les données',
+  'profile.import': 'Importer CSV',
+
   // Theme
   'theme.title': 'Apparence',
   'theme.subtitle': 'Choisissez comment FlowX apparaît sur cet appareil.',

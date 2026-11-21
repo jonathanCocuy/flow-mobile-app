@@ -24,6 +24,7 @@ import { ChangePasswordSheet } from '@/components/ChangePasswordSheet';
 import { PermissionsSheet } from '@/components/PermissionsSheet';
 import { ThemeSheet } from '@/components/ThemeSheet';
 import { MfaSheet } from '@/components/MfaSheet';
+import { ExportSheet } from '@/components/ExportSheet';
 import { useThemePreference } from '@/context/ThemeContext';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
 import { SUPPORTED_LANGUAGES, changeLanguage, type LanguageCode } from '@/i18n';
@@ -323,6 +324,7 @@ export default function ProfileScreen() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [mfaOpen, setMfaOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -593,6 +595,8 @@ export default function ProfileScreen() {
                 value={unread > 0 ? String(unread) : undefined}
                 onPress={() => setNotifOpen(true)}
               />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow icon="Download" label={t('profile.export')} onPress={() => setExportOpen(true)} />
             </View>
           </Card>
         </View>
@@ -732,6 +736,11 @@ export default function ProfileScreen() {
       <MfaSheet
         visible={mfaOpen}
         onClose={() => setMfaOpen(false)}
+      />
+
+      <ExportSheet
+        visible={exportOpen}
+        onClose={() => setExportOpen(false)}
       />
     </SafeAreaView>
   );
