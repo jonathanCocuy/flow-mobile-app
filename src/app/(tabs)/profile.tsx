@@ -23,6 +23,7 @@ import { NotificationsSheet, fetchUnreadCount } from '@/components/Notifications
 import { ChangePasswordSheet } from '@/components/ChangePasswordSheet';
 import { PermissionsSheet } from '@/components/PermissionsSheet';
 import { ThemeSheet } from '@/components/ThemeSheet';
+import { MfaSheet } from '@/components/MfaSheet';
 import { useThemePreference } from '@/context/ThemeContext';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
 import { SUPPORTED_LANGUAGES, changeLanguage, type LanguageCode } from '@/i18n';
@@ -321,6 +322,7 @@ export default function ProfileScreen() {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
+  const [mfaOpen, setMfaOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -632,6 +634,13 @@ export default function ProfileScreen() {
                 onPress={() => setChangePasswordOpen(true)}
               />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow
+                icon="Smartphone"
+                label={t('security.twoFactor')}
+                onPress={() => setMfaOpen(true)}
+              />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
               <SettingsRow
                 icon="ShieldCheck"
                 label={t('security.permissions')}
@@ -718,6 +727,11 @@ export default function ProfileScreen() {
       <ThemeSheet
         visible={themeSheetOpen}
         onClose={() => setThemeSheetOpen(false)}
+      />
+
+      <MfaSheet
+        visible={mfaOpen}
+        onClose={() => setMfaOpen(false)}
       />
     </SafeAreaView>
   );
