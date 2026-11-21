@@ -36,6 +36,7 @@ import {
   Bell, Users, Handshake, BarChart3, LineChart, RefreshCw, Target, Settings,
   Globe, LogOut, Key, Mail, MailCheck, AlertTriangle, CalendarClock, Coins,
   ReceiptText, ShieldCheck, Mountain, Sailboat, Gem, Palmtree,
+  X, Check, CheckCircle, Info, TriangleAlert,
   type LucideProps,
 } from 'lucide-react-native';
 
@@ -81,6 +82,8 @@ const REGISTRY = {
   Bell, Users, Handshake, BarChart3, LineChart, RefreshCw, Target, Settings,
   Globe, LogOut, Key, Mail, MailCheck, AlertTriangle, CalendarClock, Coins,
   ReceiptText, ShieldCheck, Mountain, Sailboat, Gem, Palmtree,
+  // UI icons (not in picker, used for close/check/info controls)
+  X, Check, CheckCircle, Info, TriangleAlert,
 } satisfies Record<string, React.ComponentType<LucideProps>>;
 
 export type IconName = keyof typeof REGISTRY;
