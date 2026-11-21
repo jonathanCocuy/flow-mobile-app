@@ -61,6 +61,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 // ── Font + splash loader ──────────────────────────────────────────────────────
 function RootLayoutInner() {
+  const { loading: authLoading } = useAuth();
   const colorScheme = useColorScheme();
   const [i18nReady, setI18nReady] = useState(false);
 
@@ -80,12 +81,12 @@ function RootLayoutInner() {
   }, []);
 
   useEffect(() => {
-    if ((fontsLoaded || fontError) && i18nReady) {
+    if ((fontsLoaded || fontError) && i18nReady && !authLoading) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, i18nReady]);
+  }, [fontsLoaded, fontError, i18nReady, authLoading]);
 
-  if ((!fontsLoaded && !fontError) || !i18nReady) {
+  if ((!fontsLoaded && !fontError) || !i18nReady || authLoading) {
     return <SplashView />;
   }
 
