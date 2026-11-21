@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useFocusEffect, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
@@ -379,18 +379,26 @@ export default function ProfileScreen() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) throw new Error('Not authenticated');
 
-      // File().arrayBuffer() gives the real bytes; passing the file:// uri or a
-      // fetch Blob to Supabase uploads an empty object on React Native.
-      const bytes = await new File(asset.uri).arrayBuffer();
-      if (bytes.byteLength > AVATAR_MAX_BYTES) {
-        setAvatarError(t('profile.photoTooLarge'));
-        return;
-      }
-
       const contentType = asset.mimeType ?? 'image/jpeg';
       const ext = contentType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg';
       // Fresh name per upload so the public URL changes and caches can't win.
       const path = `${authUser.id}/${Date.now()}.${ext}`;
+
+      // Read file as base64 then convert to Uint8Array.
+      // fetch().blob() uploads empty objects on React Native; legacy readAsStringAsync is reliable.
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      if (bytes.byteLength > AVATAR_MAX_BYTES) {
+        setAvatarError(t('profile.photoTooLarge'));
+        return;
+      }
 
       const { error: upErr } = await supabase.storage
         .from('avatars')
@@ -434,7 +442,7 @@ export default function ProfileScreen() {
               {avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
               ) : (
-                <Text variant="title1" color="#fff" align="center">{initials || '?'}</Text>
+                <Text variant="title1" color={colors.tintForeground} align="center">{initials || '?'}</Text>
               )}
               {avatarBusy && (
                 <View style={styles.avatarOverlay}>
