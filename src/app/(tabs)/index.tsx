@@ -253,10 +253,10 @@ export default function DashboardScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={{
               width: 36, height: 36, borderRadius: 10,
-              backgroundColor: colors.tint,
+              backgroundColor: '#171717',
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <FlowXLogo color="#000" size={20} />
+              <FlowXLogo color="#fafafa" size={20} />
             </View>
             <View>
               <Text variant="footnote" color={colors.labelSecondary}>
