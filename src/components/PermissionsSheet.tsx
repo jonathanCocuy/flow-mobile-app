@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Modal, View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback,
-  Animated, PanResponder, Dimensions, useColorScheme, AppState,
+  Animated, PanResponder, Dimensions, Platform, useColorScheme, AppState,
 } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as ImagePicker from 'expo-image-picker';
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingBottom: 34,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
   handle: { width: 36, height: 4, borderRadius: 2 },
