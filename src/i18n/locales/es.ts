@@ -453,6 +453,18 @@ export default {
   'split.category.services': 'Servicios',
   'split.category.other': 'Otro',
 
+  // Settle up
+  'split.settle.title': 'Ajustar cuentas',
+  'split.settle.account': 'Cuenta',
+  'split.settle.payments': 'Pagos',
+  'split.settle.youAreOwed': '{{name}} te debe',
+  'split.settle.youOwe': 'Le debes a {{name}}',
+  'split.settle.settle': 'Ajustar',
+  'split.settle.allSettled': '¡Todo ajustado!',
+  'split.settle.noAccount': 'Selecciona una cuenta para registrar el pago.',
+  'split.settle.paymentFrom': 'Pago de {{name}}',
+  'split.settle.paymentTo': 'Pago a {{name}}',
+
   // Common
   'common.edit': 'Editar',
 

@@ -453,6 +453,18 @@ export default {
   'split.category.services': 'Services',
   'split.category.other': 'Other',
 
+  // Settle up
+  'split.settle.title': 'Settle Up',
+  'split.settle.account': 'Account',
+  'split.settle.payments': 'Payments',
+  'split.settle.youAreOwed': '{{name}} owes you',
+  'split.settle.youOwe': 'You owe {{name}}',
+  'split.settle.settle': 'Settle',
+  'split.settle.allSettled': 'All balances settled!',
+  'split.settle.noAccount': 'Select an account to record the settlement.',
+  'split.settle.paymentFrom': 'Payment from {{name}}',
+  'split.settle.paymentTo': 'Payment to {{name}}',
+
   // Common (make sure edit exists)
   'common.edit': 'Edit',
 

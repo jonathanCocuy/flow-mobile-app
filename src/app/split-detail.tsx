@@ -27,6 +27,8 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Icon } from '@/components/ui/Icon';
 import { formatAmountInput, parseAmountInput, toAmountInput } from '@/utils/amount';
 import { DatePickerField } from '@/components/ui/DatePickerField';
+import { SettlementSheet } from '@/components/SettlementSheet';
+import type { DashboardAccount } from '@/types/finance';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -462,19 +464,23 @@ export default function SplitDetailScreen() {
 
   const [members, setMembers] = useState<SharedMember[]>([]);
   const [expenses, setExpenses] = useState<SharedExpense[]>([]);
+  const [accounts, setAccounts] = useState<DashboardAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [settlementOpen, setSettlementOpen] = useState(false);
   const [editing, setEditing] = useState<SharedExpense | null>(null);
   const [deleting, setDeleting] = useState<SharedExpense | null>(null);
 
   const load = useCallback(async () => {
     if (!groupId) return;
-    const [{ data: mData }, { data: eData }] = await Promise.all([
+    const [{ data: mData }, { data: eData }, { data: aData }] = await Promise.all([
       supabase.from('shared_members').select('*').eq('group_id', groupId).order('created_at'),
       supabase.from('shared_expenses').select('*').eq('group_id', groupId).order('date', { ascending: false }),
+      supabase.from('accounts').select('id, name, color, balance, initial_balance').order('created_at'),
     ]);
     setMembers((mData ?? []) as SharedMember[]);
     setExpenses((eData ?? []) as SharedExpense[]);
+    setAccounts((aData ?? []) as DashboardAccount[]);
     setLoading(false);
   }, [groupId]);
 
@@ -544,11 +550,25 @@ export default function SplitDetailScreen() {
           <Card radius={Spacing.radius.lg} style={{ marginBottom: Spacing.md }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
               <Text variant="callout" style={{ fontWeight: '700' }}>{t('split.detail.balance')}</Text>
-              {totalExpenses > 0 && (
-                <Text variant="caption1" color={colors.labelSecondary}>
-                  Total: ${fmtCOP(totalExpenses)} COP
-                </Text>
-              )}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                {totalExpenses > 0 && (
+                  <Text variant="caption1" color={colors.labelSecondary}>
+                    Total: ${fmtCOP(totalExpenses)} COP
+                  </Text>
+                )}
+                {totalExpenses > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setSettlementOpen(true)}
+                    style={[styles.settleHeaderBtn, { backgroundColor: colors.tint + '18' }]}
+                    activeOpacity={0.7}
+                    hitSlop={8}>
+                    <Icon name="HandCoins" size={13} color={colors.tint} />
+                    <Text variant="caption1" style={{ color: colors.tint, fontWeight: '700' }}>
+                      {t('split.settle.settle')}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
             {balances.map((m, i) => (
               <View key={m.id} style={[styles.balanceRow, i < balances.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator }]}>
@@ -658,6 +678,15 @@ export default function SplitDetailScreen() {
         onSaved={load}
       />
 
+      <SettlementSheet
+        visible={settlementOpen}
+        onClose={() => setSettlementOpen(false)}
+        groupId={groupId}
+        balances={balances}
+        accounts={accounts}
+        onSettled={load}
+      />
+
       <ConfirmDialog
         visible={!!deleting}
         title={t('split.expense.deleteTitle')}
@@ -702,6 +731,14 @@ const styles = StyleSheet.create({
   },
   memberDotSmall: {
     width: 10, height: 10, borderRadius: 5,
+  },
+  settleHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   expenseRow: {
     flexDirection: 'row',
