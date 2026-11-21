@@ -25,6 +25,7 @@ import {
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { CurrencyProvider } from '@/context/CurrencyContext';
 import { SplashView } from '@/components/SplashView';
 
 SplashScreen.preventAutoHideAsync();
@@ -114,7 +115,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <AuthProvider>
-            <RootLayoutInner />
+            <CurrencyProvider>
+              <RootLayoutInner />
+            </CurrencyProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>

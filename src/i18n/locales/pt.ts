@@ -540,6 +540,16 @@ export default {
   'permissions.allow': 'Permitir',
   'permissions.openSettings': 'Abrir configurações',
 
+  // Currency
+  'currency.title': 'Moeda base',
+  'currency.desc': 'Todos os valores serão exibidos nesta moeda.',
+  'currency.COP': 'Peso colombiano',
+  'currency.USD': 'Dólar americano',
+  'currency.EUR': 'Euro',
+  'currency.GBP': 'Libra esterlina',
+  'currency.MXN': 'Peso mexicano',
+  'currency.BRL': 'Real brasileiro',
+
   // Export
   'export.title': 'Exportar transações',
   'export.desc': 'Baixe todas as suas transações como um arquivo CSV para abrir no Excel ou qualquer planilha.',

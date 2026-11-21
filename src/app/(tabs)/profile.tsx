@@ -25,6 +25,8 @@ import { PermissionsSheet } from '@/components/PermissionsSheet';
 import { ThemeSheet } from '@/components/ThemeSheet';
 import { MfaSheet } from '@/components/MfaSheet';
 import { ExportSheet } from '@/components/ExportSheet';
+import { CurrencySheet } from '@/components/CurrencySheet';
+import { useCurrency } from '@/context/CurrencyContext';
 import { useThemePreference } from '@/context/ThemeContext';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
 import { SUPPORTED_LANGUAGES, changeLanguage, type LanguageCode } from '@/i18n';
@@ -325,6 +327,8 @@ export default function ProfileScreen() {
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [mfaOpen, setMfaOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const { currency } = useCurrency();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -621,6 +625,13 @@ export default function ProfileScreen() {
                 value={themeLabel}
                 onPress={() => setThemeSheetOpen(true)}
               />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow
+                icon="DollarSign"
+                label={t('profile.currency')}
+                value={currency}
+                onPress={() => setCurrencyOpen(true)}
+              />
             </View>
           </Card>
         </View>
@@ -741,6 +752,11 @@ export default function ProfileScreen() {
       <ExportSheet
         visible={exportOpen}
         onClose={() => setExportOpen(false)}
+      />
+
+      <CurrencySheet
+        visible={currencyOpen}
+        onClose={() => setCurrencyOpen(false)}
       />
     </SafeAreaView>
   );
