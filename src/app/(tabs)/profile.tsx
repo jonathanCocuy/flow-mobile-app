@@ -22,6 +22,8 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { NotificationsSheet, fetchUnreadCount } from '@/components/NotificationsSheet';
 import { ChangePasswordSheet } from '@/components/ChangePasswordSheet';
 import { PermissionsSheet } from '@/components/PermissionsSheet';
+import { ThemeSheet } from '@/components/ThemeSheet';
+import { useThemePreference } from '@/context/ThemeContext';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
 import { SUPPORTED_LANGUAGES, changeLanguage, type LanguageCode } from '@/i18n';
 import i18n from '@/i18n';
@@ -318,12 +320,16 @@ export default function ProfileScreen() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
+  const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
 
   const currentLang = (i18n.language ?? 'en') as LanguageCode;
   const currentLangLabel = SUPPORTED_LANGUAGES.find(l => l.code === currentLang)?.label ?? 'English';
+
+  const { preference: themePref } = useThemePreference();
+  const themeLabel = t(`theme.${themePref}`);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -602,6 +608,13 @@ export default function ProfileScreen() {
                 value={currentLangLabel}
                 onPress={() => setLanguageSheetVisible(true)}
               />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow
+                icon="Sun"
+                label={t('theme.title')}
+                value={themeLabel}
+                onPress={() => setThemeSheetOpen(true)}
+              />
             </View>
           </Card>
         </View>
@@ -700,6 +713,11 @@ export default function ProfileScreen() {
       <PermissionsSheet
         visible={permissionsOpen}
         onClose={() => setPermissionsOpen(false)}
+      />
+
+      <ThemeSheet
+        visible={themeSheetOpen}
+        onClose={() => setThemeSheetOpen(false)}
       />
     </SafeAreaView>
   );

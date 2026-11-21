@@ -500,4 +500,14 @@ export default {
   'permissions.notDetermined': 'Sin definir',
   'permissions.allow': 'Permitir',
   'permissions.openSettings': 'Abrir ajustes',
+
+  // Theme
+  'theme.title': 'Apariencia',
+  'theme.subtitle': 'Elige cómo se ve FlowX en este dispositivo.',
+  'theme.light': 'Claro',
+  'theme.lightDesc': 'Usar siempre el tema claro.',
+  'theme.dark': 'Oscuro',
+  'theme.darkDesc': 'Usar siempre el tema oscuro.',
+  'theme.system': 'Sistema',
+  'theme.systemDesc': 'Seguir la configuración del sistema.',
 } as const;
