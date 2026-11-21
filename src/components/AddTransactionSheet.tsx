@@ -287,7 +287,7 @@ export function AddTransactionSheet({
 
   return (
     <>
-      <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+      <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={dismissSheet}>
         <View style={styles.root}>
           <TouchableWithoutFeedback onPress={dismissSheet}>
             <View style={StyleSheet.absoluteFill} />

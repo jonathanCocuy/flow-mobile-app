@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Modal,
+  Platform,
   TouchableOpacity,
   TouchableWithoutFeedback,
   StyleSheet,
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
-    paddingBottom: 48,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
     paddingHorizontal: Spacing.screenHorizontal,
   },
   sheet: {
