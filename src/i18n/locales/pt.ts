@@ -359,6 +359,8 @@ export default {
   'reports.totalIncome': 'Receita total',
   'reports.totalExpenses': 'Despesa total',
   'reports.totalSavings': 'Poupança líquida',
+  'reports.expensesByCategory': 'Despesas por categoria',
+  'reports.other': 'Outros',
 
   // Profile navigation - split
   'profile.split': 'Despesas compartilhadas',

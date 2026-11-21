@@ -359,6 +359,8 @@ export default {
   'reports.totalIncome': 'Ingresos totales',
   'reports.totalExpenses': 'Gastos totales',
   'reports.totalSavings': 'Ahorro neto',
+  'reports.expensesByCategory': 'Gastos por categoría',
+  'reports.other': 'Otros',
 
   // Profile navigation - split
   'profile.split': 'Gastos compartidos',

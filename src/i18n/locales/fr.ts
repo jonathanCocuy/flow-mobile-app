@@ -359,6 +359,8 @@ export default {
   'reports.totalIncome': 'Revenus totaux',
   'reports.totalExpenses': 'Dépenses totales',
   'reports.totalSavings': 'Épargne nette',
+  'reports.expensesByCategory': 'Dépenses par catégorie',
+  'reports.other': 'Autres',
 
   // Profile navigation - split
   'profile.split': 'Dépenses partagées',

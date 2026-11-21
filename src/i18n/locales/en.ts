@@ -359,6 +359,8 @@ export default {
   'reports.totalIncome': 'Total Income',
   'reports.totalExpenses': 'Total Expenses',
   'reports.totalSavings': 'Net Savings',
+  'reports.expensesByCategory': 'Expenses by Category',
+  'reports.other': 'Other',
 
   // Profile navigation - split
   'profile.split': 'Shared Expenses',

@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import Svg, { Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Rect, Text as SvgText, G } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { Colors } from '@/constants/Colors';
@@ -151,6 +151,93 @@ function KpiCard({ label, value, color }: { label: string; value: string; color:
   );
 }
 
+// ── Donut Chart ───────────────────────────────────────────────────────────────
+
+const DONUT_SIZE = 160;
+const OUTER_R = 68;
+const INNER_R = 44;
+const CX = DONUT_SIZE / 2;
+const CY = DONUT_SIZE / 2;
+
+function polar(cx: number, cy: number, r: number, angle: number) {
+  return {
+    x: cx + r * Math.cos(angle - Math.PI / 2),
+    y: cy + r * Math.sin(angle - Math.PI / 2),
+  };
+}
+
+function donutSegment(cx: number, cy: number, ro: number, ri: number, start: number, end: number): string {
+  const o1 = polar(cx, cy, ro, start);
+  const o2 = polar(cx, cy, ro, end);
+  const i1 = polar(cx, cy, ri, start);
+  const i2 = polar(cx, cy, ri, end);
+  const large = end - start > Math.PI ? 1 : 0;
+  return [
+    `M ${o1.x.toFixed(2)} ${o1.y.toFixed(2)}`,
+    `A ${ro} ${ro} 0 ${large} 1 ${o2.x.toFixed(2)} ${o2.y.toFixed(2)}`,
+    `L ${i2.x.toFixed(2)} ${i2.y.toFixed(2)}`,
+    `A ${ri} ${ri} 0 ${large} 0 ${i1.x.toFixed(2)} ${i1.y.toFixed(2)}`,
+    'Z',
+  ].join(' ');
+}
+
+interface DonutSlice {
+  color: string;
+  name: string;
+  pct: number;
+}
+
+const GAP = 0.025;
+
+function buildSegments(slices: DonutSlice[]) {
+  let angle = 0;
+  return slices.map(slice => {
+    const sweep = (slice.pct / 100) * (2 * Math.PI - GAP * slices.length);
+    const start = angle + GAP / 2;
+    const end = start + sweep;
+    angle = end + GAP / 2;
+    return { path: donutSegment(CX, CY, OUTER_R, INNER_R, start, end), color: slice.color };
+  });
+}
+
+function DonutChart({ slices, centerLabel, centerSub }: { slices: DonutSlice[]; centerLabel: string; centerSub: string }) {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const segments = buildSegments(slices);
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+      <Svg width={DONUT_SIZE} height={DONUT_SIZE}>
+        {segments.map((seg, i) => (
+          <G key={i}>
+            <Path d={seg.path} fill={seg.color} />
+          </G>
+        ))}
+        {/* Center text */}
+        <SvgText x={CX} y={CY - 8} fontSize={15} fontWeight="bold" fill={colors.label} textAnchor="middle">
+          {centerLabel}
+        </SvgText>
+        <SvgText x={CX} y={CY + 10} fontSize={10} fill={colors.labelSecondary} textAnchor="middle">
+          {centerSub}
+        </SvgText>
+      </Svg>
+
+      {/* Legend */}
+      <View style={{ flex: 1, gap: 7 }}>
+        {slices.map((slice, i) => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: slice.color, flexShrink: 0 }} />
+            <Text variant="caption1" style={{ flex: 1 }} numberOfLines={1}>{slice.name}</Text>
+            <Text variant="caption1" style={{ fontWeight: '700', color: slice.color }}>
+              {slice.pct.toFixed(1)}%
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 // ── Format ────────────────────────────────────────────────────────────────────
 
 function fmtCOP(n: number): string {
@@ -284,6 +371,16 @@ export default function ReportsScreen() {
   const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
   const hasData = totalIncome > 0 || totalExpenses > 0;
 
+  const donutSlices: DonutSlice[] = (() => {
+    if (topCategories.length === 0) return [];
+    const TOP = 5;
+    const top = topCategories.slice(0, TOP);
+    const otherPct = topCategories.slice(TOP).reduce((s, c) => s + c.percentage, 0);
+    const slices: DonutSlice[] = top.map(c => ({ color: c.color, name: c.name.charAt(0).toUpperCase() + c.name.slice(1), pct: c.percentage }));
+    if (otherPct > 0.5) slices.push({ color: colors.labelSecondary, name: t('reports.other'), pct: otherPct });
+    return slices;
+  })();
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundGrouped }]} edges={['top']}>
       <View style={styles.header}>
@@ -326,6 +423,20 @@ export default function ReportsScreen() {
               <KpiCard label={t('reports.totalSavings')} value={fmtCOP(totalSavings)} color={totalSavings >= 0 ? colors.income : colors.expense} />
               <KpiCard label={t('reports.savingsRate')} value={fmtRate(savingsRate)} color={savingsRate >= 0 ? colors.income : colors.expense} />
             </View>
+
+            {/* Donut chart */}
+            {donutSlices.length > 0 && (
+              <View style={styles.chartSection}>
+                <Text variant="title3" style={{ marginBottom: Spacing.sm }}>{t('reports.expensesByCategory')}</Text>
+                <Card radius={Spacing.radius.lg} padding={Spacing.md}>
+                  <DonutChart
+                    slices={donutSlices}
+                    centerLabel={fmtCOP(totalExpenses)}
+                    centerSub={t('reports.expenses')}
+                  />
+                </Card>
+              </View>
+            )}
 
             {/* Bar chart */}
             <View style={styles.chartSection}>
