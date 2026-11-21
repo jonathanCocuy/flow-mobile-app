@@ -215,13 +215,14 @@ export default function DashboardScreen() {
     : hour >= 12 && hour < 17 ? t('dashboard.greeting.afternoon')
     : t('dashboard.greeting.evening');
 
-  // Balance card — always dark, elevated in dark mode
-  const cardBg = colorScheme === 'dark' ? '#262626' : '#171717';
-  const cardBorder = colorScheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'transparent';
-  const cardText = '#fafafa';
-  const cardTextSub = 'rgba(250,250,250,0.55)';
-  const chipBg = 'rgba(255,255,255,0.09)';
-  const chipBorder = 'rgba(255,255,255,0.13)';
+  // Balance card — dark in dark mode, white card in light mode
+  const isDark = colorScheme === 'dark';
+  const cardBg     = isDark ? '#262626' : colors.backgroundGroupedSecondary;
+  const cardBorder = isDark ? 'rgba(255,255,255,0.10)' : colors.separator;
+  const cardText    = isDark ? '#fafafa' : colors.label;
+  const cardTextSub = isDark ? 'rgba(250,250,250,0.55)' : colors.labelSecondary;
+  const chipBg     = isDark ? 'rgba(255,255,255,0.09)' : colors.fillTertiary;
+  const chipBorder = isDark ? 'rgba(255,255,255,0.13)' : colors.separator;
 
   const savings = data.currentMonthIncome - data.currentMonthExpenses;
 

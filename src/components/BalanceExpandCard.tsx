@@ -106,9 +106,10 @@ export function BalanceExpandCard({ frontContent, accounts, cardBg, cardBorder, 
     extrapolate: 'clamp',
   });
 
-  const cardText = '#fafafa';
-  const cardTextSub = 'rgba(250,250,250,0.55)';
-  const dividerColor = 'rgba(255,255,255,0.12)';
+  const isDark = colorScheme === 'dark';
+  const cardText    = isDark ? '#fafafa' : colors.label;
+  const cardTextSub = isDark ? 'rgba(250,250,250,0.55)' : colors.labelSecondary;
+  const dividerColor = isDark ? 'rgba(255,255,255,0.12)' : colors.separator;
 
   return (
     <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
@@ -144,7 +145,7 @@ export function BalanceExpandCard({ frontContent, accounts, cardBg, cardBorder, 
                 key={acc.id}
                 style={[
                   styles.accountRow,
-                  i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.08)' },
+                  i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : colors.separator },
                 ]}
               >
                 <View style={[styles.accountDot, { backgroundColor: acc.color ?? colors.tint }]}>

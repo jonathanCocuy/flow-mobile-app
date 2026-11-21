@@ -117,8 +117,9 @@ export function BalanceFlipCard({ frontContent, accounts, cardBg, cardBorder }: 
     extrapolate: 'clamp',
   });
 
-  const cardText = '#fafafa';
-  const cardTextSub = 'rgba(250,250,250,0.55)';
+  const isDark = colorScheme === 'dark';
+  const cardText    = isDark ? '#fafafa' : colors.label;
+  const cardTextSub = isDark ? 'rgba(250,250,250,0.55)' : colors.labelSecondary;
 
   const totalBalance = accounts.reduce((s, a) => s + (a.balance ?? 0), 0);
 
@@ -171,7 +172,7 @@ export function BalanceFlipCard({ frontContent, accounts, cardBg, cardBorder }: 
           </Text>
 
           {/* Divider */}
-          <View style={[styles.divider, { backgroundColor: 'rgba(255,255,255,0.12)' }]} />
+          <View style={[styles.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : colors.separator }]} />
 
           {/* Accounts list */}
           <ScrollView
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
   },
   accountRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: 'rgba(128,128,128,0.15)',
   },
   accountDot: {
     width: 30,
