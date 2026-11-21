@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_HEIGHT * 0.92,
     borderTopLeftRadius: Spacing.radius.xxl,
     borderTopRightRadius: Spacing.radius.xxl,
-    paddingBottom: 32,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
   handle: { width: 36, height: 4, borderRadius: 2 },

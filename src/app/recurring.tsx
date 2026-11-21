@@ -301,8 +301,8 @@ function RecurringSheet({
   const typeColor = form.type === 'income' ? colors.income : colors.expense;
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <Modal visible={visible} animationType="slide" statusBarTranslucent onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <SafeAreaView style={[styles.sheet, { backgroundColor: colors.backgroundGrouped }]} edges={['top', 'bottom']}>
           <View style={[styles.sheetHeader, { borderBottomColor: colors.separator }]}>
             <TouchableOpacity onPress={onClose} hitSlop={12}>

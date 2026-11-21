@@ -312,7 +312,7 @@ function ExpenseSheet({ visible, editing, groupId, members, onClose, onSaved }: 
   }];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         <View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped }]}>
@@ -752,7 +752,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? 32 : Spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 34 : Spacing.lg,
     paddingTop: Spacing.sm,
     maxHeight: '90%',
   },

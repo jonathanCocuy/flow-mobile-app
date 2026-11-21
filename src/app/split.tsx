@@ -474,7 +474,7 @@ function GroupSheet({ visible, editing, onClose, onSaved, userId, userEmail }: G
   }];
 
   return (
-    <Modal visible={visible} animationType="none" transparent presentationStyle="overFullScreen">
+    <Modal visible={visible} animationType="none" transparent statusBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={dismiss} />
         <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] }]}>
@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? 32 : Spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 34 : Spacing.lg,
     paddingTop: Spacing.sm,
     maxHeight: '90%',
   },

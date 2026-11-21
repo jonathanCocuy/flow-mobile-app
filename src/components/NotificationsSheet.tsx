@@ -10,6 +10,7 @@ import {
   Dimensions,
   Animated,
   PanResponder,
+  Platform,
 } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
     minHeight: SCREEN_HEIGHT * 0.4,
     borderTopLeftRadius: Spacing.radius.xxl,
     borderTopRightRadius: Spacing.radius.xxl,
-    paddingBottom: 32,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
   },
   handleZone: { paddingTop: 12, paddingBottom: 8, alignItems: 'center' },
   handle: { width: 36, height: 4, borderRadius: 2 },
