@@ -455,4 +455,49 @@ export default {
 
   // Common
   'common.edit': 'Editar',
+
+  // Security & Privacy section
+  'security.title': 'Seguridad y privacidad',
+  'security.changePassword': 'Cambiar contraseña',
+  'security.permissions': 'Permisos de la app',
+
+  // Change password sheet
+  'changePassword.title': 'Cambiar contraseña',
+  'changePassword.tabKnown': 'Sé mi contraseña',
+  'changePassword.tabForgot': 'La olvidé',
+  'changePassword.current': 'Contraseña actual',
+  'changePassword.currentPh': 'Tu contraseña actual',
+  'changePassword.new': 'Nueva contraseña',
+  'changePassword.newPh': 'Mín. 8 caracteres',
+  'changePassword.confirm': 'Confirmar nueva contraseña',
+  'changePassword.confirmPh': 'Repite la nueva contraseña',
+  'changePassword.submit': 'Cambiar contraseña',
+  'changePassword.recoveryTitle': 'Recuperar acceso',
+  'changePassword.recoveryDesc': 'Enviaremos un enlace de restablecimiento a {{email}}.',
+  'changePassword.sendLink': 'Enviar enlace',
+  'changePassword.sentTitle': 'Revisa tu correo',
+  'changePassword.sentDesc': 'Enviamos un enlace de recuperación a {{email}}. Haz clic en él y luego vuelve aquí.',
+  'changePassword.successTitle': '¡Contraseña actualizada!',
+  'changePassword.successDesc': 'Tu nueva contraseña ya está activa.',
+  'changePassword.error.currentRequired': 'Ingresa tu contraseña actual.',
+  'changePassword.error.newShort': 'La contraseña debe tener al menos 8 caracteres.',
+  'changePassword.error.mismatch': 'Las contraseñas no coinciden.',
+  'changePassword.error.wrongPassword': 'La contraseña actual es incorrecta.',
+  'changePassword.error.samePassword': 'La nueva contraseña no puede ser igual a la actual.',
+
+  // Permissions sheet
+  'permissions.title': 'Permisos de la app',
+  'permissions.subtitle': 'Administra el acceso que tiene FlowX a funciones de tu dispositivo.',
+  'permissions.photos': 'Fotos',
+  'permissions.photosDesc': 'Necesario para actualizar tu foto de perfil.',
+  'permissions.camera': 'Cámara',
+  'permissions.cameraDesc': 'Necesario para tomar fotos de perfil.',
+  'permissions.notifications': 'Notificaciones',
+  'permissions.notificationsDesc': 'Recibe alertas de invitaciones y novedades.',
+  'permissions.granted': 'Permitido',
+  'permissions.limited': 'Limitado',
+  'permissions.denied': 'Denegado',
+  'permissions.notDetermined': 'Sin definir',
+  'permissions.allow': 'Permitir',
+  'permissions.openSettings': 'Abrir ajustes',
 } as const;

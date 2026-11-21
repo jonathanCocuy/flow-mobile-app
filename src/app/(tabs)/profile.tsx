@@ -20,6 +20,8 @@ import { supabase } from '@/lib/supabase';
 import { CategoryModal, type CategoryData } from '@/components/CategoryModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { NotificationsSheet, fetchUnreadCount } from '@/components/NotificationsSheet';
+import { ChangePasswordSheet } from '@/components/ChangePasswordSheet';
+import { PermissionsSheet } from '@/components/PermissionsSheet';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
 import { SUPPORTED_LANGUAGES, changeLanguage, type LanguageCode } from '@/i18n';
 import i18n from '@/i18n';
@@ -314,6 +316,8 @@ export default function ProfileScreen() {
   const [languageSheetVisible, setLanguageSheetVisible] = useState(false);
   const [unread, setUnread] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -602,6 +606,28 @@ export default function ProfileScreen() {
           </Card>
         </View>
 
+        {/* Security & Privacy */}
+        <View style={styles.section}>
+          <Text variant="footnote" color={colors.labelSecondary} style={styles.sectionTitle}>
+            {t('security.title').toUpperCase()}
+          </Text>
+          <Card radius={Spacing.radius.lg} padding={0}>
+            <View style={{ paddingHorizontal: Spacing.md }}>
+              <SettingsRow
+                icon="Lock"
+                label={t('security.changePassword')}
+                onPress={() => setChangePasswordOpen(true)}
+              />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow
+                icon="ShieldCheck"
+                label={t('security.permissions')}
+                onPress={() => setPermissionsOpen(true)}
+              />
+            </View>
+          </Card>
+        </View>
+
         {/* Sign Out / Delete Account */}
         <View style={styles.section}>
           <Card radius={Spacing.radius.lg} padding={0}>
@@ -663,6 +689,17 @@ export default function ProfileScreen() {
         loading={deletingAccount}
         onConfirm={() => { setDeleteAccountDialogVisible(false); handleDeleteAccount(); }}
         onCancel={() => setDeleteAccountDialogVisible(false)}
+      />
+
+      <ChangePasswordSheet
+        visible={changePasswordOpen}
+        userEmail={user?.email ?? ''}
+        onClose={() => setChangePasswordOpen(false)}
+      />
+
+      <PermissionsSheet
+        visible={permissionsOpen}
+        onClose={() => setPermissionsOpen(false)}
       />
     </SafeAreaView>
   );

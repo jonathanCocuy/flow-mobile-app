@@ -455,4 +455,49 @@ export default {
 
   // Common (make sure edit exists)
   'common.edit': 'Edit',
+
+  // Security & Privacy section
+  'security.title': 'Security & Privacy',
+  'security.changePassword': 'Change Password',
+  'security.permissions': 'App Permissions',
+
+  // Change password sheet
+  'changePassword.title': 'Change Password',
+  'changePassword.tabKnown': 'I know my password',
+  'changePassword.tabForgot': 'I forgot it',
+  'changePassword.current': 'Current Password',
+  'changePassword.currentPh': 'Your current password',
+  'changePassword.new': 'New Password',
+  'changePassword.newPh': 'Min. 8 characters',
+  'changePassword.confirm': 'Confirm New Password',
+  'changePassword.confirmPh': 'Repeat your new password',
+  'changePassword.submit': 'Change Password',
+  'changePassword.recoveryTitle': 'Recover Access',
+  'changePassword.recoveryDesc': "We'll send a reset link to {{email}}.",
+  'changePassword.sendLink': 'Send Link',
+  'changePassword.sentTitle': 'Check your inbox',
+  'changePassword.sentDesc': 'We sent a recovery link to {{email}}. Click it and then come back here.',
+  'changePassword.successTitle': 'Password Updated!',
+  'changePassword.successDesc': 'Your new password is now active.',
+  'changePassword.error.currentRequired': 'Enter your current password.',
+  'changePassword.error.newShort': 'Password must be at least 8 characters.',
+  'changePassword.error.mismatch': 'Passwords do not match.',
+  'changePassword.error.wrongPassword': 'Current password is incorrect.',
+  'changePassword.error.samePassword': 'New password cannot be the same as the current one.',
+
+  // Permissions sheet
+  'permissions.title': 'App Permissions',
+  'permissions.subtitle': 'Manage what FlowX can access on your device.',
+  'permissions.photos': 'Photos',
+  'permissions.photosDesc': 'Required to update your profile photo.',
+  'permissions.camera': 'Camera',
+  'permissions.cameraDesc': 'Required to take profile photos.',
+  'permissions.notifications': 'Notifications',
+  'permissions.notificationsDesc': 'Receive alerts for invitations and updates.',
+  'permissions.granted': 'Granted',
+  'permissions.limited': 'Limited',
+  'permissions.denied': 'Denied',
+  'permissions.notDetermined': 'Not set',
+  'permissions.allow': 'Allow',
+  'permissions.openSettings': 'Open Settings',
 } as const;

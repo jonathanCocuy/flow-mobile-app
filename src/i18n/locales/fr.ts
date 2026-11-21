@@ -455,4 +455,49 @@ export default {
 
   // Common
   'common.edit': 'Modifier',
+
+  // Security & Privacy section
+  'security.title': 'Sécurité et confidentialité',
+  'security.changePassword': 'Changer le mot de passe',
+  'security.permissions': 'Autorisations',
+
+  // Change password sheet
+  'changePassword.title': 'Changer le mot de passe',
+  'changePassword.tabKnown': 'Je connais mon mot de passe',
+  'changePassword.tabForgot': 'Je l\'ai oublié',
+  'changePassword.current': 'Mot de passe actuel',
+  'changePassword.currentPh': 'Votre mot de passe actuel',
+  'changePassword.new': 'Nouveau mot de passe',
+  'changePassword.newPh': 'Min. 8 caractères',
+  'changePassword.confirm': 'Confirmer le nouveau mot de passe',
+  'changePassword.confirmPh': 'Répétez votre nouveau mot de passe',
+  'changePassword.submit': 'Changer le mot de passe',
+  'changePassword.recoveryTitle': 'Récupérer l\'accès',
+  'changePassword.recoveryDesc': 'Nous enverrons un lien de réinitialisation à {{email}}.',
+  'changePassword.sendLink': 'Envoyer le lien',
+  'changePassword.sentTitle': 'Vérifiez votre boîte mail',
+  'changePassword.sentDesc': 'Nous avons envoyé un lien de récupération à {{email}}.',
+  'changePassword.successTitle': 'Mot de passe mis à jour !',
+  'changePassword.successDesc': 'Votre nouveau mot de passe est actif.',
+  'changePassword.error.currentRequired': 'Saisissez votre mot de passe actuel.',
+  'changePassword.error.newShort': 'Le mot de passe doit comporter au moins 8 caractères.',
+  'changePassword.error.mismatch': 'Les mots de passe ne correspondent pas.',
+  'changePassword.error.wrongPassword': 'Le mot de passe actuel est incorrect.',
+  'changePassword.error.samePassword': 'Le nouveau mot de passe ne peut pas être identique à l\'actuel.',
+
+  // Permissions sheet
+  'permissions.title': 'Autorisations',
+  'permissions.subtitle': 'Gérez ce à quoi FlowX peut accéder sur votre appareil.',
+  'permissions.photos': 'Photos',
+  'permissions.photosDesc': 'Nécessaire pour mettre à jour votre photo de profil.',
+  'permissions.camera': 'Caméra',
+  'permissions.cameraDesc': 'Nécessaire pour prendre des photos de profil.',
+  'permissions.notifications': 'Notifications',
+  'permissions.notificationsDesc': 'Recevez des alertes pour les invitations.',
+  'permissions.granted': 'Autorisé',
+  'permissions.limited': 'Limité',
+  'permissions.denied': 'Refusé',
+  'permissions.notDetermined': 'Non défini',
+  'permissions.allow': 'Autoriser',
+  'permissions.openSettings': 'Ouvrir les réglages',
 } as const;

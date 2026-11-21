@@ -455,4 +455,49 @@ export default {
 
   // Common
   'common.edit': 'Editar',
+
+  // Security & Privacy section
+  'security.title': 'Segurança e privacidade',
+  'security.changePassword': 'Alterar senha',
+  'security.permissions': 'Permissões do app',
+
+  // Change password sheet
+  'changePassword.title': 'Alterar senha',
+  'changePassword.tabKnown': 'Sei minha senha',
+  'changePassword.tabForgot': 'Esqueci a senha',
+  'changePassword.current': 'Senha atual',
+  'changePassword.currentPh': 'Sua senha atual',
+  'changePassword.new': 'Nova senha',
+  'changePassword.newPh': 'Mín. 8 caracteres',
+  'changePassword.confirm': 'Confirmar nova senha',
+  'changePassword.confirmPh': 'Repita a nova senha',
+  'changePassword.submit': 'Alterar senha',
+  'changePassword.recoveryTitle': 'Recuperar acesso',
+  'changePassword.recoveryDesc': 'Enviaremos um link de redefinição para {{email}}.',
+  'changePassword.sendLink': 'Enviar link',
+  'changePassword.sentTitle': 'Verifique seu e-mail',
+  'changePassword.sentDesc': 'Enviamos um link de recuperação para {{email}}.',
+  'changePassword.successTitle': 'Senha atualizada!',
+  'changePassword.successDesc': 'Sua nova senha já está ativa.',
+  'changePassword.error.currentRequired': 'Digite sua senha atual.',
+  'changePassword.error.newShort': 'A senha deve ter pelo menos 8 caracteres.',
+  'changePassword.error.mismatch': 'As senhas não coincidem.',
+  'changePassword.error.wrongPassword': 'A senha atual está incorreta.',
+  'changePassword.error.samePassword': 'A nova senha não pode ser igual à atual.',
+
+  // Permissions sheet
+  'permissions.title': 'Permissões do app',
+  'permissions.subtitle': 'Gerencie o que o FlowX pode acessar no seu dispositivo.',
+  'permissions.photos': 'Fotos',
+  'permissions.photosDesc': 'Necessário para atualizar sua foto de perfil.',
+  'permissions.camera': 'Câmera',
+  'permissions.cameraDesc': 'Necessário para tirar fotos de perfil.',
+  'permissions.notifications': 'Notificações',
+  'permissions.notificationsDesc': 'Receba alertas de convites e atualizações.',
+  'permissions.granted': 'Permitido',
+  'permissions.limited': 'Limitado',
+  'permissions.denied': 'Negado',
+  'permissions.notDetermined': 'Não definido',
+  'permissions.allow': 'Permitir',
+  'permissions.openSettings': 'Abrir configurações',
 } as const;
