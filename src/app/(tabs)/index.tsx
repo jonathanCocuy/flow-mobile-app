@@ -221,7 +221,7 @@ export default function DashboardScreen() {
   const cardBorder = isDark ? 'rgba(255,255,255,0.10)' : colors.separator;
   const cardText    = isDark ? '#fafafa' : colors.label;
   const cardTextSub = isDark ? 'rgba(250,250,250,0.55)' : colors.labelSecondary;
-  const chipBg     = isDark ? 'rgba(255,255,255,0.09)' : colors.fillTertiary;
+  const chipBg     = isDark ? 'rgba(255,255,255,0.09)' : colors.fillSecondary;
   const chipBorder = isDark ? 'rgba(255,255,255,0.13)' : colors.separator;
 
   const savings = data.currentMonthIncome - data.currentMonthExpenses;
@@ -342,6 +342,8 @@ export default function DashboardScreen() {
                     accent={colors.income}
                     chipBg={chipBg}
                     chipBorder={chipBorder}
+                    labelColor={cardTextSub}
+                    valueColor={cardText}
                     icon={<ArrowUpIcon color={colors.income} />}
                   />
                   <StatChip
@@ -350,6 +352,8 @@ export default function DashboardScreen() {
                     accent={colors.expense}
                     chipBg={chipBg}
                     chipBorder={chipBorder}
+                    labelColor={cardTextSub}
+                    valueColor={cardText}
                     icon={<ArrowDownIcon color={colors.expense} />}
                   />
                   <StatChip
@@ -358,6 +362,8 @@ export default function DashboardScreen() {
                     accent={colors.savings}
                     chipBg={chipBg}
                     chipBorder={chipBorder}
+                    labelColor={cardTextSub}
+                    valueColor={cardText}
                     icon={<FlowXLogo color={colors.savings} />}
                   />
                 </View>
@@ -540,13 +546,15 @@ export default function DashboardScreen() {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function StatChip({
-  label, value, accent, chipBg, chipBorder, icon, elevated,
+  label, value, accent, chipBg, chipBorder, labelColor, valueColor, icon, elevated,
 }: {
   label: string;
   value: string;
   accent: string;
   chipBg: string;
   chipBorder: string;
+  labelColor: string;
+  valueColor: string;
   icon: React.ReactNode;
   elevated?: boolean;
 }) {
@@ -559,8 +567,8 @@ function StatChip({
       <View style={[chipStyles.iconBox, { backgroundColor: `${accent}22` }]}>
         {icon}
       </View>
-      <Text variant="caption2" color="rgba(250,250,250,0.55)">{label}</Text>
-      <Text variant="footnote" color="#fafafa" style={{ fontWeight: '700' }}>{value}</Text>
+      <Text variant="caption2" color={labelColor}>{label}</Text>
+      <Text variant="footnote" color={valueColor} style={{ fontWeight: '700' }}>{value}</Text>
     </View>
   );
 }
