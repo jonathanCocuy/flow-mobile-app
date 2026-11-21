@@ -71,6 +71,7 @@ export default {
 
   // Common actions
   'common.cancel': 'Cancel',
+  'common.done': 'Done',
   'common.delete': 'Delete',
   'common.today': 'Today',
   'common.yesterday': 'Yesterday',
@@ -557,6 +558,21 @@ export default {
   'export.success': 'File exported successfully',
   'export.empty': 'No transactions to export',
   'export.error': 'Failed to export transactions',
+
+  // Import CSV
+  'import.title': 'Import CSV',
+  'import.desc': 'Import transactions from a CSV file. Columns: Date, Description, Category, Amount, Type.',
+  'import.format': 'Format: Date, Description, Category, Amount, Type',
+  'import.pickFile': 'Choose CSV File',
+  'import.preview': 'Preview',
+  'import.rows': '{{count}} rows found',
+  'import.import': 'Import',
+  'import.importing': 'Importing…',
+  'import.doneTitle': 'Import Complete',
+  'import.success': '{{count}} transactions imported',
+  'import.empty': 'No valid rows found in the file',
+  'import.error.parse': 'Could not read the file. Make sure it is a valid CSV.',
+  'import.error.generic': 'Import failed. Please try again.',
 
   // Profile — extra rows
   'profile.export': 'Export Data',

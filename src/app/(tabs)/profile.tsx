@@ -26,6 +26,7 @@ import { ThemeSheet } from '@/components/ThemeSheet';
 import { MfaSheet } from '@/components/MfaSheet';
 import { ExportSheet } from '@/components/ExportSheet';
 import { CurrencySheet } from '@/components/CurrencySheet';
+import { ImportSheet } from '@/components/ImportSheet';
 import { useCurrency } from '@/context/CurrencyContext';
 import { useThemePreference } from '@/context/ThemeContext';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
@@ -328,6 +329,7 @@ export default function ProfileScreen() {
   const [mfaOpen, setMfaOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const { currency } = useCurrency();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -601,6 +603,8 @@ export default function ProfileScreen() {
               />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
               <SettingsRow icon="Download" label={t('profile.export')} onPress={() => setExportOpen(true)} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow icon="FileUp" label={t('profile.import')} onPress={() => setImportOpen(true)} />
             </View>
           </Card>
         </View>
@@ -757,6 +761,11 @@ export default function ProfileScreen() {
       <CurrencySheet
         visible={currencyOpen}
         onClose={() => setCurrencyOpen(false)}
+      />
+
+      <ImportSheet
+        visible={importOpen}
+        onClose={() => setImportOpen(false)}
       />
     </SafeAreaView>
   );

@@ -71,6 +71,7 @@ export default {
 
   // Common actions
   'common.cancel': 'Cancelar',
+  'common.done': 'Concluído',
   'common.delete': 'Excluir',
   'common.today': 'Hoje',
   'common.yesterday': 'Ontem',
@@ -557,6 +558,21 @@ export default {
   'export.success': 'Arquivo exportado com sucesso',
   'export.empty': 'Sem transações para exportar',
   'export.error': 'Falha ao exportar transações',
+
+  // Import CSV
+  'import.title': 'Importar CSV',
+  'import.desc': 'Importe transações de um arquivo CSV. Colunas: Data, Descrição, Categoria, Valor, Tipo.',
+  'import.format': 'Formato: Data, Descrição, Categoria, Valor, Tipo',
+  'import.pickFile': 'Escolher arquivo CSV',
+  'import.preview': 'Pré-visualização',
+  'import.rows': '{{count}} linhas encontradas',
+  'import.import': 'Importar',
+  'import.importing': 'Importando…',
+  'import.doneTitle': 'Importação concluída',
+  'import.success': '{{count}} transações importadas',
+  'import.empty': 'Nenhuma linha válida encontrada no arquivo',
+  'import.error.parse': 'Não foi possível ler o arquivo. Certifique-se de que é um CSV válido.',
+  'import.error.generic': 'A importação falhou. Por favor, tente novamente.',
 
   // Profile — extra rows
   'profile.export': 'Exportar dados',
