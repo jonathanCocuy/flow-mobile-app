@@ -43,7 +43,8 @@
         {
           "photosPermission": "FlowX uses your photos so you can set a profile picture."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true
