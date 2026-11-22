@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   useColorScheme,
   Dimensions,
@@ -14,6 +14,7 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
@@ -47,6 +48,7 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+  const { shift: kbShift, onFocus: onKbFocus } = useKeyboardShift(visible);
 
   useEffect(() => {
     if (visible) {
@@ -63,6 +65,7 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
   };
 
   function dismissSheet() {
+    Keyboard.dismiss();
     Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
       reset();
       onClose();
@@ -130,15 +133,10 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          pointerEvents="box-none"
-        >
           <Animated.View
             style={[
               styles.sheet,
-              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] },
+              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY: Animated.subtract(translateY, kbShift) }] },
             ]}
           >
             {/* Handle — drag to close */}
@@ -164,6 +162,7 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
                 style={inputStyle}
                 value={name}
                 onChangeText={setName}
+                onFocus={onKbFocus}
                 placeholder={t('account.namePlaceholder')}
                 placeholderTextColor={colors.labelTertiary}
                 autoCapitalize="words"
@@ -178,6 +177,7 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
                 style={inputStyle}
                 value={balance}
                 onChangeText={v => setBalance(formatAmountInput(v))}
+                onFocus={onKbFocus}
                 placeholder="0.00"
                 placeholderTextColor={colors.labelTertiary}
                 keyboardType="decimal-pad"
@@ -221,7 +221,6 @@ export function AddAccountSheet({ visible, onClose, onSuccess }: Props) {
               </TouchableOpacity>
             </ScrollView>
           </Animated.View>
-        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -231,9 +230,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  keyboardView: {
     justifyContent: 'flex-end',
   },
   sheet: {

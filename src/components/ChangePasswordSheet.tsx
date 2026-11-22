@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Modal, View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback,
-  KeyboardAvoidingView, Platform, ScrollView, Animated, PanResponder,
+  Keyboard, Platform, ScrollView, Animated, PanResponder,
   Dimensions, useColorScheme, ActivityIndicator,
 } from 'react-native';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Input } from '@/components/ui/Input';
@@ -37,6 +38,7 @@ export function ChangePasswordSheet({ visible, userEmail, onClose }: Props) {
   const [recoverySent, setRecoverySent] = useState(false);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+  const { shift: kbShift, onFocus: onKbFocus } = useKeyboardShift(visible);
 
   useEffect(() => {
     if (visible) {
@@ -57,6 +59,7 @@ export function ChangePasswordSheet({ visible, userEmail, onClose }: Props) {
   }
 
   function dismissSheet() {
+    Keyboard.dismiss();
     Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
       resetState();
       onClose();
@@ -135,12 +138,7 @@ export function ChangePasswordSheet({ visible, userEmail, onClose }: Props) {
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          pointerEvents="box-none"
-        >
-          <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] }]}>
+          <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped, transform: [{ translateY: Animated.subtract(translateY, kbShift) }] }]}>
             {/* Handle */}
             <View style={styles.handleZone} {...panResponder.panHandlers}>
               <View style={[styles.handle, { backgroundColor: colors.fillPrimary }]} />
@@ -224,6 +222,7 @@ export function ChangePasswordSheet({ visible, userEmail, onClose }: Props) {
                         label={t('changePassword.current')}
                         value={currentPw}
                         onChangeText={(v) => { setCurrentPw(v); setError(null); }}
+                        onFocus={onKbFocus}
                         secureToggle
                         placeholder={t('changePassword.currentPh')}
                         textContentType="password"
@@ -234,6 +233,7 @@ export function ChangePasswordSheet({ visible, userEmail, onClose }: Props) {
                         label={t('changePassword.new')}
                         value={newPw}
                         onChangeText={(v) => { setNewPw(v); setError(null); }}
+                        onFocus={onKbFocus}
                         secureToggle
                         placeholder={t('changePassword.newPh')}
                         textContentType="newPassword"
@@ -244,6 +244,7 @@ export function ChangePasswordSheet({ visible, userEmail, onClose }: Props) {
                         label={t('changePassword.confirm')}
                         value={confirmPw}
                         onChangeText={(v) => { setConfirmPw(v); setError(null); }}
+                        onFocus={onKbFocus}
                         secureToggle
                         placeholder={t('changePassword.confirmPh')}
                         textContentType="newPassword"
@@ -306,7 +307,6 @@ export function ChangePasswordSheet({ visible, userEmail, onClose }: Props) {
               )}
             </ScrollView>
           </Animated.View>
-        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -314,7 +314,6 @@ export function ChangePasswordSheet({ visible, userEmail, onClose }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal, View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback,
-  KeyboardAvoidingView, Platform, useColorScheme, Dimensions, TextInput,
+  Keyboard, Platform, useColorScheme, Dimensions, TextInput,
   ScrollView, Switch, Animated, PanResponder,
 } from 'react-native';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Colors } from '@/constants/Colors';
@@ -47,6 +48,7 @@ export function ContributeGoalSheet({ visible, goal, accounts, onClose, onSucces
   const [error, setError] = useState<string | null>(null);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+  const { shift: kbShift, onFocus: onKbFocus } = useKeyboardShift(visible);
 
   useEffect(() => {
     if (visible) {
@@ -69,6 +71,7 @@ export function ContributeGoalSheet({ visible, goal, accounts, onClose, onSucces
   };
 
   function dismissSheet() {
+    Keyboard.dismiss();
     Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
       reset();
       onClose();
@@ -143,15 +146,10 @@ export function ContributeGoalSheet({ visible, goal, accounts, onClose, onSucces
         <TouchableWithoutFeedback onPress={dismissSheet}>
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          pointerEvents="box-none"
-        >
           <Animated.View
             style={[
               styles.sheet,
-              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] },
+              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY: Animated.subtract(translateY, kbShift) }] },
             ]}
           >
             {/* Handle — drag to close */}
@@ -196,6 +194,7 @@ export function ContributeGoalSheet({ visible, goal, accounts, onClose, onSucces
                 style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
                 value={amount}
                 onChangeText={v => setAmount(formatAmountInput(v))}
+                onFocus={onKbFocus}
                 placeholder="0.00"
                 placeholderTextColor={colors.labelTertiary}
                 keyboardType="decimal-pad"
@@ -265,7 +264,6 @@ export function ContributeGoalSheet({ visible, goal, accounts, onClose, onSucces
               </TouchableOpacity>
             </ScrollView>
           </Animated.View>
-        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -277,7 +275,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

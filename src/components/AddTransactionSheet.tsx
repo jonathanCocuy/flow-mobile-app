@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   useColorScheme,
   Dimensions,
@@ -16,6 +16,7 @@ import {
   PanResponder,
   Switch,
 } from 'react-native';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import Svg, { Path, Polyline } from 'react-native-svg';
 import { DatePickerField } from '@/components/ui/DatePickerField';
 import { router } from 'expo-router';
@@ -146,6 +147,7 @@ export function AddTransactionSheet({
   }, [visible]);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+  const { shift: kbShift, onFocus: onKbFocus } = useKeyboardShift(visible);
 
   useEffect(() => {
     if (visible) {
@@ -155,6 +157,7 @@ export function AddTransactionSheet({
   }, [visible, translateY]);
 
   function dismissSheet() {
+    Keyboard.dismiss();
     Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
       onClose();
     });
@@ -293,11 +296,7 @@ export function AddTransactionSheet({
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardView}
-          >
-            <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGroupedSecondary, transform: [{ translateY }] }]}>
+            <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGroupedSecondary, transform: [{ translateY: Animated.subtract(translateY, kbShift) }] }]}>
               {/* Handle — drag here to close */}
               <View style={styles.handleZone} {...panResponder.panHandlers}>
                 <View style={[styles.handle, { backgroundColor: colors.separator }]} />
@@ -373,6 +372,7 @@ export function AddTransactionSheet({
                       placeholderTextColor={colors.labelTertiary}
                       value={description}
                       onChangeText={v => { setDescription(v); setErrors(e => ({ ...e, description: '' })); }}
+                      onFocus={onKbFocus}
                       autoCapitalize="sentences"
                       autoCorrect={false}
                       returnKeyType="next"
@@ -396,6 +396,7 @@ export function AddTransactionSheet({
                       placeholderTextColor={colors.labelTertiary}
                       value={amount}
                       onChangeText={v => { setAmount(formatAmountInput(v)); setErrors(e => ({ ...e, amount: '' })); }}
+                      onFocus={onKbFocus}
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                     />
@@ -586,7 +587,6 @@ export function AddTransactionSheet({
                 </TouchableOpacity>
               </ScrollView>
             </Animated.View>
-          </KeyboardAvoidingView>
         </View>
       </Modal>
 
@@ -751,7 +751,6 @@ function GroupSelect({
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     maxHeight: SCREEN_HEIGHT * 0.92,
     borderTopLeftRadius: Spacing.radius.xxl,

@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   useColorScheme,
   Dimensions,
@@ -14,6 +14,7 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
@@ -57,6 +58,7 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+  const { shift: kbShift, onFocus: onKbFocus } = useKeyboardShift(visible);
 
   useEffect(() => {
     if (visible) {
@@ -85,6 +87,7 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
   };
 
   function dismissSheet() {
+    Keyboard.dismiss();
     Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
       reset();
       onClose();
@@ -150,15 +153,10 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          pointerEvents="box-none"
-        >
           <Animated.View
             style={[
               styles.sheet,
-              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] },
+              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY: Animated.subtract(translateY, kbShift) }] },
             ]}
           >
             {/* Handle — drag to close */}
@@ -225,6 +223,7 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
                 style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
                 value={limit}
                 onChangeText={v => setLimit(formatAmountInput(v))}
+                onFocus={onKbFocus}
                 placeholder="0.00"
                 placeholderTextColor={colors.labelTertiary}
                 keyboardType="decimal-pad"
@@ -261,7 +260,6 @@ export function AddBudgetSheet({ visible, onClose, onSuccess, onDelete, categori
               )}
             </ScrollView>
           </Animated.View>
-        </KeyboardAvoidingView>
       </View>
 
       <ConfirmDialog
@@ -285,9 +283,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  keyboardView: {
     justifyContent: 'flex-end',
   },
   sheet: {

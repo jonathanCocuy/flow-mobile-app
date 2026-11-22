@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal, View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback,
-  KeyboardAvoidingView, Platform, useColorScheme, Dimensions, TextInput,
+  Keyboard, Platform, useColorScheme, Dimensions, TextInput,
   ScrollView, Animated, PanResponder,
 } from 'react-native';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { useTranslation } from 'react-i18next';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/ui/Text';
@@ -65,6 +66,7 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
   const [iconPickerVisible, setIconPickerVisible] = useState(false);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+  const { shift: kbShift, onFocus: onKbFocus } = useKeyboardShift(visible);
 
   useEffect(() => {
     if (visible) {
@@ -89,6 +91,7 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
   }, [visible, category]);
 
   function dismissSheet() {
+    Keyboard.dismiss();
     Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
       setError(null);
       onClose();
@@ -163,12 +166,7 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
         <TouchableWithoutFeedback onPress={dismissSheet}>
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          pointerEvents="box-none"
-        >
-          <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] }]}>
+          <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGrouped, transform: [{ translateY: Animated.subtract(translateY, kbShift) }] }]}>
             <View style={styles.handleZone} {...panResponder.panHandlers}>
               <View style={[styles.handle, { backgroundColor: colors.fillPrimary }]} />
             </View>
@@ -200,6 +198,7 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
               style={[styles.input, { backgroundColor: colors.fillPrimary, color: colors.label, borderColor: colors.separator }]}
               value={label}
               onChangeText={setLabel}
+              onFocus={onKbFocus}
               placeholder={t('categories.labelPlaceholder')}
               placeholderTextColor={colors.labelTertiary}
               autoCapitalize="sentences"
@@ -268,7 +267,6 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
             </TouchableOpacity>
           </ScrollView>
           </Animated.View>
-        </KeyboardAvoidingView>
       </View>
 
       <IconPicker
@@ -302,7 +300,6 @@ export function CategoryModal({ visible, category, onClose, onSuccess }: Props) 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

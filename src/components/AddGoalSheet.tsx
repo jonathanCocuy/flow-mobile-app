@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   useColorScheme,
   Dimensions,
@@ -14,6 +14,7 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui/Text';
 import { Icon, isKnownIcon } from '@/components/ui/Icon';
@@ -65,6 +66,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+  const { shift: kbShift, onFocus: onKbFocus } = useKeyboardShift(visible);
 
   useEffect(() => {
     if (visible) {
@@ -108,6 +110,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
   };
 
   function dismissSheet() {
+    Keyboard.dismiss();
     Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
       reset();
       onClose();
@@ -183,15 +186,10 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          pointerEvents="box-none"
-        >
           <Animated.View
             style={[
               styles.sheet,
-              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY }] },
+              { backgroundColor: colors.backgroundGrouped, transform: [{ translateY: Animated.subtract(translateY, kbShift) }] },
             ]}
           >
             {/* Handle — drag to close */}
@@ -240,6 +238,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
                 style={inputStyle}
                 value={name}
                 onChangeText={setName}
+                onFocus={onKbFocus}
                 placeholder={t('goal.namePlaceholder')}
                 placeholderTextColor={colors.labelTertiary}
                 autoCapitalize="sentences"
@@ -254,6 +253,7 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
                 style={inputStyle}
                 value={targetAmount}
                 onChangeText={v => setTargetAmount(formatAmountInput(v))}
+                onFocus={onKbFocus}
                 placeholder="0.00"
                 placeholderTextColor={colors.labelTertiary}
                 keyboardType="decimal-pad"
@@ -317,7 +317,6 @@ export function AddGoalSheet({ visible, onClose, onSuccess, onDelete, initialGoa
               )}
             </ScrollView>
           </Animated.View>
-        </KeyboardAvoidingView>
       </View>
 
       <ConfirmDialog
@@ -343,7 +342,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: 20, borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.85, paddingBottom: Platform.OS === 'ios' ? 34 : 24,

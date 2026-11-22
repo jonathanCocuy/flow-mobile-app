@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   useColorScheme,
   Dimensions,
@@ -15,6 +15,7 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import Svg, { Path, Polyline } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { DatePickerField } from '@/components/ui/DatePickerField';
@@ -128,6 +129,7 @@ export function EditTransactionSheet({
   }, [transaction, categories]);
 
   const translateY = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
+  const { shift: kbShift, onFocus: onKbFocus } = useKeyboardShift(visible);
 
   useEffect(() => {
     if (visible) {
@@ -137,6 +139,7 @@ export function EditTransactionSheet({
   }, [visible, translateY]);
 
   function dismissSheet() {
+    Keyboard.dismiss();
     Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 220, useNativeDriver: true }).start(() => {
       onClose();
     });
@@ -237,11 +240,7 @@ export function EditTransactionSheet({
             <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardView}
-          >
-            <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGroupedSecondary, transform: [{ translateY }] }]}>
+            <Animated.View style={[styles.sheet, { backgroundColor: colors.backgroundGroupedSecondary, transform: [{ translateY: Animated.subtract(translateY, kbShift) }] }]}>
               <View style={styles.handleZone} {...panResponder.panHandlers}>
                 <View style={[styles.handle, { backgroundColor: colors.separator }]} />
               </View>
@@ -317,6 +316,7 @@ export function EditTransactionSheet({
                       placeholderTextColor={colors.labelTertiary}
                       value={description}
                       onChangeText={v => { setDescription(v); setErrors(e => ({ ...e, description: '' })); }}
+                      onFocus={onKbFocus}
                       autoCapitalize="sentences"
                       autoCorrect={false}
                       returnKeyType="next"
@@ -340,6 +340,7 @@ export function EditTransactionSheet({
                       placeholderTextColor={colors.labelTertiary}
                       value={amount}
                       onChangeText={v => { setAmount(formatAmountInput(v)); setErrors(e => ({ ...e, amount: '' })); }}
+                      onFocus={onKbFocus}
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                     />
@@ -462,7 +463,6 @@ export function EditTransactionSheet({
                 </TouchableOpacity>
               </ScrollView>
             </Animated.View>
-          </KeyboardAvoidingView>
         </View>
       </Modal>
 
@@ -557,7 +557,6 @@ function AccountSelect({
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  keyboardView: { justifyContent: 'flex-end' },
   sheet: {
     maxHeight: SCREEN_HEIGHT * 0.92,
     borderTopLeftRadius: Spacing.radius.xxl,
