@@ -27,8 +27,16 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { CurrencyProvider } from '@/context/CurrencyContext';
 import { SplashView } from '@/components/SplashView';
+import {
+  setupNotificationHandler,
+  registerForPushNotificationsAsync,
+  addNotificationListeners,
+} from '@/lib/notifications';
 
 SplashScreen.preventAutoHideAsync();
+
+// Set up foreground notification behavior before any notification can arrive.
+setupNotificationHandler();
 
 // ── Auth guard: redirect to (auth), onboarding, or (tabs) ────────────────────
 function AuthGate({ children }: { children: React.ReactNode }) {
@@ -56,6 +64,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, segments]);
+
+  // Register for push notifications when authenticated and wire up listeners.
+  useEffect(() => {
+    if (!user) return;
+    registerForPushNotificationsAsync();
+    return addNotificationListeners();
+  }, [user]);
 
   return <>{children}</>;
 }
