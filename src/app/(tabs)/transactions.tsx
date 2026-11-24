@@ -139,9 +139,18 @@ function TxRow({
           <Text variant="callout" style={{ fontWeight: '500' }}>{tx.description}</Text>
           <Text variant="caption1" color={colors.labelSecondary}>{secondaryLine}</Text>
         </View>
-        <Text variant="callout" style={{ fontWeight: '600' }} color={amountColor}>
-          {amountStr}
-        </Text>
+        <View style={{ alignItems: 'flex-end', gap: 2 }}>
+          <Text variant="callout" style={{ fontWeight: '600' }} color={amountColor}>
+            {amountStr}
+          </Text>
+          {tx.currency !== 'COP' && (
+            <View style={[styles.currencyBadge, { backgroundColor: colors.fillPrimary }]}>
+              <Text style={{ fontSize: 10, fontWeight: '600', color: colors.labelSecondary }}>
+                {tx.currency}
+              </Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
       {!isLast && (
         <View style={[styles.divider, { backgroundColor: colors.separator, marginLeft: 72 }]} />
@@ -455,6 +464,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   txMiddle: { flex: 1, gap: 2 },
+  currencyBadge: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   divider: { height: StyleSheet.hairlineWidth },
   fab: {
     position: 'absolute',

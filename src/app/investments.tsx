@@ -530,6 +530,10 @@ export default function InvestmentsScreen() {
             {/* Summary totals */}
             <View style={styles.section}>
               <View style={styles.summaryRow}>
+                <Card style={{ flex: 1 }} radius={Spacing.radius.lg} padding={Spacing.md}>
+                  <Text variant="caption1" color={colors.labelSecondary}>{t('investments.records')}</Text>
+                  <Text variant="title3" style={{ marginTop: 4 }}>{records.length}</Text>
+                </Card>
                 {totalCOP > 0 && (
                   <Card style={{ flex: 1 }} radius={Spacing.radius.lg} padding={Spacing.md}>
                     <Text variant="caption1" color={colors.labelSecondary}>{t('investments.totalCOP')}</Text>
