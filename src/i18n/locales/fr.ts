@@ -172,6 +172,7 @@ export default {
   'transactions.empty': 'Aucune transaction',
   'transactions.search': 'Rechercher…',
   'transactions.monthAll': 'Tous les mois',
+  'transactions.accountAll': 'Tous les comptes',
   'transactions.add.title': 'Nouvelle transaction',
   'transactions.add.income': 'Revenu',
   'transactions.add.expense': 'Dépense',
@@ -365,6 +366,8 @@ export default {
   'reports.totalSavings': 'Épargne nette',
   'reports.expensesByCategory': 'Dépenses par catégorie',
   'reports.other': 'Autres',
+  'reports.monthlyBreakdown': 'Répartition mensuelle',
+  'reports.month': 'Mois',
 
   // Profile navigation - split
   'profile.split': 'Dépenses partagées',

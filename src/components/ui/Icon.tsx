@@ -38,6 +38,7 @@ import {
   ReceiptText, ShieldCheck, Mountain, Sailboat, Gem, Palmtree,
   X, Check, CheckCircle, Info, TriangleAlert,
   Lock, Trash2, HandCoins, Download, FileUp, Search,
+  ChevronRight,
   type LucideProps,
 } from 'lucide-react-native';
 
@@ -85,7 +86,7 @@ const REGISTRY = {
   ReceiptText, ShieldCheck, Mountain, Sailboat, Gem, Palmtree,
   // UI icons (not in picker, used for close/check/info/settings controls)
   X, Check, CheckCircle, Info, TriangleAlert,
-  Lock, Trash2, HandCoins, Download, FileUp, Search,
+  Lock, Trash2, HandCoins, Download, FileUp, Search, ChevronRight,
 } satisfies Record<string, React.ComponentType<LucideProps>>;
 
 export type IconName = keyof typeof REGISTRY;

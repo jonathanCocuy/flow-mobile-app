@@ -500,6 +500,45 @@ export default function ReportsScreen() {
               </Card>
             </View>
 
+            {/* Monthly breakdown table */}
+            <View style={styles.chartSection}>
+              <Text variant="title3" style={{ marginBottom: Spacing.sm }}>{t('reports.monthlyBreakdown')}</Text>
+              <Card radius={Spacing.radius.lg} padding={0}>
+                {/* Header */}
+                <View style={[styles.tableRow, styles.tableHeader, { borderBottomColor: colors.separator }]}>
+                  <Text variant="caption1" color={colors.labelSecondary} style={styles.tableColMonth}>{t('reports.month')}</Text>
+                  <Text variant="caption1" color={colors.income} style={styles.tableColNum}>{t('reports.income')}</Text>
+                  <Text variant="caption1" color={colors.expense} style={styles.tableColNum}>{t('reports.expenses')}</Text>
+                  <Text variant="caption1" color={colors.labelSecondary} style={styles.tableColNum}>{t('reports.savings')}</Text>
+                </View>
+                {monthlyData.map((d, i) => {
+                  const net = d.income - d.expenses;
+                  const hasActivity = d.income > 0 || d.expenses > 0;
+                  return (
+                    <View key={i}>
+                      <View style={styles.tableRow}>
+                        <Text variant="caption1" style={[styles.tableColMonth, !hasActivity && { opacity: 0.4 }]}>{MONTH_ABBREVS[i]}</Text>
+                        <Text variant="caption1" color={hasActivity ? colors.income : colors.labelTertiary} style={styles.tableColNum}>
+                          {hasActivity ? fmtCOP(d.income) : '—'}
+                        </Text>
+                        <Text variant="caption1" color={hasActivity ? colors.expense : colors.labelTertiary} style={styles.tableColNum}>
+                          {hasActivity ? fmtCOP(d.expenses) : '—'}
+                        </Text>
+                        <Text
+                          variant="caption1"
+                          style={[styles.tableColNum, { fontWeight: '600' }]}
+                          color={!hasActivity ? colors.labelTertiary : net >= 0 ? colors.income : colors.expense}
+                        >
+                          {hasActivity ? fmtCOP(net) : '—'}
+                        </Text>
+                      </View>
+                      {i < 11 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginHorizontal: Spacing.md }} />}
+                    </View>
+                  );
+                })}
+              </Card>
+            </View>
+
             {/* Top categories */}
             {topCategories.length > 0 && (
               <View style={styles.chartSection}>
@@ -583,4 +622,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
   },
   monthDetailDot: { width: 8, height: 8, borderRadius: 4 },
+  tableRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: Spacing.md, paddingVertical: 9,
+  },
+  tableHeader: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  tableColMonth: { flex: 1.2 },
+  tableColNum: { flex: 1.6, textAlign: 'right' },
 });

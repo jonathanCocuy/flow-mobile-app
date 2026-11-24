@@ -587,6 +587,8 @@ export default function ProfileScreen() {
             <View style={{ paddingHorizontal: Spacing.md }}>
               <SettingsRow icon="Landmark" label={t('profile.accounts')} onPress={() => router.push('/accounts')} />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
+              <SettingsRow icon="Tag" label={t('profile.categories')} onPress={() => router.push('/categories' as never)} />
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
               <SettingsRow icon="TrendingUp" label={t('profile.investments')} onPress={() => router.push('/investments')} />
               <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: 36 }} />
               <SettingsRow icon="RefreshCw" label={t('profile.recurring')} onPress={() => router.push('/recurring')} />

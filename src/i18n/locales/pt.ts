@@ -172,6 +172,7 @@ export default {
   'transactions.empty': 'Sem transações ainda',
   'transactions.search': 'Pesquisar transações…',
   'transactions.monthAll': 'Todos os meses',
+  'transactions.accountAll': 'Todas as contas',
   'transactions.add.title': 'Nova transação',
   'transactions.add.income': 'Receita',
   'transactions.add.expense': 'Despesa',
@@ -365,6 +366,8 @@ export default {
   'reports.totalSavings': 'Poupança líquida',
   'reports.expensesByCategory': 'Despesas por categoria',
   'reports.other': 'Outros',
+  'reports.monthlyBreakdown': 'Resumo mensal',
+  'reports.month': 'Mês',
 
   // Profile navigation - split
   'profile.split': 'Despesas compartilhadas',

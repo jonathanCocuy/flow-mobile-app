@@ -172,6 +172,7 @@ export default {
   'transactions.empty': 'No transactions yet',
   'transactions.search': 'Search transactions…',
   'transactions.monthAll': 'All months',
+  'transactions.accountAll': 'All accounts',
   'transactions.add.title': 'New Transaction',
   'transactions.add.income': 'Income',
   'transactions.add.expense': 'Expense',
@@ -365,6 +366,8 @@ export default {
   'reports.totalSavings': 'Net Savings',
   'reports.expensesByCategory': 'Expenses by Category',
   'reports.other': 'Other',
+  'reports.monthlyBreakdown': 'Monthly Breakdown',
+  'reports.month': 'Month',
 
   // Profile navigation - split
   'profile.split': 'Shared Expenses',

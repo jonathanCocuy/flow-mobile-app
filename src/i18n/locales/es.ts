@@ -172,6 +172,7 @@ export default {
   'transactions.empty': 'Sin transacciones aún',
   'transactions.search': 'Buscar transacciones…',
   'transactions.monthAll': 'Todos los meses',
+  'transactions.accountAll': 'Todas las cuentas',
   'transactions.add.title': 'Nueva transacción',
   'transactions.add.income': 'Ingreso',
   'transactions.add.expense': 'Gasto',
@@ -365,6 +366,8 @@ export default {
   'reports.totalSavings': 'Ahorro neto',
   'reports.expensesByCategory': 'Gastos por categoría',
   'reports.other': 'Otros',
+  'reports.monthlyBreakdown': 'Desglose mensual',
+  'reports.month': 'Mes',
 
   // Profile navigation - split
   'profile.split': 'Gastos compartidos',

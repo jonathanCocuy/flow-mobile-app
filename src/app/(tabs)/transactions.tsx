@@ -160,6 +160,7 @@ export default function TransactionsScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editTx, setEditTx] = useState<DashboardTransaction | null>(null);
 
@@ -182,12 +183,13 @@ export default function TransactionsScreen() {
     let txs = data.transactions;
     if (activeFilter !== 'all') txs = txs.filter(tx => tx.type === activeFilter);
     if (selectedMonth) txs = txs.filter(tx => tx.date.startsWith(selectedMonth));
+    if (selectedAccount) txs = txs.filter(tx => tx.account_id === selectedAccount);
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       txs = txs.filter(tx => tx.description?.toLowerCase().includes(q));
     }
     return txs;
-  }, [data.transactions, activeFilter, selectedMonth, searchQuery]);
+  }, [data.transactions, activeFilter, selectedMonth, selectedAccount, searchQuery]);
 
   const groups = useMemo(() => {
     const map: Record<string, DashboardTransaction[]> = {};
@@ -253,6 +255,37 @@ export default function TransactionsScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* Account filter chips */}
+        {data.accounts.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filters}
+          >
+            <TouchableOpacity
+              onPress={() => setSelectedAccount(null)}
+              style={[styles.chip, { backgroundColor: selectedAccount === null ? colors.tint : colors.fillPrimary }]}
+              activeOpacity={0.7}
+            >
+              <Text variant="subheadline" color={selectedAccount === null ? colors.tintForeground : colors.labelSecondary}>
+                {t('transactions.accountAll')}
+              </Text>
+            </TouchableOpacity>
+            {data.accounts.map(acc => (
+              <TouchableOpacity
+                key={acc.id}
+                onPress={() => setSelectedAccount(acc.id === selectedAccount ? null : acc.id)}
+                style={[styles.chip, { backgroundColor: selectedAccount === acc.id ? colors.tint : colors.fillPrimary }]}
+                activeOpacity={0.7}
+              >
+                <Text variant="subheadline" color={selectedAccount === acc.id ? colors.tintForeground : colors.labelSecondary}>
+                  {acc.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Month filter chips */}
         {availableMonths.length > 1 && (
