@@ -23,12 +23,18 @@ export function setupNotificationHandler() {
 /** Request permission, get the Expo push token, and persist it to Supabase. */
 export async function registerForPushNotificationsAsync(): Promise<void> {
   // Android 8+: a notification channel must exist before requesting permission.
+  // Wrapped in try-catch because the native module can throw a NullPointerException
+  // if the Android context hasn't fully initialized yet (e.g. cold start race).
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'FlowX',
-      importance: AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-    });
+    try {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'FlowX',
+        importance: AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+      });
+    } catch {
+      // Channel creation is best-effort; notifications still work without it.
+    }
   }
 
   const { status: existing } = await Notifications.getPermissionsAsync();
