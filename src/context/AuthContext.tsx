@@ -83,12 +83,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const redirectTo = Linking.createURL('/');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo },
+      options: { redirectTo, skipBrowserRedirect: true },
     });
     if (error) return { error };
-    if (data.url) {
-      await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (!data.url) return { error: null };
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+    if (result.type === 'success') {
+      // Exchange the PKCE code for a session. onAuthStateChange picks it up automatically.
+      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url);
+      if (sessionError) return { error: sessionError };
     }
+
     return { error: null };
   };
 
