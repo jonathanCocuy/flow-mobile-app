@@ -24,6 +24,8 @@ type BudgetRow = {
   category: string;
   monthly_limit: number;
   rollover_enabled: boolean;
+  rollover_amount: number;
+  effective_limit: number;
   spent: number;
   remaining: number;
   percentage: number;
@@ -103,8 +105,12 @@ export default function BudgetsScreen() {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
         .toISOString().split('T')[0];
+      const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        .toISOString().split('T')[0];
+      const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+        .toISOString().split('T')[0];
 
-      const [budgetsRes, txRes, catsRes] = await Promise.all([
+      const [budgetsRes, txRes, prevTxRes, catsRes] = await Promise.all([
         supabase
           .from('budgets')
           .select('id, category, monthly_limit, rollover_enabled')
@@ -115,6 +121,13 @@ export default function BudgetsScreen() {
           .eq('user_id', user.id)
           .eq('type', 'expense')
           .gte('date', startOfMonth),
+        supabase
+          .from('transactions')
+          .select('category, amount, exchange_rate')
+          .eq('user_id', user.id)
+          .eq('type', 'expense')
+          .gte('date', startOfPrevMonth)
+          .lte('date', endOfPrevMonth),
         supabase
           .from('categories')
           .select('id, name, label, color, icon')
@@ -127,18 +140,30 @@ export default function BudgetsScreen() {
           (spentByCategory[tx.category] ?? 0) + tx.amount * (tx.exchange_rate ?? 1);
       });
 
+      const prevSpentByCategory: Record<string, number> = {};
+      (prevTxRes.data ?? []).forEach(tx => {
+        prevSpentByCategory[tx.category] =
+          (prevSpentByCategory[tx.category] ?? 0) + tx.amount * (tx.exchange_rate ?? 1);
+      });
+
       const rows: BudgetRow[] = (budgetsRes.data ?? [])
         .map(b => {
+          const rollover_amount = b.rollover_enabled
+            ? Math.max(0, b.monthly_limit - (prevSpentByCategory[b.category] ?? 0))
+            : 0;
+          const effective_limit = b.monthly_limit + rollover_amount;
           const spent = spentByCategory[b.category] ?? 0;
-          const remaining = b.monthly_limit - spent;
-          const percentage = b.monthly_limit > 0 ? (spent / b.monthly_limit) * 100 : 0;
+          const remaining = effective_limit - spent;
+          const percentage = effective_limit > 0 ? (spent / effective_limit) * 100 : 0;
           return {
             ...b,
             rollover_enabled: b.rollover_enabled ?? false,
+            rollover_amount,
+            effective_limit,
             spent,
             remaining,
             percentage,
-            isOverBudget: spent > b.monthly_limit,
+            isOverBudget: spent > effective_limit,
           };
         })
         .sort((a, b) => b.percentage - a.percentage);
@@ -255,7 +280,16 @@ export default function BudgetsScreen() {
                         </View>
                         <View style={styles.budgetContent}>
                           <View style={styles.budgetTop}>
-                            <Text variant="callout" style={{ fontWeight: '500' }}>{label}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <Text variant="callout" style={{ fontWeight: '500' }}>{label}</Text>
+                              {budget.rollover_enabled && budget.rollover_amount > 0 && (
+                                <View style={[styles.rolloverBadge, { backgroundColor: `${colors.income}18` }]}>
+                                  <Text variant="caption2" color={colors.income} style={{ fontWeight: '600' }}>
+                                    {`+$${budget.rollover_amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
                             <Text
                               variant="callout"
                               style={{ fontWeight: '600' }}
@@ -263,7 +297,7 @@ export default function BudgetsScreen() {
                             >
                               ${budget.spent.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                               <Text variant="caption1" color={colors.labelSecondary}>
-                                {' / $'}{budget.monthly_limit.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                {' / $'}{budget.effective_limit.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                               </Text>
                             </Text>
                           </View>
@@ -334,5 +368,6 @@ const styles = StyleSheet.create({
   emoji: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   budgetContent: { flex: 1, gap: 4 },
   budgetTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rolloverBadge: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6 },
   divider: { height: StyleSheet.hairlineWidth },
 });

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { DashboardData, DashboardTransaction, DashboardAccount, BudgetWithProgress, UserCategory } from '@/types/finance'
+import type { DashboardData, DashboardTransaction, DashboardAccount, BudgetWithProgress, UserCategory, SavingsGoal } from '@/types/finance'
 
 const DEFAULT_CATEGORIES: Omit<UserCategory, 'id'>[] = [
   { name: 'food',      label: 'Food',      color: '#f97316', icon: 'Utensils' },
@@ -17,6 +17,7 @@ const empty: DashboardData = {
   currentMonthExpenses: 0,
   recentTransactions: [],
   budgets: [],
+  goals: [],
   categories: [],
   hasTransactions: false,
   hasGoals: false,
@@ -62,8 +63,10 @@ export function useDashboard() {
           .order('created_at'),
         supabase
           .from('savings_goals')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id),
+          .select('id, name, target_amount, current_amount, deadline, icon')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true })
+          .limit(3),
       ])
 
       const accounts: DashboardAccount[] = accountsRes.data ?? []
@@ -135,6 +138,15 @@ export function useDashboard() {
 
       const allBudgets = budgetsRes.data ?? []
 
+      const goals: SavingsGoal[] = (goalsRes.data ?? []).map(g => ({
+        id: g.id,
+        name: g.name,
+        target_amount: g.target_amount,
+        current_amount: g.current_amount,
+        deadline: g.deadline ?? null,
+        icon: g.icon ?? null,
+      }))
+
       setData({
         accounts,
         totalBalance,
@@ -142,9 +154,10 @@ export function useDashboard() {
         currentMonthExpenses,
         recentTransactions,
         budgets,
+        goals,
         categories,
         hasTransactions: txData.length > 0,
-        hasGoals: (goalsRes.count ?? 0) > 0,
+        hasGoals: goals.length > 0,
         hasBudgets: allBudgets.length > 0,
       })
     } catch (e) {

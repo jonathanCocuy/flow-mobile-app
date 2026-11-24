@@ -31,7 +31,7 @@ import { NotificationsSheet, fetchUnreadCount } from '@/components/Notifications
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { RefreshScrollView } from '@/components/ui/RefreshScrollView';
-import type { BudgetWithProgress, DashboardTransaction, UserCategory } from '@/types/finance';
+import type { BudgetWithProgress, DashboardTransaction, UserCategory, SavingsGoal } from '@/types/finance';
 
 type AppColors = typeof Colors[keyof typeof Colors];
 
@@ -449,6 +449,45 @@ export default function DashboardScreen() {
           </View>
         )}
 
+        {/* Goals Widget */}
+        {(loading || data.goals.length > 0) && (
+          <View style={styles.sectionWithHeader}>
+            <View style={styles.sectionHeader}>
+              <Text variant="title3">{t('dashboard.goals')}</Text>
+              <TouchableOpacity onPress={() => router.push('/goals')}>
+                <Text variant="subheadline" color={colors.tint}>{t('dashboard.seeAll')}</Text>
+              </TouchableOpacity>
+            </View>
+            <Card radius={Spacing.radius.lg} padding={0}>
+              {loading ? (
+                <View style={{ paddingVertical: Spacing.xs }}>
+                  {([1, 2] as const).map((i) => (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2, gap: Spacing.sm }}>
+                      <Skeleton width={40} height={40} radius={20} />
+                      <View style={{ flex: 1, gap: 6 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Skeleton width="45%" height={13} radius={7} />
+                          <Skeleton width="22%" height={13} radius={7} />
+                        </View>
+                        <Skeleton width="100%" height={5} radius={3} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                data.goals.map((goal, index) => (
+                  <GoalRow
+                    key={goal.id}
+                    goal={goal}
+                    colors={colors}
+                    isLast={index === data.goals.length - 1}
+                  />
+                ))
+              )}
+            </Card>
+          </View>
+        )}
+
         {/* Recent Transactions */}
         <View style={[styles.sectionWithHeader, styles.lastSection]}>
           <View style={styles.sectionHeader}>
@@ -625,6 +664,41 @@ function BudgetRow({
           </Text>
         </View>
       </View>
+      {!isLast && (
+        <View style={[styles.insetDivider, { backgroundColor: colors.separator, marginLeft: Spacing.md }]} />
+      )}
+    </>
+  );
+}
+
+function GoalRow({ goal, colors, isLast }: { goal: SavingsGoal; colors: AppColors; isLast: boolean }) {
+  const pct = goal.target_amount > 0 ? Math.min((goal.current_amount / goal.target_amount) * 100, 100) : 0;
+  const iconName = (goal.icon ?? 'Target') as Parameters<typeof Icon>[0]['name'];
+  return (
+    <>
+      <TouchableOpacity
+        style={[styles.budgetItem, { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2 }]}
+        activeOpacity={0.6}
+        onPress={() => { router.push('/goals'); }}
+      >
+        <View style={[styles.txIcon, { backgroundColor: `${colors.tint}18` }]}>
+          <Icon name={iconName} size={18} color={colors.tint} />
+        </View>
+        <View style={[styles.budgetLeft, { flex: 1, marginLeft: Spacing.xs }]}>
+          <Text variant="callout" style={{ fontWeight: '500' }}>{goal.name}</Text>
+          <View style={[styles.progressTrack, { backgroundColor: colors.fillPrimary, marginTop: 4 }]}>
+            <View style={[styles.progressFill, { backgroundColor: colors.income, width: `${pct}%` }]} />
+          </View>
+        </View>
+        <View style={styles.budgetRight}>
+          <Text variant="callout" style={{ fontWeight: '600' }}>
+            {Math.round(pct)}%
+          </Text>
+          <Text variant="caption1" color={colors.labelSecondary}>
+            {formatCurrency(goal.current_amount, true)}
+          </Text>
+        </View>
+      </TouchableOpacity>
       {!isLast && (
         <View style={[styles.insetDivider, { backgroundColor: colors.separator, marginLeft: Spacing.md }]} />
       )}

@@ -161,6 +161,7 @@ export default {
   'dashboard.action.budgets': 'Budgets',
   'dashboard.action.goals': 'Objectifs',
   'dashboard.action.activity': 'Activité',
+  'dashboard.goals': 'Objectifs',
 
   // Transactions
   'transactions.title': 'Activité',
@@ -169,6 +170,8 @@ export default {
   'transactions.filter.expense': 'Dépenses',
   'transactions.filter.transfer': 'Virements',
   'transactions.empty': 'Aucune transaction',
+  'transactions.search': 'Rechercher…',
+  'transactions.monthAll': 'Tous les mois',
   'transactions.add.title': 'Nouvelle transaction',
   'transactions.add.income': 'Revenu',
   'transactions.add.expense': 'Dépense',

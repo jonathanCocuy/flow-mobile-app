@@ -4,6 +4,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -157,6 +158,8 @@ export default function TransactionsScreen() {
   const colors = Colors[colorScheme];
   const { data, loading, refetch } = useTransactions();
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editTx, setEditTx] = useState<DashboardTransaction | null>(null);
 
@@ -167,10 +170,24 @@ export default function TransactionsScreen() {
     { key: 'transfer', label: t('transactions.filter.transfer') },
   ];
 
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    data.transactions.forEach(tx => {
+      if (tx.date) months.add(tx.date.substring(0, 7));
+    });
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
+  }, [data.transactions]);
+
   const filtered = useMemo(() => {
-    if (activeFilter === 'all') return data.transactions;
-    return data.transactions.filter(tx => tx.type === activeFilter);
-  }, [data.transactions, activeFilter]);
+    let txs = data.transactions;
+    if (activeFilter !== 'all') txs = txs.filter(tx => tx.type === activeFilter);
+    if (selectedMonth) txs = txs.filter(tx => tx.date.startsWith(selectedMonth));
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      txs = txs.filter(tx => tx.description?.toLowerCase().includes(q));
+    }
+    return txs;
+  }, [data.transactions, activeFilter, selectedMonth, searchQuery]);
 
   const groups = useMemo(() => {
     const map: Record<string, DashboardTransaction[]> = {};
@@ -195,7 +212,21 @@ export default function TransactionsScreen() {
           <Text variant="largeTitle">{t('transactions.title')}</Text>
         </View>
 
-        {/* Filter chips */}
+        {/* Search bar */}
+        <View style={[styles.searchRow, { backgroundColor: colors.fillPrimary }]}>
+          <Icon name="Search" size={16} color={colors.labelTertiary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.label }]}
+            placeholder={t('transactions.search')}
+            placeholderTextColor={colors.labelTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+        </View>
+
+        {/* Type filter chips */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -222,6 +253,37 @@ export default function TransactionsScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* Month filter chips */}
+        {availableMonths.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filters}
+          >
+            <TouchableOpacity
+              onPress={() => setSelectedMonth(null)}
+              style={[styles.chip, { backgroundColor: selectedMonth === null ? colors.tint : colors.fillPrimary }]}
+              activeOpacity={0.7}
+            >
+              <Text variant="subheadline" color={selectedMonth === null ? colors.tintForeground : colors.labelSecondary}>
+                {t('transactions.monthAll')}
+              </Text>
+            </TouchableOpacity>
+            {availableMonths.map(m => (
+              <TouchableOpacity
+                key={m}
+                onPress={() => setSelectedMonth(m === selectedMonth ? null : m)}
+                style={[styles.chip, { backgroundColor: selectedMonth === m ? colors.tint : colors.fillPrimary }]}
+                activeOpacity={0.7}
+              >
+                <Text variant="subheadline" color={selectedMonth === m ? colors.tintForeground : colors.labelSecondary}>
+                  {new Date(m + '-02').toLocaleDateString(i18n.language, { month: 'short', year: 'numeric' })}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Loading state */}
         {loading && data.transactions.length === 0 && (
@@ -307,6 +369,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenHorizontal,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.screenHorizontal,
+    marginBottom: Spacing.xs,
+    borderRadius: Spacing.radius.lg,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 9,
+    gap: Spacing.xs,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
   },
   filters: {
     paddingHorizontal: Spacing.screenHorizontal,

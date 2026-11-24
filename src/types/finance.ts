@@ -34,10 +34,21 @@ export type BudgetWithProgress = {
   category: string
   monthly_limit: number
   rollover_enabled: boolean
+  rollover_amount?: number
+  effective_limit?: number
   spent: number
   remaining: number
   percentage: number
   isOverBudget: boolean
+}
+
+export type SavingsGoal = {
+  id: string
+  name: string
+  target_amount: number
+  current_amount: number
+  deadline: string | null
+  icon: string | null
 }
 
 export type InvestmentRecord = {
@@ -106,6 +117,7 @@ export type DashboardData = {
   currentMonthExpenses: number
   recentTransactions: DashboardTransaction[]
   budgets: BudgetWithProgress[]
+  goals: SavingsGoal[]
   categories: UserCategory[]
   hasTransactions: boolean
   hasGoals: boolean
